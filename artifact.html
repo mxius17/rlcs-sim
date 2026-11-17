@@ -1,0 +1,40 @@
+<title>RL Esports Simulator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Build a custom Rocket League esports tournament with real RLCS 2026 rosters and simulate every series.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+
+<header class="topbar">
+  <a class="brand" href="#" data-action="go-home" aria-label="RL Esports Simulator home">
+    <span class="brand-mark">RL</span>
+    <span class="brand-text"><strong>ESPORTS</strong><small>SIMULATOR</small></span>
+  </a>
+  <nav class="topnav" aria-label="Main"><button data-action="nav" data-v="home">Simulators</button><button data-action="nav" data-v="career">Career</button><button data-action="nav" data-v="teams">Teams</button></nav>
+    <div class="topbar-actions">
+    <button class="icon-btn" data-action="open-guide" title="How it works" aria-label="How it works">?</button>
+    <button class="icon-btn" data-action="open-settings" title="Settings" aria-label="Settings">⚙</button>
+  </div>
+</header>
+
+<main id="app" class="app" aria-live="polite"></main>
+
+<footer class="site-footer">
+  <div>
+    <strong>RL Esports Simulator</strong>
+    <p>An unofficial Rocket League esports tournament simulator built for entertainment. Rosters and event data sourced from <a href="https://liquipedia.net/rocketleague/Main_Page" target="_blank" rel="noopener">Liquipedia</a> (CC-BY-SA 3.0).</p>
+  </div>
+  <p class="muted mono" id="dataStamp"></p>
+</footer>
+
+<div id="modalRoot"></div>
+<div id="toastRoot" class="toast-root" aria-live="polite"></div>
+
+<script src="js/data.js"></script>
+<script src="js/data27.js"></script>
+<script src="js/logos.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/pitch.js"></script>
+<script src="js/career.js"></script>
+<script src="js/app.js"></script>

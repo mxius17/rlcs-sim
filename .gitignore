@@ -1,0 +1,33 @@
+# ---- Secrets: never commit these ----
+# Environment files (keep an .env.example with placeholder values if you need one)
+.env
+.env.*
+*.env
+!.env.example
+
+# API keys, tokens and credentials
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+id_rsa*
+id_ed25519*
+secrets.*
+secret.*
+*secret*.json
+*credentials*.json
+credentials*
+service-account*.json
+.npmrc
+.netrc
+.aws/
+.gcloud/
+
+# ---- Local / generated files ----
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/

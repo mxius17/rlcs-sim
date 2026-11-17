@@ -1,0 +1,744 @@
+/* RL Esports Simulator — top-down 2D match renderer.
+ *
+ * Geometry, speeds and handling use Rocket League's own numbers (unreal units, uu):
+ *   field 10240 x 8192 with cut corners, goals 1786 wide / 642 high / 880 deep, ceiling 2044,
+ *   ball radius 93, gravity 650 uu/s², car top speed 1410 (2300 supersonic on boost),
+ *   boost 33.3/s, big pads 100 (10 s respawn), small pads 12 (4 s respawn), RLCS kickoff spawns.
+ * Team A (blue) defends -x, Team B (orange) defends +x.
+ *
+ * The match engine has already decided every goal, shot, save and demo. This file stages them:
+ * a "director" builds each one up (carry, pass/centre, shot) so it lands at its exact game time,
+ * while the rest of the time the cars play free-form: first man challenges, second man supports,
+ * third man sits back, players rotate out after a touch and collect boost.
+ */
+(function (global) {
+  'use strict';
+  const L = 5120, W = 4096, GW = 893, GH = 642, GD = 880, C = 1152, BR = 93, CEIL = 2044, G = 650;
+  const K = L + W - C; // corner cut line |x| + |y| = K
+  const TOUCH = 250; // contact distance: cars and ball are drawn larger than life so they read on screen
+  const VW = 1100, VH = 820;
+  const S = Math.min((VW - 40) / (2 * (L + GD)), (VH - 96) / (2 * W));
+  const BLUE = '#1f8bff', ORANGE = '#f2542d'; // Azure Blue / Vermilion Orange
+  // RLCS kickoff spawns for blue (orange mirrors): diagonals, off-centres, back centre
+  const SPAWNS = [[-2560, -2048], [-2560, 2048], [-3840, -256], [-3840, 256], [-4608, 0]];
+  const SMALL_PADS = [[0, -4240], [-1792, -4184], [1792, -4184], [-940, -3308], [940, -3308], [0, -2816], [-3584, -2484], [3584, -2484], [-1788, -2300], [1788, -2300], [-2048, -1036], [0, -1024], [2048, -1036], [-1024, 0], [1024, 0], [-2048, 1036], [0, 1024], [2048, 1036], [-1788, 2300], [1788, 2300], [-3584, 2484], [3584, 2484], [0, 2816], [-940, 3310], [940, 3308], [-1792, 4184], [1792, 4184], [0, 4240]].map(([x, y]) => [y, x]);
+  const BIG_PADS = [[0, -3584], [0, 3584], [-4096, -3072], [-4096, 3072], [4096, -3072], [4096, 3072]];
+  // turning curvature by speed (RL's steering table): tighter at low speed
+  const CURV = [[0, 0.0069], [500, 0.00398], [1000, 0.00235], [1500, 0.001375], [1750, 0.0011], [2300, 0.00088]];
+
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const len = (x, y) => Math.hypot(x, y);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const norm = (x, y) => { const l = Math.hypot(x, y) || 1; return [x / l, y / l]; };
+  const wrap = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
+  const sgn = (v) => (v < 0 ? -1 : 1);
+  function curvature(v) {
+    for (let i = 1; i < CURV.length; i++) if (v <= CURV[i][0]) { const [a, ca] = CURV[i - 1], [b, cb] = CURV[i]; return ca + ((v - a) / (b - a)) * (cb - ca); }
+    return CURV[CURV.length - 1][1];
+  }
+  const throttleAccel = (v) => (v < 1400 ? 1600 - v * (1440 / 1400) : v < 1410 ? 160 : 0);
+
+  function Pitch(canvas, teamA, teamB) {
+    this.attach(canvas);
+    this.teams = [teamA, teamB];
+    this.cars = [];
+    [teamA, teamB].forEach((team, ti) => {
+      team.players.slice(0, 3).forEach((p, i) => {
+        this.cars.push({ side: ti ? 'B' : 'A', s: ti ? -1 : 1, i, name: p.name, x: 0, y: 0, z: 17, vz: 0, hd: 0, v: 0, boost: 33, boosting: false, dead: 0, cd: 0, rotT: 0, dribbles: 0, air: false });
+      });
+    });
+    this.ball = { x: 0, y: 0, z: BR, vx: 0, vy: 0, vz: 0, trail: [] };
+    this.pads = SMALL_PADS.map(([x, y]) => ({ x, y, big: false, t: 0 })).concat(BIG_PADS.map(([x, y]) => ({ x, y, big: true, t: 0 })));
+    this.fx = [];
+    this.newGame();
+  }
+
+  Pitch.prototype.attach = function (canvas) {
+    this.cv = canvas;
+    this.ctx = canvas ? canvas.getContext('2d') : null;
+    if (!canvas) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1) || 1;
+    canvas.width = VW * dpr; canvas.height = VH * dpr;
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  };
+
+  Pitch.prototype.newGame = function () {
+    this.handled = new Set();
+    this.fx = [];
+    this.pads.forEach((p) => (p.t = 0));
+    this.cars.forEach((c) => (c.boost = 33));
+    this.kickoff();
+  };
+
+  /** Line both teams up on random mirrored RLCS spawns. */
+  Pitch.prototype.kickoff = function () {
+    const b = this.ball;
+    Object.assign(b, { x: 0, y: 0, z: BR, vx: 0, vy: 0, vz: 0, trail: [] });
+    this.hidden = false; this.inGoal = 0; this.cur = null; this.flight = null; this.lastTouch = null; this.kicked = false;
+    const pick = [0, 1, 2, 3, 4].sort(() => Math.random() - 0.5).slice(0, 3).sort((p, q) => p - q);
+    // the car on the nearest spawn takes the kickoff ("left goes" on double diagonals)
+    this.cars.forEach((c) => {
+      const sp = SPAWNS[pick[c.i]];
+      const m = c.side === 'A' ? 1 : -1;
+      Object.assign(c, { x: sp[0] * m, y: sp[1] * m, z: 17, vz: 0, v: 0, dead: 0, cd: 0, rotT: 0, dribbles: 0, air: false, boost: 33, boosting: false, kick: null });
+      c.hd = Math.atan2(-c.y, -c.x);
+    });
+    ['A', 'B'].forEach((side) => {
+      const team = this.cars.filter((k) => k.side === side).sort((p, q) => len(p.x, p.y) - len(q.x, q.y) || p.y - q.y);
+      team[0].kick = 'go';
+      team[1].kick = 'cheat';
+      team[2].kick = 'boost';
+    });
+    this.kickT = 0;
+  };
+
+  /* ================= simulation ================= */
+  Pitch.prototype.update = function (t, dt, game, frozen) {
+    if (dt <= 0) return;
+    const n = Math.min(240, Math.ceil(dt / (1 / 90)));
+    const h = dt / n;
+    for (let k = 0; k < n; k++) {
+      const tt = t - dt + h * (k + 1);
+      if (frozen) { this.coast(h); continue; }
+      this.kickT += h;
+      this.direct(tt, game);
+      this.stepCars(h, tt);
+      this.stepBall(h);
+      this.stepPads(h);
+    }
+  };
+
+  /** During goal celebrations: everything glides to a stop. */
+  Pitch.prototype.coast = function (h) {
+    this.cars.forEach((k) => {
+      k.v *= Math.max(0, 1 - 2 * h);
+      k.x = clamp(k.x + Math.cos(k.hd) * k.v * h, -L + 80, L - 80); k.y = clamp(k.y + Math.sin(k.hd) * k.v * h, -W + 80, W - 80);
+      if (k.z > 17) { k.vz -= G * h; k.z = Math.max(17, k.z + k.vz * h); }
+      k.boosting = false;
+    });
+  };
+
+  Pitch.prototype.carFor = function (side, name) {
+    return this.cars.find((c) => c.side === side && c.name === name) || this.cars.find((c) => c.side === side && !c.dead) || this.cars.find((c) => c.side === side);
+  };
+
+  /* ---------- ballistic helper: hit the ball from where it is to (x,y,z) in T seconds ---------- */
+  function launch(b, x, y, z, T) {
+    b.vx = (x - b.x) / T; b.vy = (y - b.y) / T; b.vz = (z - b.z + 0.5 * G * T * T) / T;
+  }
+  /** Keep free-play balls under ~1300 uu: RLCS play is mostly low and mid-height. */
+  function capLift(b) { const vmax = Math.sqrt(Math.max(0, 2 * G * (1300 - b.z))); if (b.vz > vmax) b.vz = vmax; }
+
+  /* ================= director: stage the engine's events ================= */
+  Pitch.prototype.direct = function (t, game) {
+    const evs = game.events;
+    // demos: the attacker boosts into the victim
+    for (let i = 0; i < evs.length; i++) {
+      const e = evs[i];
+      if (e.type !== 'demo' || this.handled.has(i)) continue;
+      if (e.t - t > 2.2) break;
+      const atk = this.carFor(e.side, e.who), vic = this.carFor(e.side === 'A' ? 'B' : 'A', e.victim);
+      if (t >= e.t) {
+        this.handled.add(i); atk.demoOn = null;
+        if (!vic.dead && !atk.dead) {
+          vic.dead = 3; // RL respawn time
+          this.burst(vic.x, vic.y, vic.side === 'A' ? BLUE : ORANGE, 30); this.ring(vic.x, vic.y, '#ffffff', 900);
+          atk.x = vic.x - Math.cos(atk.hd) * 200; atk.y = vic.y - Math.sin(atk.hd) * 200;
+        }
+      } else if (!atk.dead && !vic.dead && !this.isActor(atk)) atk.demoOn = vic;
+    }
+    if (this.cur && this.cur.done) this.cur = null;
+    if (!this.cur) {
+      for (let i = 0; i < evs.length; i++) {
+        const e = evs[i];
+        if (this.handled.has(i) || e.type === 'demo') continue;
+        if (e.t < t - 0.05) { this.handled.add(i); continue; }
+        if (e.t - t > 5.5) break;
+        this.handled.add(i);
+        this.stage(e, t);
+        break;
+      }
+    }
+    const c = this.cur;
+    if (!c) return;
+    const b = this.ball;
+    if (c.phase === 'carry') {
+      // carry the ball to where the play is made (a dribble down the wing or into the slot)
+      const [ox, oy] = c.carryTo;
+      const remain = Math.max(0.15, c.tPass - t);
+      const d = len(ox - b.x, oy - b.y);
+      const sp = Math.min(1900, d / remain + 200);
+      const [ux, uy] = norm(ox - b.x, oy - b.y);
+      const k = 0.05;
+      b.vx += (ux * sp - b.vx) * k; b.vy += (uy * sp - b.vy) * k;
+      if (b.z > BR + 5) b.vz -= 200 * k; // settle it down
+      if (t >= c.tPass) {
+        const hitter = c.passer || c.shooter;
+        if (c.passer) {
+          // centre / pass into the shooting spot
+          launch(b, c.spot[0], c.spot[1], c.spotZ, Math.max(0.5, c.tShot - t));
+          this.strike(hitter, b);
+          c.phase = 'pass';
+        } else {
+          c.phase = 'shoot';
+        }
+      }
+    }
+    if (c.phase === 'pass' && t >= c.tShot) c.phase = 'shoot';
+    if (c.phase === 'shoot') {
+      launch(b, c.target[0], c.target[1], c.target[2], Math.max(0.25, c.e.t - t));
+      this.strike(c.shooter, b);
+      this.ring(b.x, b.y, 'rgba(255,255,255,0.9)', 420);
+      c.phase = 'flight';
+      this.flight = c;
+    }
+    if (c.phase === 'flight' && t >= c.e.t) {
+      if (c.e.type === 'save') {
+        const sv = c.saver;
+        b.vx = -b.vx * rnd(0.25, 0.45); b.vy = b.vy * 0.3 + rnd(-1400, 1400); b.vz = rnd(300, 800);
+        if (sv && !sv.dead) { sv.x = b.x - c.s * 180; sv.y = b.y + rnd(-60, 60); sv.z = Math.max(17, b.z - 60); sv.vz = 300; sv.hd = c.s > 0 ? Math.PI : 0; sv.v = 600; sv.rotT = 1.5; }
+        this.ring(b.x, b.y, '#ffffff', 600); this.burst(b.x, b.y, '#ffffff', 12);
+        this.lastTouch = sv;
+      }
+      this.flight = null;
+      c.done = true; // goals keep flying into the net; misses carry on into the post/backboard
+      if (c.e.type === 'goal') this.flight = c;
+    }
+  };
+
+  Pitch.prototype.isActor = function (k) { const c = this.cur; return !!c && (k === c.shooter || k === c.passer || k === c.saver); };
+
+  /** A car strikes the ball: put it on the ball for the hit, facing where the ball goes. */
+  Pitch.prototype.strike = function (k, b) {
+    if (!k || k.dead) return;
+    const [hx, hy] = norm(b.vx, b.vy);
+    const tx = b.x - hx * 200, ty = b.y - hy * 200;
+    k.x += (tx - k.x) * 0.9; k.y += (ty - k.y) * 0.9;
+    k.hd = Math.atan2(hy, hx); k.v = Math.max(k.v, 1500);
+    if (b.z > 260) { k.z = Math.max(k.z, b.z - 80); k.vz = 200; k.air = true; }
+    k.rotT = rnd(2.5, 3.8); k.cd = 0.8; k.dribbles = 0;
+    this.lastTouch = k;
+  };
+
+  Pitch.prototype.stage = function (e, t) {
+    const s = e.side === 'A' ? 1 : -1; // attacking direction
+    const b = this.ball;
+    const kmh = e.speed || rnd(80, 120);
+    const v = clamp(kmh / 0.036, 1900, 5000);
+    const aerial = Math.random() < (e.type === 'goal' ? 0.32 : 0.22);
+    const spot = [s * rnd(L - 3000, L - 1300), rnd(-1500, 1500)];
+    const spotZ = aerial ? rnd(320, 900) : BR;
+    let target;
+    if (e.type === 'goal') target = [s * (L + BR + 120), rnd(-GW * 0.78, GW * 0.78), rnd(BR, GH - 140)];
+    else if (e.type === 'save') target = [s * (L - 40), rnd(-GW * 0.75, GW * 0.75), rnd(BR, GH - 160)];
+    else if (Math.random() < 0.5) target = [s * (L - BR), rnd(-GW, GW), rnd(GH + 150, GH + 600)]; // off the backboard
+    else target = [s * (L - BR), sgn(rnd(-1, 1)) * rnd(GW + 120, GW + 900), rnd(BR, 500)]; // wide of the post
+    const flightT = len(target[0] - spot[0], target[1] - spot[1]) / v;
+    const shooter = this.carFor(e.side, e.shooter || e.scorer);
+    const mates = this.cars.filter((k) => k.side === e.side && k !== shooter);
+    let passer = null;
+    if (e.assist) passer = this.carFor(e.side, e.assist);
+    else if (Math.random() < 0.4) passer = mates[Math.floor(Math.random() * mates.length)];
+    if (passer === shooter) passer = null;
+    const avail = e.t - t;
+    if (avail < flightT + 1.6) passer = null; // no time to build it up: a quick shot / rebound
+    const defSide = e.side === 'A' ? 'B' : 'A';
+    const saver = e.type === 'save' ? this.carFor(defSide, e.saver) : null;
+    const tShot = e.t - flightT;
+    const tPass = passer ? tShot - rnd(0.9, 1.4) : tShot;
+    // where the carry goes: down a wing for a centre, or straight into the slot for a solo shot
+    const wing = sgn(b.y || rnd(-1, 1));
+    const carryTo = passer ? [s * rnd(L - 3200, L - 1600), wing * rnd(2300, 3300)] : spot;
+    [shooter, passer, saver].forEach((k) => { if (k && k.dead) { k.dead = 0; k.x = b.x - s * 1500; k.y = clamp(b.y, -2000, 2000); k.z = 17; } });
+    this.cur = { e, s, spot, spotZ, target, shooter, passer, saver, tShot, tPass, carryTo, phase: tShot - t < 0.25 ? 'shoot' : 'carry', aerial };
+  };
+
+  /* ================= free play: where each car wants to be ================= */
+  Pitch.prototype.plan = function (t) {
+    const b = this.ball, c = this.cur;
+    const out = new Map();
+    const reach = (k) => {
+      // time-ish to the ball, punishing cars on the wrong side of it and cars rotating out
+      const s = k.s;
+      return len(b.x - k.x, b.y - k.y) / 1500 + (s * (k.x - b.x) > 200 ? 1.1 : 0) + (k.rotT > 0 ? 3 : 0) + (k.dead > 0 ? 9 : 0);
+    };
+    const first = {};
+    ['A', 'B'].forEach((side) => {
+      const team = this.cars.filter((k) => k.side === side);
+      const order = team.slice().sort((p, q) => reach(p) - reach(q));
+      // hysteresis: keep the current first man unless a teammate is clearly better placed
+      const prev = this['first' + side];
+      let f = order[0];
+      if (prev && !prev.dead && prev.rotT <= 0 && reach(prev) < reach(f) + 0.35) f = prev;
+      this['first' + side] = f;
+      first[side] = { f, order, r: reach(f) };
+    });
+    ['A', 'B'].forEach((side) => {
+      const s = side === 'A' ? 1 : -1;
+      const own = -s * L, opp = s * L;
+      const F = first[side], O = first[side === 'A' ? 'B' : 'A'];
+      const depth = s * b.x; // >0: ball in the opponent half
+      const atk = c && c.e.side === side, def = c && c.e.side !== side;
+      const f = F.f;
+      // challenge, or shadow (stay goal-side) when the opponent will clearly get there first
+      if (!def && (atk || F.r < O.r + 0.45 || depth > 2000)) {
+        const lead = clamp(len(b.x - f.x, b.y - f.y) / 1800, 0, 1.2);
+        const px = clamp(b.x + b.vx * lead, -L + 200, L - 200), py = clamp(b.y + b.vy * lead, -W + 200, W - 200);
+        const [ax, ay] = norm(opp - px, -py * 0.5);
+        const behind = s * (f.x - px) < -120;
+        out.set(f, behind ? { x: px + ax * 300, y: py + ay * 300, boost: len(px - f.x, py - f.y) > 900 || depth < 0, role: 1 }
+          : { x: px - ax * 700 + -ay * 500 * sgn(f.y - py), y: py - ay * 700 + ax * 500 * sgn(f.y - py), boost: true, role: 1 });
+      } else {
+        const [gx, gy] = norm(own - b.x, -b.y);
+        out.set(f, { x: b.x + gx * 1500, y: b.y + gy * 1500, boost: false, role: 1 });
+      }
+      const rest = F.order.filter((k) => k !== f);
+      rest.forEach((k, j) => {
+        if (k.dead > 0) return;
+        if (k.rotT > 0) {
+          // rotate out: back-post side, through the boost on the way
+          const far = -sgn(b.y || 1);
+          const pad = this.pads.find((p) => p.big && p.t <= 0 && s * p.x < 0 && sgn(p.y) === far);
+          if (k.boost < 45 && pad) out.set(k, { x: pad.x, y: pad.y, boost: false, role: 4 });
+          else out.set(k, { x: clamp(b.x - s * 3200, -L + 1300, L - 1300), y: far * 2600, boost: false, role: 4 });
+          return;
+        }
+        if (k.boost < 22) {
+          const pads = this.pads.filter((p) => p.big && p.t <= 0 && s * (p.x - k.x) < 800);
+          if (pads.length) { const p = pads.sort((p1, p2) => len(p1.x - k.x, p1.y - k.y) - len(p2.x - k.x, p2.y - k.y))[0]; out.set(k, { x: p.x, y: p.y, boost: false, role: 5 }); return; }
+        }
+        if (j === 0) {
+          // second man: ready for the next touch, a little behind and to the other side of the ball
+          const sx = depth > 0 ? b.x - s * 2000 : b.x - s * 2500;
+          out.set(k, { x: clamp(sx, -L + 1500, L - 1500), y: clamp(-b.y * 0.45, -2600, 2600), boost: false, role: 2 });
+        } else {
+          // third man: last back, between the ball and the net (never parked in it)
+          let tx = b.x - s * 4200;
+          if (s * (tx - own) < 1400) tx = own + s * 1400;
+          let ty = clamp(b.y * 0.3, -1500, 1500);
+          if (depth < -(L - 2400)) { tx = own + s * 650; ty = -sgn(b.y || 1) * 600; } // ball in our corner: back post
+          out.set(k, { x: clamp(tx, -L + 600, L - 600), y: ty, boost: false, role: 3 });
+        }
+      });
+    });
+    // directed plays override the free-play plan
+    if (c) {
+      const b2 = this.ball;
+      const sh = c.shooter, ps = c.passer, sv = c.saver;
+      if (c.phase === 'carry') {
+        const carrier = ps || sh;
+        const [ux, uy] = norm(b2.vx || c.s, b2.vy);
+        out.set(carrier, { x: b2.x - ux * 200, y: b2.y - uy * 200, boost: true, role: 1, carry: true });
+        if (ps) out.set(sh, { x: c.spot[0] - c.s * 900, y: c.spot[1] * 0.7, boost: true, role: 2 });
+      } else if (c.phase === 'pass') {
+        out.set(sh, { x: c.spot[0] - c.s * 220, y: c.spot[1], boost: true, role: 1, arriveBy: c.tShot });
+      }
+      if (sv && !sv.dead && c.e.type === 'save') {
+        const own = c.s * L;
+        const gy = clamp(c.phase === 'flight' ? b2.y + (b2.vy / (Math.abs(b2.vx) || 1)) * Math.abs(own - b2.x) : b2.y * 0.25, -GW + 100, GW - 100);
+        out.set(sv, { x: own - c.s * 250, y: gy, boost: true, role: 6 });
+      }
+      // the defending team's challenger steps up and gets beaten
+      const dside = c.e.side === 'A' ? 'B' : 'A';
+      const dfirst = this['first' + dside];
+      if (dfirst && dfirst !== sv && c.phase !== 'flight') {
+        const carrier = c.phase === 'carry' ? (ps || sh) : sh;
+        out.set(dfirst, { x: carrier.x + c.s * 500, y: carrier.y + (carrier.y > 0 ? -300 : 300), boost: true, role: 1 });
+      }
+    }
+    // kickoff routes
+    if (this.kickT < 2.5) {
+      this.cars.forEach((k) => {
+        if (k.kick === 'go' && this.kickT < 2.5 && !this.kicked) out.set(k, { x: 0, y: 0, boost: true, role: 1 });
+        else if (k.kick === 'cheat' && this.kickT < 2.5) out.set(k, { x: -k.s * 2000, y: k.y * 0.3, boost: true, role: 2 });
+        else if (k.kick === 'boost' && this.kickT < 2.5) { const p = this.pads.find((p) => p.big && sgn(p.x) === -k.s && sgn(p.y) === sgn(k.y || 1)); if (p) out.set(k, { x: p.x, y: p.y, boost: true, role: 5 }); }
+      });
+    }
+    return out;
+  };
+
+  /* ---------- car physics: throttle, boost, RL turning radius, powerslides ---------- */
+  Pitch.prototype.drive = function (k, tg, h) {
+    let tx = tg ? tg.x : k.x + Math.cos(k.hd) * 400, ty = tg ? tg.y : k.y + Math.sin(k.hd) * 400;
+    if (k.demoOn && !k.demoOn.dead) { tx = k.demoOn.x; ty = k.demoOn.y; tg = { boost: true }; }
+    const dx = tx - k.x, dy = ty - k.y, d = len(dx, dy);
+    const err = wrap(Math.atan2(dy, dx) - k.hd);
+    let want = 1410;
+    const canBoost = tg && tg.boost && k.boost > 0;
+    if (canBoost) want = 2300;
+    if (!tg) want = 0;
+    if (d < 700 && !(tg && tg.carry)) want = Math.min(want, d * 1.8 + (tg && tg.role === 1 ? 600 : 0));
+    if (tg && tg.carry) want = Math.min(want, len(this.ball.vx, this.ball.vy) + 250);
+    if (Math.abs(err) > 1.25 && d < 2600) want = Math.min(want, 650 + d * 0.15);
+    // steering
+    const slide = Math.abs(err) > 1.0 && k.v > 500;
+    const maxW = Math.max(k.v, 380) * curvature(k.v) * (slide ? 1.7 : 1);
+    const w = clamp(err * 5, -maxW, maxW);
+    k.hd = wrap(k.hd + w * h);
+    k.slide = slide;
+    // speed
+    const aligned = Math.abs(err) < 0.45;
+    k.boosting = false;
+    if (k.v < want - 20) {
+      let a = throttleAccel(k.v);
+      if (canBoost && aligned && (want > 1410 || k.v < 1300)) { a += 991.7; k.boosting = true; k.boost = Math.max(0, k.boost - 33.3 * h); }
+      if (k.v >= 1410 && !k.boosting) a = 0;
+      k.v = Math.min(k.v + a * h, k.boosting ? 2300 : Math.max(k.v, 1410));
+    } else {
+      const over = k.v - want;
+      k.v = Math.max(0, k.v - (over > 400 ? 3500 : 525) * h * (slide ? 1.3 : 1));
+    }
+    if (slide) k.v *= 1 - 0.25 * h;
+    k.x += Math.cos(k.hd) * k.v * h; k.y += Math.sin(k.hd) * k.v * h;
+    // stay on the field (cars ride the walls in RL; here they skim along them)
+    k.x = clamp(k.x, -L + 80, L - 80); k.y = clamp(k.y, -W + 80, W - 80);
+    const m = Math.abs(k.x) + Math.abs(k.y);
+    if (m > K - 100) { const ex = (m - (K - 100)) / 2; k.x -= sgn(k.x) * ex; k.y -= sgn(k.y) * ex; }
+  };
+
+  Pitch.prototype.stepCars = function (h, t) {
+    const plan = this.plan(t);
+    const b = this.ball;
+    this.cars.forEach((k) => {
+      k.cd = Math.max(0, k.cd - h); k.rotT = Math.max(0, k.rotT - h);
+      if (k.dead > 0) {
+        k.dead -= h;
+        if (k.dead <= 0) { // respawn behind own goal, facing upfield, with 33 boost
+          const s = k.s;
+          Object.assign(k, { x: -s * (L - 600), y: (k.i - 1) * 1200, z: 17, vz: 0, v: 500, hd: s > 0 ? 0 : Math.PI, boost: 33, rotT: 0, dead: 0 });
+          this.ring(k.x, k.y, k.side === 'A' ? BLUE : ORANGE, 400);
+        }
+        return;
+      }
+      const tg = plan.get(k);
+      this.drive(k, tg, h);
+      // jumping / aerials
+      if (k.z > 17 || k.air) {
+        k.vz -= G * h; k.z += k.vz * h;
+        if (k.z <= 17) { k.z = 17; k.vz = 0; k.air = false; }
+      }
+      const role1 = tg && tg.role === 1;
+      const hd = len(b.x - k.x, b.y - k.y);
+      k.airCd = Math.max(0, (k.airCd || 0) - h);
+      if (role1 && !this.flight && b.z > 330 && b.z < 1400 && b.vz < 350 && hd < 900 && k.z < 40 && k.airCd <= 0 && (k.boost > 25 || b.z < 450) && k.cd <= 0) {
+        k.airCd = rnd(3, 6);
+        // go up for it: jump + boost toward the ball's height
+        const tUp = clamp(hd / Math.max(800, k.v), 0.35, 1.3);
+        k.vz = (b.z + b.vz * tUp - k.z + 0.5 * G * tUp * tUp) / tUp; k.air = true; k.boost = Math.max(0, k.boost - 10);
+      }
+    });
+    // spacing: cars bump rather than overlap
+    for (let i = 0; i < this.cars.length; i++) for (let j = i + 1; j < this.cars.length; j++) {
+      const p = this.cars[i], q = this.cars[j];
+      if (p.dead > 0 || q.dead > 0) continue;
+      const dx = q.x - p.x, dy = q.y - p.y, d = len(dx, dy);
+      if (d < 230 && d > 0) { const push = (230 - d) / 2; p.x -= (dx / d) * push; p.y -= (dy / d) * push; q.x += (dx / d) * push; q.y += (dy / d) * push; }
+    }
+    if (this.cur && this.cur.phase !== 'flight') return; // the director owns the ball during a build-up
+    if (this.flight || this.inGoal || this.hidden) return;
+    // free-play touches
+    this.cars.forEach((k) => {
+      if (k.dead > 0 || k.cd > 0) return;
+      const dx = b.x - k.x, dy = b.y - k.y, dz = b.z - (k.z + 40), d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      if (d > TOUCH) return;
+      this.touch(k, plan.get(k));
+    });
+  };
+
+  /** What a player does with a free touch, by where it happens. */
+  Pitch.prototype.touch = function (k, tg) {
+    const b = this.ball, s = k.s;
+    const depth = s * b.x;
+    const carSp = Math.max(600, k.v);
+    let tx, ty, tz, T;
+    const r = Math.random();
+    if (this.kickT < 3 && len(b.x, b.y) < 300) {
+      // kickoff 50/50: the ball pops loose
+      const a = rnd(-Math.PI, Math.PI);
+      b.vx = Math.cos(a) * rnd(500, 1300); b.vy = Math.sin(a) * rnd(500, 1300); b.vz = rnd(200, 550);
+      this.kicked = true;
+      this.cars.forEach((c) => { if (c.kick === 'go') { c.cd = 0.6; c.rotT = rnd(1, 2); } c.kick = null; });
+      this.ring(b.x, b.y, '#ffffff', 600);
+      this.lastTouch = k;
+      return;
+    }
+    if (depth < -L / 3) {
+      // own third: clear it high toward the opponent's corner
+      tx = s * rnd(L * 0.25, L * 0.85); ty = sgn(b.y || rnd(-1, 1)) * rnd(2200, 3600); tz = rnd(150, 700); T = rnd(1.2, 1.8);
+    } else if (depth < L / 3) {
+      if (r < 0.45 && k.dribbles < 3 && b.z < 200) {
+        // dribble: soft touch ahead, stay on it
+        const [ux, uy] = norm(Math.cos(k.hd) + s * 0.3, Math.sin(k.hd));
+        b.vx = ux * (carSp + 250); b.vy = uy * (carSp + 250); b.vz = rnd(0, 250);
+        k.cd = 0.35; k.dribbles++; this.lastTouch = k;
+        return;
+      }
+      if (r < 0.8) {
+        // pass into space ahead of a teammate
+        const mate = this.cars.filter((m) => m.side === k.side && m !== k && !m.dead).sort((p, q) => s * q.x - s * p.x)[0];
+        tx = mate ? clamp(mate.x + s * 1400, -L + 600, L - 600) : s * L * 0.5; ty = mate ? clamp(mate.y * 0.7, -3000, 3000) : rnd(-2500, 2500); tz = rnd(BR, 450); T = rnd(1, 1.6);
+      } else { tx = s * rnd(L * 0.5, L * 0.9); ty = sgn(rnd(-1, 1)) * rnd(1500, 3600); tz = rnd(BR, 700); T = rnd(1.1, 1.8); }
+    } else {
+      if (r < 0.5) { tx = s * rnd(L - 2200, L - 1200); ty = rnd(-1000, 1000); tz = rnd(250, 950); T = rnd(0.9, 1.4); } // centre
+      else if (r < 0.8) { tx = s * (L - BR); ty = rnd(-GW, GW); tz = rnd(GH + 200, GH + 700); T = rnd(0.7, 1.1); } // backboard read
+      else { tx = s * rnd(L * 0.4, L * 0.75); ty = sgn(b.y || 1) * rnd(2600, 3600); tz = rnd(BR, 400); T = rnd(0.8, 1.3); } // reset to the corner
+    }
+    launch(b, tx, ty, tz, T);
+    capLift(b);
+    const spd = len(b.vx, b.vy);
+    if (spd > 4200) { b.vx *= 4200 / spd; b.vy *= 4200 / spd; }
+    k.cd = 0.9; k.rotT = rnd(2.2, 3.4); k.dribbles = 0;
+    this.lastTouch = k;
+    this.ring(b.x, b.y, 'rgba(255,255,255,0.3)', 200);
+  };
+
+  /* ---------- ball physics ---------- */
+  Pitch.prototype.stepBall = function (h) {
+    const b = this.ball;
+    if (this.hidden) return;
+    const fl = this.flight;
+    b.vz -= G * h;
+    b.x += b.vx * h; b.y += b.vy * h; b.z += b.vz * h;
+    if (this.inGoal) { // settles in the net
+      const s = this.inGoal;
+      b.vx *= Math.max(0, 1 - 3 * h); b.vy *= Math.max(0, 1 - 3 * h);
+      b.x = clamp(Math.abs(b.x), L + BR, L + GD - BR) * s; b.y = clamp(b.y, -GW + BR, GW - BR);
+      if (b.z < BR) { b.z = BR; b.vz = -b.vz * 0.5; }
+      b.z = Math.min(b.z, GH - BR);
+      return;
+    }
+    if (fl && fl.e.type === 'goal') {
+      if (Math.abs(b.x) > L + BR && Math.abs(b.y) < GW) { this.inGoal = sgn(b.x); }
+      if (b.z < BR) { b.z = BR; b.vz = Math.abs(b.vz) * 0.4; }
+      return;
+    }
+    if (fl) {
+      // scripted shot or pass: it follows its arc; only the floor applies
+      if (b.z < BR) { b.z = BR; b.vz = Math.abs(b.vz) * 0.5; }
+      if (fl.phase === 'flight' && fl.done) this.flight = null;
+      return;
+    }
+    const sp = len(b.vx, b.vy);
+    // drag and rolling resistance
+    const drag = b.z <= BR + 2 ? 0.06 + 230 / Math.max(200, sp) * 0.25 : 0.03;
+    b.vx *= Math.max(0, 1 - drag * h); b.vy *= Math.max(0, 1 - drag * h);
+    if (sp > 6000) { b.vx *= 6000 / sp; b.vy *= 6000 / sp; }
+    // floor and ceiling
+    if (b.z < BR) { b.z = BR; b.vz = b.vz < -150 ? -b.vz * 0.6 : 0; }
+    if (b.z > CEIL - BR) { b.z = CEIL - BR; b.vz = -Math.abs(b.vz) * 0.6; }
+    // side walls: the ball rides up a little as it bounces off
+    if (Math.abs(b.y) > W - BR) { const v = Math.abs(b.vy); b.y = sgn(b.y) * (W - BR); b.vy = -b.vy * 0.6; b.vz += v * 0.18; capLift(b); }
+    // back walls and the goal mouth (an unstaged ball into the mouth is kept out: blocked on the line)
+    if (Math.abs(b.x) > L - BR) {
+      const v = Math.abs(b.vx);
+      b.x = sgn(b.x) * (L - BR); b.vx = -b.vx * 0.6;
+      if (!(Math.abs(b.y) < GW && b.z < GH)) { b.vz += v * 0.15; capLift(b); }
+    }
+    const m = Math.abs(b.x) + Math.abs(b.y);
+    if (m > K - BR * 1.41) {
+      const nx = sgn(b.x) / Math.SQRT2, ny = sgn(b.y) / Math.SQRT2;
+      const vn = b.vx * nx + b.vy * ny;
+      if (vn > 0) { b.vx -= 1.6 * vn * nx; b.vy -= 1.6 * vn * ny; b.vz += vn * 0.15; capLift(b); }
+      const ex = (m - (K - BR * 1.41)) / 2; b.x -= sgn(b.x) * ex; b.y -= sgn(b.y) * ex;
+    }
+  };
+
+  Pitch.prototype.stepPads = function (h) {
+    this.pads.forEach((p) => {
+      if (p.t > 0) { p.t -= h; return; }
+      for (const k of this.cars) {
+        if (k.dead > 0 || k.z > 60 || k.boost >= 100) continue;
+        if (len(k.x - p.x, k.y - p.y) < (p.big ? 208 : 144)) { k.boost = Math.min(100, k.boost + (p.big ? 100 : 12)); p.t = p.big ? 10 : 4; break; }
+      }
+    });
+  };
+
+  /** Called by the app when a goal event is shown: the ball explodes in the net. */
+  Pitch.prototype.goal = function (side) {
+    const s = side === 'A' ? 1 : -1;
+    const b = this.ball;
+    if (!this.inGoal) { b.x = s * (L + BR + 60); b.y = clamp(b.y, -GW + BR, GW - BR); }
+    const col = side === 'A' ? BLUE : ORANGE;
+    for (let i = 0; i < 3; i++) this.ring(b.x, b.y, col, 1800 + i * 1000, i * 0.1);
+    this.burst(b.x, b.y, col, 70); this.burst(b.x, b.y, '#ffffff', 25);
+    // the explosion knocks nearby cars away
+    this.cars.forEach((k) => { const d = len(k.x - b.x, k.y - b.y); if (d < 2200) { k.hd = Math.atan2(k.y - b.y, k.x - b.x); k.v = 1800 * (1 - d / 2200) + 300; if (d < 1400) { k.vz = 500; k.z = Math.max(k.z, 18); k.air = true; } } });
+    this.hidden = true; this.flight = null; this.cur = null; this.inGoal = s;
+    this.shake = 0.5;
+  };
+
+  /* ---------- effects (real time) ---------- */
+  Pitch.prototype.ring = function (x, y, color, r, delay) { this.fx.push({ k: 'ring', x, y, color, r, life: 0, max: 0.7, delay: delay || 0 }); };
+  Pitch.prototype.burst = function (x, y, color, n) {
+    for (let i = 0; i < n; i++) { const a = rnd(0, Math.PI * 2), v = rnd(400, 3000); this.fx.push({ k: 'p', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, color, life: 0, max: rnd(0.5, 1.2) }); }
+  };
+
+  /* ================= rendering ================= */
+  const CY = 40 + W * S; // field centre (leaves room for the boost HUD underneath)
+  const X = (x) => VW / 2 + x * S, Y = (y) => CY + y * S;
+  const LIFT = 0.32; // screen offset per uu of height (light 3/4 view so aerials read)
+
+  function fieldPath(ctx) {
+    const pts = [[-L + C, -W], [L - C, -W], [L, -W + C], [L, -GW], [L + GD, -GW], [L + GD, GW], [L, GW], [L, W - C], [L - C, W], [-L + C, W], [-L, W - C], [-L, GW], [-L - GD, GW], [-L - GD, -GW], [-L, -GW], [-L, -W + C]];
+    ctx.beginPath();
+    pts.forEach(([x, y], k) => (k ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y))));
+    ctx.closePath();
+  }
+
+  Pitch.prototype.render = function (dtReal, countdown) {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    ctx.save();
+    ctx.clearRect(0, 0, VW, VH);
+    if (this.shake > 0) { this.shake -= dtReal; const m = this.shake * 10; ctx.translate(rnd(-m, m), rnd(-m, m)); }
+    ctx.fillStyle = '#121A2E'; ctx.fillRect(-20, -20, VW + 40, VH + 40); // Midnight Ink
+    // turf with mowing stripes and team-tinted halves
+    ctx.save(); fieldPath(ctx); ctx.clip();
+    // pitch: Midnight Ink, lifted slightly, with Azure (blue half) and Vermilion (orange half) tints
+    ctx.fillStyle = 'rgba(255,255,255,0.035)'; ctx.fillRect(0, 0, VW, VH);
+    const g = ctx.createLinearGradient(X(-L), 0, X(L), 0);
+    g.addColorStop(0, 'rgba(31,139,255,0.20)'); g.addColorStop(0.45, 'rgba(31,139,255,0.03)'); g.addColorStop(0.55, 'rgba(242,84,45,0.03)'); g.addColorStop(1, 'rgba(242,84,45,0.20)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+    for (let k = -5; k < 5; k++) if (k % 2 === 0) { ctx.fillStyle = 'rgba(255,255,255,0.02)'; ctx.fillRect(X(k * 1024), 0, 1024 * S, VH); }
+    ctx.fillStyle = 'rgba(31,139,255,0.32)'; ctx.fillRect(X(-L - GD), Y(-GW), GD * S, 2 * GW * S);
+    ctx.fillStyle = 'rgba(242,84,45,0.32)'; ctx.fillRect(X(L), Y(-GW), GD * S, 2 * GW * S);
+    ctx.strokeStyle = 'rgba(255,255,255,0.13)'; ctx.lineWidth = 1;
+    for (let k = 1; k < 7; k++) [-1, 1].forEach((s) => { ctx.beginPath(); ctx.moveTo(X(s * (L + (GD * k) / 7)), Y(-GW)); ctx.lineTo(X(s * (L + (GD * k) / 7)), Y(GW)); ctx.stroke(); });
+    for (let k = -3; k <= 3; k++) [-1, 1].forEach((s) => { ctx.beginPath(); ctx.moveTo(X(s * L), Y((GW * k) / 4)); ctx.lineTo(X(s * (L + GD)), Y((GW * k) / 4)); ctx.stroke(); });
+    ctx.restore();
+    // markings
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(X(0), Y(-W)); ctx.lineTo(X(0), Y(W)); ctx.stroke();
+    ctx.beginPath(); ctx.arc(X(0), Y(0), 1000 * S, 0, Math.PI * 2); ctx.stroke();
+    [-1, 1].forEach((s) => {
+      ctx.strokeStyle = s < 0 ? 'rgba(31,139,255,0.45)' : 'rgba(242,84,45,0.45)';
+      ctx.beginPath(); ctx.moveTo(X(s * L), Y(-1800)); ctx.lineTo(X(s * (L - 1300)), Y(-1800)); ctx.lineTo(X(s * (L - 1300)), Y(1800)); ctx.lineTo(X(s * L), Y(1800)); ctx.stroke();
+    });
+    // boost pads (dim while respawning)
+    this.pads.forEach((p) => {
+      const on = p.t <= 0;
+      if (p.big) {
+        ctx.beginPath(); ctx.arc(X(p.x), Y(p.y), 11, 0, Math.PI * 2); ctx.fillStyle = on ? 'rgba(242,84,45,0.25)' : 'rgba(255,255,255,0.04)'; ctx.fill();
+        ctx.beginPath(); ctx.arc(X(p.x), Y(p.y), 6.5, 0, Math.PI * 2); ctx.fillStyle = on ? '#F2542D' : 'rgba(255,255,255,0.12)'; ctx.fill();
+      } else { ctx.beginPath(); ctx.arc(X(p.x), Y(p.y), 3.6, 0, Math.PI * 2); ctx.fillStyle = on ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.1)'; ctx.fill(); }
+    });
+    fieldPath(ctx); ctx.strokeStyle = 'rgba(210,225,255,0.75)'; ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.stroke();
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = BLUE; ctx.beginPath(); ctx.moveTo(X(-L), Y(-GW)); ctx.lineTo(X(-L), Y(GW)); ctx.stroke();
+    ctx.strokeStyle = ORANGE; ctx.beginPath(); ctx.moveTo(X(L), Y(-GW)); ctx.lineTo(X(L), Y(GW)); ctx.stroke();
+
+    const b = this.ball;
+    // shadows first
+    this.cars.forEach((k) => { if (k.dead > 0) return; ctx.beginPath(); ctx.ellipse(X(k.x), Y(k.y) + 2, 13, 9, 0, 0, Math.PI * 2); ctx.fillStyle = `rgba(0,0,0,${k.z > 40 ? 0.22 : 0.32})`; ctx.fill(); });
+    if (!this.hidden) { ctx.beginPath(); ctx.ellipse(X(b.x), Y(b.y) + 2, 11 * (1 - Math.min(0.4, b.z / 4000)), 8 * (1 - Math.min(0.4, b.z / 4000)), 0, 0, Math.PI * 2); ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fill(); }
+    // draw order by height so aerials sit on top
+    const items = this.cars.filter((k) => k.dead <= 0).map((k) => ({ k, z: k.z }));
+    if (!this.hidden) items.push({ ball: true, z: b.z });
+    items.sort((p, q) => p.z - q.z).forEach((it) => (it.ball ? this.drawBall(ctx) : this.drawCar(ctx, it.k)));
+    // effects
+    this.fx = this.fx.filter((f) => {
+      if (f.delay > 0) { f.delay -= dtReal; return true; }
+      f.life += dtReal;
+      const p = f.life / f.max;
+      if (p >= 1) return false;
+      if (f.k === 'ring') {
+        ctx.beginPath(); ctx.arc(X(f.x), Y(f.y), f.r * S * p + 4, 0, Math.PI * 2);
+        ctx.strokeStyle = f.color; ctx.globalAlpha = 1 - p; ctx.lineWidth = 4 * (1 - p) + 1; ctx.stroke(); ctx.globalAlpha = 1;
+      } else {
+        f.x += f.vx * dtReal; f.y += f.vy * dtReal; f.vx *= 0.93; f.vy *= 0.93;
+        ctx.beginPath(); ctx.arc(X(f.x), Y(f.y), 3.4 * (1 - p) + 1, 0, Math.PI * 2);
+        ctx.fillStyle = f.color; ctx.globalAlpha = 1 - p; ctx.fill(); ctx.globalAlpha = 1;
+      }
+      return true;
+    });
+    this.drawHud(ctx);
+    if (countdown) {
+      ctx.font = '700 84px "Inter Tight", Inter, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillText(countdown, VW / 2 + 3, CY + 3);
+      ctx.fillStyle = '#ffffff'; ctx.fillText(countdown, VW / 2, CY);
+      ctx.textBaseline = 'alphabetic';
+    }
+    ctx.restore();
+  };
+
+  Pitch.prototype.drawBall = function (ctx) {
+    const b = this.ball;
+    const sc = 1 + Math.min(0.9, (b.z - BR) / 1500);
+    const px = X(b.x), py = Y(b.y) - (b.z - BR) * S * LIFT;
+    b.trail.push([px, py]); if (b.trail.length > 12) b.trail.shift();
+    if (len(b.vx, b.vy) > 1800 && b.trail.length > 2) {
+      ctx.lineCap = 'round';
+      for (let i = 1; i < b.trail.length; i++) {
+        ctx.strokeStyle = `rgba(255,255,255,${(i / b.trail.length) * 0.32})`; ctx.lineWidth = (i / b.trail.length) * 11 * sc;
+        ctx.beginPath(); ctx.moveTo(b.trail[i - 1][0], b.trail[i - 1][1]); ctx.lineTo(b.trail[i][0], b.trail[i][1]); ctx.stroke();
+      }
+    }
+    const r = 10.5 * sc;
+    ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2);
+    const bg = ctx.createRadialGradient(px - r * 0.3, py - r * 0.35, 1, px, py, r);
+    bg.addColorStop(0, '#ffffff'); bg.addColorStop(1, 'rgba(255,255,255,0.72)'); ctx.fillStyle = bg; ctx.fill();
+    ctx.strokeStyle = 'rgba(18,26,46,0.75)'; ctx.lineWidth = 1.4; ctx.stroke();
+    // panel lines so it reads as the RL ball
+    ctx.strokeStyle = 'rgba(18,26,46,0.3)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(px, py, r * 0.45, 0, Math.PI * 2); ctx.stroke();
+  };
+
+  Pitch.prototype.drawCar = function (ctx, k) {
+    const col = k.side === 'A' ? BLUE : ORANGE;
+    const lift = (k.z - 17) * S * LIFT;
+    const sc = 1 + Math.min(0.6, (k.z - 17) / 1600);
+    const px = X(k.x), py = Y(k.y) - lift;
+    const c = Math.cos(k.hd), s = Math.sin(k.hd);
+    // supersonic trail / boost flame
+    if (k.v > 2200) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 2;
+      [-5, 5].forEach((o) => { ctx.beginPath(); ctx.moveTo(px - c * 14 - s * o, py - s * 14 + c * o); ctx.lineTo(px - c * 46 - s * o, py - s * 46 + c * o); ctx.stroke(); });
+    }
+    if (k.boosting) {
+      for (let j = 0; j < 5; j++) {
+        const d = 15 + j * 6 + rnd(0, 3);
+        ctx.beginPath(); ctx.arc(px - c * d * sc, py - s * d * sc, (5 - j * 0.8) * sc, 0, Math.PI * 2);
+        ctx.fillStyle = j < 2 ? 'rgba(255,255,255,0.85)' : 'rgba(242,84,45,0.6)'; ctx.fill();
+      }
+    }
+    if (k.slide && k.z < 30) { // powerslide marks
+      ctx.fillStyle = 'rgba(255,255,255,0.12)';
+      ctx.fillRect(px - c * 16 - 2, py - s * 16 - 2, 4, 4);
+    }
+    ctx.save(); ctx.translate(px, py); ctx.rotate(k.hd); ctx.scale(sc, sc);
+    ctx.fillStyle = col; rr(ctx, -14, -8.5, 29, 17, 5); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.18)'; rr(ctx, -12, -6.5, 10, 13, 3); ctx.fill();
+    ctx.fillStyle = 'rgba(18,26,46,0.9)'; rr(ctx, 1, -6, 8, 12, 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.92)'; ctx.fillRect(12, -6.5, 2.5, 3.5); ctx.fillRect(12, 3, 2.5, 3.5);
+    ctx.restore();
+    ctx.font = '600 11px Inter, system-ui, sans-serif'; ctx.textAlign = 'center';
+    const ly = clamp(py - 15 * sc, 12, VH - 60), lx = clamp(px, 40, VW - 40);
+    ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillText(k.name, lx + 1, ly + 1);
+    ctx.fillStyle = 'rgba(255,255,255,0.95)'; ctx.fillText(k.name, lx, ly);
+  };
+
+  /** Broadcast-style boost meters along the bottom. */
+  Pitch.prototype.drawHud = function (ctx) {
+    const y0 = VH - 34;
+    ['A', 'B'].forEach((side) => {
+      const team = this.cars.filter((k) => k.side === side);
+      team.forEach((k, i) => {
+        const w = 160, gap = 12;
+        const x0 = side === 'A' ? 24 + i * (w + gap) : VW - 24 - (3 - i) * (w + gap) + gap;
+        ctx.fillStyle = 'rgba(255,255,255,0.06)'; rr(ctx, x0, y0, w, 26, 6); ctx.fill();
+        ctx.font = '600 11px Inter, system-ui, sans-serif'; ctx.textAlign = 'left';
+        ctx.fillStyle = k.dead > 0 ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.9)';
+        ctx.fillText(k.name.length > 13 ? k.name.slice(0, 12) + '…' : k.name, x0 + 8, y0 + 12);
+        ctx.textAlign = 'right'; ctx.font = '700 11px "Inter Tight", Inter, sans-serif';
+        ctx.fillText(k.dead > 0 ? 'DEMO' : String(Math.round(k.boost)), x0 + w - 8, y0 + 12);
+        ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(x0 + 8, y0 + 17, w - 16, 4);
+        ctx.fillStyle = side === 'A' ? BLUE : ORANGE; ctx.fillRect(x0 + 8, y0 + 17, ((w - 16) * k.boost) / 100, 4);
+      });
+    });
+  };
+
+  function rr(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+
+  Pitch.VW = VW; Pitch.VH = VH;
+  global.RLPitch = Pitch;
+})(window);
