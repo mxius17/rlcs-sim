@@ -182,14 +182,14 @@
         <section class="tile stat-tile accent-orange c-3"><span class="glyph">⚡</span><div class="tile-kicker">Chaos meter</div><div class="big" style="font-size:clamp(24px,2.6vw,34px)">${chaos[0]}</div><div class="sub">${chaos[1]}</div></section>
         <section class="tile stat-tile c-3"><span class="glyph">★</span><div class="tile-kicker">Favourite</div>${fav ? `<div style="display:flex;align-items:center;gap:10px">${badge(fav)}<div class="big" style="font-size:clamp(18px,2vw,24px)">${esc(fav.name)}</div></div><div class="sub">OVR ${fav.ovr} · field average ${avg}</div>` : '<div class="big" style="font-size:24px">—</div><div class="sub">add teams to see the favourite</div>'}</section>
 
-        <div class="stack c-3">
+        <div class="stack col-setup c-3">
           ${renderSetupTile(sizes, F)}
         </div>
-        <div class="stack c-6">
+        <div class="stack col-main c-6">
           ${renderBracketTile(preview)}
           ${renderTeamsTile()}
         </div>
-        <div class="stack c-3">
+        <div class="stack col-adv c-3">
           ${renderAdvancedTile()}
         </div>
       </div>`;
@@ -605,15 +605,15 @@
         </div>
       </div>
       <div class="bento">
-        <div class="stack c-3">
+        <div class="stack col-stats c-3">
           ${statsTile(T, fm)}
           ${T.managed ? tacticsTile(T) : ''}
         </div>
-        <div class="stack c-6">
+        <div class="stack col-main col-match c-6">
           ${matchCentreTile(T, fm)}
           ${leadersTile(T)}
         </div>
-        <div class="stack c-3">
+        <div class="stack col-info c-3">
           ${miniStandingsTile(T, fm)}
           ${pulseTile(T)}
         </div>

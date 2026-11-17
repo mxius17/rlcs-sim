@@ -916,3 +916,78 @@ table.st th, .scorecard th { color: var(--text-3); }
 .modal-backdrop { background: rgba(10, 15, 27, 0.72); }
 .toast { background: var(--ink); color: #fff; border: 1px solid var(--line-strong); }
 .toast button { color: var(--azure); }
+
+/* =====================================================================
+   RESPONSIVE REFINEMENTS
+   Desktop (>1180px): three columns. Tablet (721–1180px): main content first, full width, side panels paired below.
+   Phone (≤720px): one column, the thing you came for first, compact header with the navigation on its own row.
+   ===================================================================== */
+.team-grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+
+@media (max-width: 1180px) {
+  /* setup: format choices, then your teams, then advanced settings */
+  .col-setup { grid-column: span 6; order: 1; }
+  .col-setup .format-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .col-main { grid-column: span 6; order: 2; }
+  .col-adv { grid-column: span 6; order: 3; }
+  /* tournament: the match first, stats and standings side by side under it */
+  .col-match { order: -1; }
+  .col-stats, .col-info { grid-column: span 3; order: 2; }
+  .page-head .head-actions { flex: 1 1 100%; justify-content: flex-start; }
+}
+
+@media (max-width: 720px) {
+  /* header: brand + icons on one row, navigation on its own full-width row */
+  .topbar { flex-wrap: wrap; row-gap: 6px; padding-block: 8px 0; }
+  .topnav { order: 3; flex: 1 1 100%; justify-content: space-between; border-top: 1px solid var(--line); margin-inline: -4px; }
+  .topnav button { flex: 1; text-align: center; padding: 11px 6px; font-size: 14px; }
+  .icon-btn { width: 36px; height: 36px; font-size: 15px; }
+  .brand-mark { width: 36px; height: 36px; }
+
+  /* page heads stack: back link, title, then actions sharing the row */
+  .page-head { gap: 10px; padding-bottom: 16px; margin-bottom: 20px; }
+  .page-head h1 { order: 2; flex: 1 1 100%; min-width: 0; font-size: 26px; }
+  .page-head > .btn { order: 1; }
+  .page-head .head-actions { order: 3; gap: 8px; }
+  .page-head .head-actions .btn { flex: 1 1 auto; }
+  .page-head .head-actions > div:not(.seg) { flex: 1 1 100%; }
+
+  /* all columns full width; keep the reading order */
+  .col-setup, .col-main, .col-adv, .col-stats, .col-info { grid-column: span 2 !important; }
+  .col-setup .format-list { grid-template-columns: 1fr; }
+  .col-stats { order: 2; } .col-info { order: 3; }
+
+  /* match centre on a phone */
+  .sb-team .nm { font-size: 17px; }
+  .badge.lg { width: 52px; height: 52px; }
+  .sb-score { font-size: 46px; }
+  .mc > div:first-child { justify-content: center; }
+  .live-bar { gap: 6px; }
+  .live-bar .seg { order: 3; flex: 1 1 100%; justify-content: center; }
+  .feed { max-height: 180px; }
+
+  /* comfortable tap targets */
+  .btn.xs { padding: 6px 10px; }
+  .seg button { padding: 8px 11px; }
+  .team-grid { grid-template-columns: 1fr; }
+  .fixtures-grid { grid-template-columns: 1fr; }
+  .tables-grid { grid-template-columns: 1fr; }
+  .modal-head { padding: 16px; }
+  .modal-body { padding: 14px 16px; }
+  .modal-foot { padding: 12px 16px; }
+  .modal-foot .btn { flex: 1 1 auto; }
+  .home-h { margin-top: 18px; }
+  .featured { gap: 12px; }
+  .feat-hero { padding: 18px; min-height: 0; }
+  .career-banner { padding: 18px; }
+}
+
+@media (max-width: 380px) {
+  .topnav button { font-size: 13px; padding: 10px 2px; }
+  .page-head h1 { font-size: 23px; }
+  .feat-grid, .feat-grid-6 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .stat-tile .big { font-size: 20px !important; }
+  .timeline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.table-card, .group-card, .fx, .b-col { min-width: 0; }
+@media (max-width: 720px) { .tables-grid, .fixtures-grid, .team-grid { grid-template-columns: minmax(0, 1fr); } }

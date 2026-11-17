@@ -523,7 +523,7 @@
         <section class="tile stat-tile accent-violet c-3"><div class="tile-kicker">Circuit points</div><div class="big">${C.points[C.user].season}</div><div class="sub">Split 1: ${C.points[C.user].s1} · Split 2: ${C.points[C.user].s2}</div></section>
         <section class="tile stat-tile c-3"><div class="tile-kicker">Board confidence</div><div class="big">${C.board}%</div><div class="progress" style="margin-top:4px"><i style="width:${C.board}%"></i></div></section>
 
-        <div class="stack c-8">
+        <div class="stack c-8 col-main">
           <section class="tile"><div class="tile-head"><div><div class="tile-kicker">Next up</div><h2>${esc(st.name)}</h2></div><span class="pill ${st.type === 'window' ? 'good' : ''}">${C.step + 1} / ${SCHEDULE.length}</span></div>${next}</section>
           <section class="tile"><div class="tile-head"><h2>Season ${C.season}</h2></div>
             <div class="timeline">${SCHEDULE.map((s, i) => { const res = myEventStatus(s); return `<div class="tl ${i < C.step ? 'done' : i === C.step ? 'now' : ''} ${s.type}"><b>${s.short}</b><small>${i < C.step ? (res || (s.type === 'window' ? 'Closed' : '✓')) : i === C.step ? 'Now' : s.type === 'major' ? esc(majorCity(s)) : s.type === 'worlds' ? esc(worldsCity()) : ''}</small></div>`; }).join('')}</div>
@@ -533,7 +533,7 @@
             ${table.slice(0, 16).map((id, i) => { const tt = teamObj(id); return `<tr class="${i < slots ? 'q' : ''} ${id === C.user ? 'hl' : ''}"><td class="pos">${i + 1}</td><td class="l"><div class="tcell">${api.badge(tt, 'sm')}<span>${esc(tt.name)}</span></div></td><td>${tt.ovr}</td><td>${C.points[id].s1}</td><td>${C.points[id].s2}</td><td><b>${C.points[id].season}</b></td></tr>`; }).join('')}
             </tbody></table></div></section>
         </div>
-        <div class="stack c-4">
+        <div class="stack c-4 col-info">
           <section class="tile"><div class="tile-head"><h2>Squad</h2><button class="btn xs" data-action="career-market">Manage</button></div>
             <div class="leader-list">${roster.map((p, i) => `<div class="leader"><span class="rk">${i < 3 ? 'ST' : 'SUB'}</span><span class="who"><b>${p.flag || ''} ${esc(p.name)}</b><small>Age ${p.age} · ${p.contract}y · ${money(p.salary)}/yr${p.stats.gp ? ' · ' + p.stats.g + 'G ' + p.stats.sv + 'Sv' : ''}</small></span><span class="val">${p.rating}</span></div>`).join('')}</div></section>
           <section class="tile"><div class="tile-head"><h2>Objectives</h2></div>${C.objectives.map((o) => `<div class="kv"><span>${esc(o.t)}</span><span class="pill">${C.season}</span></div>`).join('')}</section>
