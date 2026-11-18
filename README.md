@@ -29,6 +29,8 @@ Open `index.html` in a browser. There is no build step and nothing to install.
 - Your setup and tournament save automatically in localStorage.
 
 ## Data
+**Player ages.** `js/births.js` holds the birth dates of 612 players, read from their Liquipedia player pages. Career mode uses them for real ages as of the 2027 season start, rolling forward each season. Players without a Liquipedia birth date (mostly amateur open-qualifier players) get an estimated age, shown as "~22".
+
 **Team logos.** `js/logos.js` bundles 148 team logos from Liquipedia: every team in the library that has a logo there. They're bundled as small inline images so the page works offline and on the published artifact. Logos are trademarks of their organisations. Teams without a Liquipedia logo keep their coloured tag badge.
 
 **Two roster sets.** `js/data.js` holds the RLCS 2026 rosters (unchanged). `js/data27.js` holds the RLCS 2027 rosters as of 17 November 2026. These were built from the 2027 Club Championship Kick-Off and Kick-Off Open participant lists, plus every player transfer listed on Liquipedia from 21 September to 17 November 2026, applied to the 2026 rosters. RLCS 2027 events shown are the Kick-Off Opens, the London Kick-Off, the seven regional Club Leagues and the Club Finale. Slots that haven't been decided yet are filled with the best-rated eligible teams and marked as projected.
