@@ -47,6 +47,17 @@
   const pick = (a) => a[Math.floor(Math.random() * a.length)];
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   function hash(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967295; }
+  /* ---------- real ages (birth dates from Liquipedia player pages, js/births.js) ---------- */
+  const SNAP = { y: 2026, m: 11, d: 18 }; // ages are as of the 2027 season start (data snapshot)
+  function bornOf(name, country) { const B = global.RL_BIRTHS || {}; return B[name + '|' + (country || '')] || null; }
+  function ageFromBorn(born) {
+    const [y, m, d] = born.split('-').map((x) => parseInt(x, 10));
+    if (!y) return null;
+    if (!m) return SNAP.y - y; // year only: best estimate
+    return SNAP.y - y - (m > SNAP.m || (m === SNAP.m && (d || 1) > SNAP.d) ? 1 : 0);
+  }
+  /** "22" for real or generated players, "~22" when the age is an estimate (no birth date on Liquipedia) */
+  const ageLabel = (p) => (p.ageKnown === false ? '~' : '') + p.age;
   const money = (n) => (n < 0 ? '-' : '') + '$' + (Math.abs(n) >= 1e6 ? (Math.abs(n) / 1e6).toFixed(2) + 'M' : Math.abs(n) >= 1000 ? Math.round(Math.abs(n) / 1000) + 'k' : Math.round(Math.abs(n)));
   const salaryFor = (r) => Math.max(5000, Math.round((Math.pow(Math.max(0, r - 55), 2) * 60) / 1000) * 1000);
   function valueFor(p) {
@@ -55,7 +66,20 @@
   }
 
   /* ---------------- persistence ---------------- */
-  function load() { try { const raw = localStorage.getItem(KEY); C = raw ? JSON.parse(raw) : null; } catch (e) { C = null; } bump(); }
+  function load() { try { const raw = localStorage.getItem(KEY); C = raw ? JSON.parse(raw) : null; } catch (e) { C = null; } fixAges(); bump(); }
+  /** Older saves used generated ages: replace them with real ones, rolled forward by the seasons already played. */
+  function fixAges() {
+    if (!C || C.agesV2) return;
+    const lib = new Set((((global.RL_DATA || {}).teams) || []).concat(((global.RL_DATA27 || {}).teams) || []).flatMap((t) => t.players.map((p) => p.name + '|' + (p.country || ''))));
+    Object.values(C.players).forEach((p) => {
+      const born = bornOf(p.name, p.country);
+      const a = born ? ageFromBorn(born) : null;
+      if (a != null) { p.age = a + (C.season - 2027); p.born = born; p.ageKnown = true; }
+      else if (lib.has(p.name + '|' + (p.country || ''))) p.ageKnown = false;
+    });
+    C.agesV2 = true;
+    save();
+  }
   function save() { try { if (C) localStorage.setItem(KEY, JSON.stringify(C)); else localStorage.removeItem(KEY); } catch (e) { /* storage full or blocked */ } }
   function bump() { cacheVer++; teamCache = {}; }
 
@@ -101,13 +125,15 @@
   /* ---------------- new career ---------------- */
   function newCareer(teamId) {
     const lib = api.libraryTeams();
-    C = { v: 1, season: 2027, step: 0, user: 'c:' + teamId, teams: {}, players: {}, nextPid: 1, points: {}, results: {}, news: [], history: [], trophies: [], fa: [], seasonFin: { prize: 0, sponsor: 0, salaries: 0, transfers: 0 }, objectives: [], board: 60, stepNews: [] };
+    C = { v: 1, agesV2: true, season: 2027, step: 0, user: 'c:' + teamId, teams: {}, players: {}, nextPid: 1, points: {}, results: {}, news: [], history: [], trophies: [], fa: [], seasonFin: { prize: 0, sponsor: 0, salaries: 0, transfers: 0 }, objectives: [], board: 60, stepNews: [] };
     lib.forEach((t) => {
       const cid = 'c:' + t.id;
       const roster = t.players.slice(0, 4).map((p, i) => {
-        const age = 17 + Math.floor(hash(t.id + p.name) * 10);
+        const born = bornOf(p.name, p.country);
+        const known = born ? ageFromBorn(born) : null;
+        const age = known != null ? known : 17 + Math.floor(hash(t.id + p.name) * 10);
         const pot = clamp(p.rating + Math.max(0, 23 - age) * (1 + hash(p.name) * 1.4), p.rating, 97);
-        return addPlayer({ name: p.name, country: p.country, flag: p.flag, region: t.region, age, rating: p.rating, pot: Math.round(pot), team: cid, contract: 1 + Math.floor(hash(p.name + 'c') * 3), sub: i >= 3 });
+        return addPlayer({ name: p.name, country: p.country, flag: p.flag, region: t.region, age, born: born || undefined, ageKnown: known != null, rating: p.rating, pot: Math.round(pot), team: cid, contract: 1 + Math.floor(hash(p.name + 'c') * 3), sub: i >= 3 });
       });
       const base = E.teamStrength(t);
       C.teams[cid] = { id: cid, name: t.name, tag: t.tag, region: t.region, color: t.color, roster, budget: Math.round((120000 + Math.max(0, base - 60) * 14000) / 1000) * 1000 };
@@ -499,7 +525,7 @@
         <div class="kv"><span>Season MVP</span><span>${R.mvp ? esc(R.mvp.name) + ' · ' + esc(C.teams[R.mvp.team] ? C.teams[R.mvp.team].name : '') : '—'}</span></div>
         <div class="kv"><span>Top scorer</span><span>${R.topG ? esc(R.topG.name) + ' · ' + R.topG.g + ' goals' : '—'}</span></div>
         ${R.devLines.length ? `<div class="tile-kicker" style="margin-top:12px">Your players</div><p class="help">${R.devLines.join(' · ')}</p>` : ''}
-        ${R.expiring.filter((pid) => C.players[pid] && C.players[pid].contract <= 0).length ? `<div class="tile-kicker" style="margin-top:12px">Expiring contracts</div>${R.expiring.filter((pid) => C.players[pid] && C.players[pid].contract <= 0).map((pid) => { const p = C.players[pid]; const go = (R.letGo || []).includes(pid); return `<div class="kv"><span>${esc(p.name)} · ${p.rating} · age ${p.age}</span><span class="toolbar"><span class="pill ${go ? 'bad' : 'good'}">${go ? 'Leaving' : 'Re-signs 2y · ' + money(salaryFor(p.rating)) + '/yr'}</span><button class="btn xs" data-action="career-letgo" data-id="${pid}">${go ? 'Keep' : 'Let go'}</button></span></div>`; }).join('')}<p class="help">Players marked to re-sign get a new two-season deal when the next season starts, if the budget allows.</p>` : ''}
+        ${R.expiring.filter((pid) => C.players[pid] && C.players[pid].contract <= 0).length ? `<div class="tile-kicker" style="margin-top:12px">Expiring contracts</div>${R.expiring.filter((pid) => C.players[pid] && C.players[pid].contract <= 0).map((pid) => { const p = C.players[pid]; const go = (R.letGo || []).includes(pid); return `<div class="kv"><span>${esc(p.name)} · ${p.rating} · age ${ageLabel(p)}</span><span class="toolbar"><span class="pill ${go ? 'bad' : 'good'}">${go ? 'Leaving' : 'Re-signs 2y · ' + money(salaryFor(p.rating)) + '/yr'}</span><button class="btn xs" data-action="career-letgo" data-id="${pid}">${go ? 'Keep' : 'Let go'}</button></span></div>`; }).join('')}<p class="help">Players marked to re-sign get a new two-season deal when the next season starts, if the budget allows.</p>` : ''}
         <div class="action-row"><button class="btn primary" data-action="career-next-season">Start ${C.season + 1} season →</button></div>`;
     } else {
       const ev = st.type === 'open' ? null : eventCfg(st);
@@ -535,7 +561,7 @@
         </div>
         <div class="stack c-4 col-info">
           <section class="tile"><div class="tile-head"><h2>Squad</h2><button class="btn xs" data-action="career-market">Manage</button></div>
-            <div class="leader-list">${roster.map((p, i) => `<div class="leader"><span class="rk">${i < 3 ? 'ST' : 'SUB'}</span><span class="who"><b>${p.flag || ''} ${esc(p.name)}</b><small>Age ${p.age} · ${p.contract}y · ${money(p.salary)}/yr${p.stats.gp ? ' · ' + p.stats.g + 'G ' + p.stats.sv + 'Sv' : ''}</small></span><span class="val">${p.rating}</span></div>`).join('')}</div></section>
+            <div class="leader-list">${roster.map((p, i) => `<div class="leader"><span class="rk">${i < 3 ? 'ST' : 'SUB'}</span><span class="who"><b>${p.flag || ''} ${esc(p.name)}</b><small>Age ${ageLabel(p)} · ${p.contract}y · ${money(p.salary)}/yr${p.stats.gp ? ' · ' + p.stats.g + 'G ' + p.stats.sv + 'Sv' : ''}</small></span><span class="val">${p.rating}</span></div>`).join('')}</div></section>
           <section class="tile"><div class="tile-head"><h2>Objectives</h2></div>${C.objectives.map((o) => `<div class="kv"><span>${esc(o.t)}</span><span class="pill">${C.season}</span></div>`).join('')}</section>
           <section class="tile"><div class="tile-head"><h2>Trophy cabinet</h2><span class="pill gold">${C.trophies.length}</span></div>${C.trophies.length ? C.trophies.slice().reverse().slice(0, 8).map((x) => `<div class="kv"><span>🏆 ${esc(x.title)}</span></div>`).join('') : '<p class="muted" style="font-size:13px">No trophies yet.</p>'}</section>
           <section class="tile grow"><div class="tile-head"><h2>News</h2></div><div class="pulse">${C.news.slice(0, 30).map((n) => `<div class="story ${n.kind === 'trophy' ? 'win' : n.kind === 'transfer' ? 'upset' : ''}"><small>${esc(n.when)}</small>${n.html}</div>`).join('')}</div></section>
@@ -557,7 +583,7 @@
     const tab = ui.mkTab || 'squad';
     let body = '';
     if (tab === 'squad') {
-      body = `<div class="leader-list">${me.roster.map((pid, i) => { const p = C.players[pid]; return `<div class="leader"><span class="rk">${i < 3 ? 'ST' : 'SUB'}</span><span class="who"><b>${p.flag || ''} ${esc(p.name)} · ${p.rating}</b><small>Age ${p.age} · potential ~${p.pot - 2}-${p.pot + 2} · ${p.contract}y left · ${money(p.salary)}/yr · value ${money(valueFor(p))}</small></span>
+      body = `<div class="leader-list">${me.roster.map((pid, i) => { const p = C.players[pid]; return `<div class="leader"><span class="rk">${i < 3 ? 'ST' : 'SUB'}</span><span class="who"><b>${p.flag || ''} ${esc(p.name)} · ${p.rating}</b><small>Age ${ageLabel(p)} · potential ~${p.pot - 2}-${p.pot + 2} · ${p.contract}y left · ${money(p.salary)}/yr · value ${money(valueFor(p))}</small></span>
         <span class="toolbar">${i >= 3 ? `<button class="btn xs" data-action="mk-promote" data-id="${pid}">Make starter</button>` : ''}${open ? `<button class="btn xs" data-action="mk-extend" data-id="${pid}">Extend</button><button class="btn xs" data-action="mk-sell" data-id="${pid}">Sell</button><button class="btn xs danger" data-action="mk-release" data-id="${pid}">Release</button>` : ''}</span></div>`; }).join('')}</div>
         <p class="help">The first three players start. Rosters hold up to four. ${open ? 'Releasing a player costs half a season of their salary.' : 'Signings, sales and releases open in the next transfer window.'}</p>`;
     } else {
@@ -566,7 +592,7 @@
       body = `<div class="modal-toolbar"><div class="search"><input class="input" id="mkQ" placeholder="Search players or teams" value="${esc(ui.mkQ || '')}" aria-label="Search players or teams" /></div>
         ${tab === 'players' ? `<div class="seg">${[['all', 'All'], ...REGIONS.map((k) => [k, k])].map(([k, v]) => `<button class="${k === reg ? 'active' : ''}" data-action="mk-reg" data-v="${k}">${v}</button>`).join('')}</div>` : ''}</div>
         <div class="table-wrap"><table class="st"><thead><tr><th class="l">Player</th><th class="l hide-sm">Team</th><th>Age</th><th>OVR</th><th class="hide-sm">Pot.</th><th>${tab === 'fa' ? 'Asks' : 'Value'}</th><th></th></tr></thead><tbody>
-        ${list.map((p) => `<tr><td class="l">${p.flag || ''} <b>${esc(p.name)}</b></td><td class="l hide-sm muted">${p.team ? esc(C.teams[p.team].name) : 'Free agent'}</td><td>${p.age}</td><td><b>${p.rating}</b></td><td class="hide-sm">~${p.pot}</td><td>${money(tab === 'fa' ? askingSalary(p, C.user) : valueFor(p))}</td><td>${open ? `<button class="btn xs" data-action="mk-offer" data-id="${p.id}">${tab === 'fa' ? 'Sign' : 'Bid'}</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="7" class="l muted">No players match.</td></tr>'}
+        ${list.map((p) => `<tr><td class="l">${p.flag || ''} <b>${esc(p.name)}</b></td><td class="l hide-sm muted">${p.team ? esc(C.teams[p.team].name) : 'Free agent'}</td><td>${ageLabel(p)}</td><td><b>${p.rating}</b></td><td class="hide-sm">~${p.pot}</td><td>${money(tab === 'fa' ? askingSalary(p, C.user) : valueFor(p))}</td><td>${open ? `<button class="btn xs" data-action="mk-offer" data-id="${p.id}">${tab === 'fa' ? 'Sign' : 'Bid'}</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="7" class="l muted">No players match.</td></tr>'}
         </tbody></table></div>`;
     }
     api.openModal(`${api.modalHead('Transfer market', open ? `Window open · budget ${money(me.budget)}` : 'Window closed · you can browse, but deals wait for the next window')}
@@ -585,7 +611,7 @@
     const fa = !p.team;
     const fee = fa ? 0 : valueFor(p);
     const ask = askingSalary(p, C.user);
-    api.openModal(`${api.modalHead(fa ? 'Sign ' + p.name : 'Bid for ' + p.name, `${p.flag || ''} ${esc(p.country || '')} · age ${p.age} · OVR ${p.rating} · ${fa ? 'free agent' : esc(C.teams[p.team].name)}`)}
+    api.openModal(`${api.modalHead(fa ? 'Sign ' + p.name : 'Bid for ' + p.name, `${p.flag || ''} ${esc(p.country || '')} · age ${ageLabel(p)} · OVR ${p.rating} · ${fa ? 'free agent' : esc(C.teams[p.team].name)}`)}
       <div class="modal-body">
         ${fa ? '' : `<div class="field"><label for="ofFee">Transfer fee to ${esc(C.teams[p.team].name)}</label><input class="input" type="number" id="ofFee" min="0" step="1000" value="${fee}" /><p class="help">Estimated value ${money(fee)}. Clubs rarely sell their best player for less than ~25% over value.</p></div>`}
         <div class="field"><label for="ofSal">Salary per season</label><input class="input" type="number" id="ofSal" min="0" step="1000" value="${ask}" /><p class="help">${esc(p.name)} is asking for about ${money(ask)}.</p></div>
