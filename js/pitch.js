@@ -278,6 +278,15 @@
     this.lastTouch = k;
   };
 
+  /** Leaving the ground: dust puff, a little stretch, maybe an air roll, and a second-jump puff on aerials. */
+  Pitch.prototype.takeoff = function (k) {
+    k.jumpT = 0.16; k.roll = 0;
+    const r = Math.random();
+    k.rollDir = r < 0.4 ? 0 : (r < 0.7 ? 1 : -1) * rnd(0.6, 1.1);
+    this.fx.push({ k: 'ring', x: k.x, y: k.y, z: 0, color: 'rgba(255,255,255,0.45)', r: 300, life: 0, max: 0.4, delay: 0 });
+    if (k.vz > 700 || k.pinned) k.dj = 0.14;
+  };
+
   /** Front flip when the ball goes where the car points, side/diagonal flip when it goes off at an angle. */
   Pitch.prototype.flipKind = function (k, b) { const a = Math.abs(wrap(Math.atan2(b.vy, b.vx) - k.hd)); return a < 0.35 ? 'front' : a < 1.1 ? 'diag' : 'side'; };
   Pitch.prototype.flipSide = function (k, b) { return sgn(wrap(Math.atan2(b.vy, b.vx) - k.hd)); };
@@ -511,6 +520,11 @@
     }
     if (slide) k.v *= 1 - 0.25 * h;
     k.x += Math.cos(k.hd) * k.v * h; k.y += Math.sin(k.hd) * k.v * h;
+    if (fl && (fl.kind === 'side' || fl.kind === 'diag' || fl.kind === 'speed')) {
+      // side and diagonal dodges carry the car sideways as it rolls over
+      const lat = (fl.kind === 'side' ? 650 : 300) * (1 - fl.t / fl.dur) * fl.side;
+      k.x += -Math.sin(k.hd) * lat * h; k.y += Math.cos(k.hd) * lat * h;
+    }
     // stay on the field (cars ride the walls in RL; here they skim along them)
     k.x = clamp(k.x, -L + 80, L - 80); k.y = clamp(k.y, -W + 80, W - 80);
     const m = Math.abs(k.x) + Math.abs(k.y);
@@ -534,6 +548,18 @@
       k.flipCd = Math.max(0, (k.flipCd || 0) - h);
       if (k.flip) { k.flip.t += h; if (k.flip.t >= k.flip.dur) k.flip = null; }
       const tg = plan.get(k);
+      // airborne body language: takeoff (jump + second jump), air roll, landing on the wheels
+      const up = k.z > 22;
+      if (up && !k.wasUp && !k.wall) this.takeoff(k);
+      if (!up && k.wasUp) { if (!k.wall) k.landT = 0.18; k.roll = 0; }
+      k.wasUp = up;
+      k.jumpT = Math.max(0, (k.jumpT || 0) - h); k.landT = Math.max(0, (k.landT || 0) - h);
+      if (k.dj > 0) { k.dj -= h; if (k.dj <= 0) this.fx.push({ k: 'ring', x: k.x, y: k.y, z: k.z, color: 'rgba(255,255,255,0.6)', r: 240, life: 0, max: 0.35, delay: 0 }); }
+      if (up && !k.flip && !k.wall) {
+        const r0 = k.roll || 0;
+        if (k.z < 280 && k.vz < 0 && !k.pinned) k.roll = r0 + (Math.round(r0 / (2 * Math.PI)) * 2 * Math.PI - r0) * Math.min(1, 7 * h); // straighten up to land
+        else k.roll = r0 + (k.rollDir || 0) * 5.5 * h;
+      }
       if (k.pinned) { k.pinned = false; return; } // flown by the director (air dribble)
       this.drive(k, tg, h);
       const role1 = tg && tg.role === 1;
@@ -738,6 +764,7 @@
   Pitch.prototype.render = function (dtReal, countdown) {
     const ctx = this.ctx;
     if (!ctx) return;
+    this._dt = dtReal;
     ctx.save();
     ctx.clearRect(0, 0, VW, VH);
     if (this.shake > 0) { this.shake -= dtReal; const m = this.shake * 10; ctx.translate(rnd(-m, m), rnd(-m, m)); }
@@ -779,7 +806,7 @@
 
     const b = this.ball;
     // shadows first
-    this.cars.forEach((k) => { if (k.dead > 0) return; ctx.beginPath(); ctx.ellipse(X(k.x), Y(k.y) + 2, 13, 9, 0, 0, Math.PI * 2); ctx.fillStyle = `rgba(0,0,0,${k.z > 40 ? 0.22 : 0.32})`; ctx.fill(); });
+    this.cars.forEach((k) => { if (k.dead > 0) return; const hz = Math.max(0, k.z - 17), q = 1 - Math.min(0.55, hz / 1400); ctx.beginPath(); ctx.ellipse(X(k.x), Y(k.y) + 2, 13 * q, 9 * q, k.hd, 0, Math.PI * 2); ctx.fillStyle = `rgba(0,0,0,${0.32 * (1 - Math.min(0.6, hz / 1500))})`; ctx.fill(); });
     if (!this.hidden) { ctx.beginPath(); ctx.ellipse(X(b.x), Y(b.y) + 2, 11 * (1 - Math.min(0.4, b.z / 4000)), 8 * (1 - Math.min(0.4, b.z / 4000)), 0, 0, Math.PI * 2); ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fill(); }
     // draw order by height so aerials sit on top
     const items = this.cars.filter((k) => k.dead <= 0).map((k) => ({ k, z: k.z }));
@@ -797,12 +824,14 @@
         ctx.globalAlpha = p < 0.75 ? 1 : (1 - p) * 4;
         ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillText(f.text, tx + 1, ty + 1); ctx.fillStyle = '#ffffff'; ctx.fillText(f.text, tx, ty);
         ctx.globalAlpha = 1;
+      } else if (f.k === 'skid') {
+        ctx.fillStyle = `rgba(255,255,255,${0.14 * (1 - p)})`; ctx.fillRect(X(f.x) - 1.5, Y(f.y) - 1.5, 3, 3);
       } else if (f.k === 'ring') {
-        ctx.beginPath(); ctx.arc(X(f.x), Y(f.y), f.r * S * p + 4, 0, Math.PI * 2);
+        ctx.beginPath(); ctx.arc(X(f.x), Y(f.y) - (f.z || 0) * S * LIFT, f.r * S * p + 4, 0, Math.PI * 2);
         ctx.strokeStyle = f.color; ctx.globalAlpha = 1 - p; ctx.lineWidth = 4 * (1 - p) + 1; ctx.stroke(); ctx.globalAlpha = 1;
       } else {
         f.x += f.vx * dtReal; f.y += f.vy * dtReal; f.vx *= 0.93; f.vy *= 0.93;
-        ctx.beginPath(); ctx.arc(X(f.x), Y(f.y), 3.4 * (1 - p) + 1, 0, Math.PI * 2);
+        ctx.beginPath(); ctx.arc(X(f.x), Y(f.y) - (f.z || 0) * S * LIFT, 3.4 * (1 - p) + 1, 0, Math.PI * 2);
         ctx.fillStyle = f.color; ctx.globalAlpha = 1 - p; ctx.fill(); ctx.globalAlpha = 1;
       }
       return true;
@@ -860,9 +889,9 @@
         ctx.fillStyle = j < 2 ? 'rgba(255,255,255,0.85)' : 'rgba(242,84,45,0.6)'; ctx.fill();
       }
     }
-    if (k.slide && k.z < 30) { // powerslide marks
-      ctx.fillStyle = 'rgba(255,255,255,0.12)';
-      ctx.fillRect(px - c * 16 - 2, py - s * 16 - 2, 4, 4);
+    if (this._dt > 0) {
+      if (k.slide && k.z < 30) [-1, 1].forEach((o) => this.fx.push({ k: 'skid', x: k.x - c * 110 - s * 70 * o, y: k.y - s * 110 + c * 70 * o, life: 0, max: 0.8, delay: 0 })); // tyre marks
+      if (k.boosting && k.z > 40) this.fx.push({ k: 'p', x: k.x - c * 130, y: k.y - s * 130, z: k.z - 17, vx: -c * 260 + rnd(-60, 60), vy: -s * 260 + rnd(-60, 60), color: 'rgba(242,84,45,0.85)', life: 0, max: 0.4, delay: 0 }); // boost trail hangs in the air
     }
     // flip rotation seen from above: the body foreshortens (and shows its dark underside) as it rolls
     let ang = k.hd, fx = 1, fy = 1, under = false;
@@ -872,11 +901,19 @@
       else if (fl.kind === 'side') fy = rot;
       else if (fl.kind === 'diag' || fl.kind === 'speed') { fx = 0.5 + 0.5 * rot; fy = rot; ang += fl.side * 0.35 * Math.sin(Math.PI * fp); }
       else if (fl.kind === 'half') { const q = Math.min(1, fp / 0.65); ang = fl.hd0 + Math.PI * (q * q * (3 - 2 * q)); fx = q < 0.5 ? Math.cos(Math.PI * q) : 1; }
-      under = fx < 0 || fy < 0; fx = Math.max(0.28, Math.abs(fx)); fy = Math.max(0.3, Math.abs(fy));
+    } else if (k.z > 22 && !k.wall) {
+      fy = Math.cos(k.roll || 0); // air roll
+      if (k.vz > 150 || k.boosting) fx = 0.82; // nose up while climbing
     }
+    under = fx < 0 || fy < 0; fx = Math.max(0.28, Math.abs(fx)); fy = Math.max(0.3, Math.abs(fy));
+    if (k.jumpT > 0) { fx *= 1.08; fy *= 0.9; } // stretch on takeoff
+    if (k.landT > 0) { const q = k.landT / 0.18; fx *= 1 - 0.1 * q; fy *= 1 + 0.14 * q; } // squash on landing
     ctx.save(); ctx.translate(px, py); ctx.rotate(ang); ctx.scale(sc * fx, sc * fy);
+    const WH = [[-11, -10.5], [-11, 7], [6, -10.5], [6, 7]];
+    const wheels = (inset, colr) => { ctx.fillStyle = colr; WH.forEach(([wx, wy]) => { rr(ctx, wx, wy + (wy < 0 ? inset : -inset), 6.5, 3.5, 1.2); ctx.fill(); }); };
+    if (!under) wheels(0, '#0b1020');
     ctx.fillStyle = col; rr(ctx, -14, -8.5, 29, 17, 5); ctx.fill();
-    if (under) { ctx.fillStyle = 'rgba(18,26,46,0.55)'; rr(ctx, -14, -8.5, 29, 17, 5); ctx.fill(); }
+    if (under) { ctx.fillStyle = 'rgba(18,26,46,0.55)'; rr(ctx, -14, -8.5, 29, 17, 5); ctx.fill(); wheels(3, 'rgba(11,16,32,0.95)'); ctx.restore(); ctx.save(); ctx.translate(px, py); ctx.rotate(ang); ctx.scale(sc * fx, sc * fy); ctx.globalAlpha = 0; }
     ctx.fillStyle = 'rgba(255,255,255,0.18)'; rr(ctx, -12, -6.5, 10, 13, 3); ctx.fill();
     ctx.fillStyle = 'rgba(18,26,46,0.9)'; rr(ctx, 1, -6, 8, 12, 2); ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,0.92)'; ctx.fillRect(12, -6.5, 2.5, 3.5); ctx.fillRect(12, 3, 2.5, 3.5);
