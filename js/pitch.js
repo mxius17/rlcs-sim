@@ -80,7 +80,7 @@
     this.cars.forEach((c) => {
       const sp = SPAWNS[pick[c.i]];
       const m = c.side === 'A' ? 1 : -1;
-      Object.assign(c, { x: sp[0] * m, y: sp[1] * m, z: 17, vz: 0, v: 0, dead: 0, cd: 0, rotT: 0, dribbles: 0, air: false, boost: 33, boosting: false, kick: null });
+      Object.assign(c, { x: sp[0] * m, y: sp[1] * m, z: 17, vz: 0, v: 0, dead: 0, cd: 0, rotT: 0, dribbles: 0, air: false, boost: 33, boosting: false, kick: null, flip: null, flipCd: 0, wall: false, kickFlip: false });
       c.hd = Math.atan2(-c.y, -c.x);
     });
     ['A', 'B'].forEach((side) => {
@@ -171,7 +171,11 @@
       const [ux, uy] = norm(ox - b.x, oy - b.y);
       const k = 0.05;
       b.vx += (ux * sp - b.vx) * k; b.vy += (uy * sp - b.vy) * k;
-      if (b.z > BR + 5) b.vz -= 200 * k; // settle it down
+      const carrier = c.passer || c.shooter;
+      if (c.hood && carrier && !carrier.dead && len(carrier.x - b.x, carrier.y - b.y) < 360) {
+        // ball balanced on the hood: it rides at roof height until the flick
+        b.z += (175 - b.z) * 0.12; b.vz = 0; c.onHood = true;
+      } else if (b.z > BR + 5) b.vz -= 200 * k; // settle it down
       if (t >= c.tPass) {
         const hitter = c.passer || c.shooter;
         if (c.passer) {
@@ -188,6 +192,7 @@
     if (c.phase === 'shoot') {
       launch(b, c.target[0], c.target[1], c.target[2], Math.max(0.25, c.e.t - t));
       this.strike(c.shooter, b);
+      if (c.onHood && !c.passer) this.burst(b.x, b.y, 'rgba(255,255,255,0.7)', 6); // the flick
       this.ring(b.x, b.y, 'rgba(255,255,255,0.9)', 420);
       c.phase = 'flight';
       this.flight = c;
@@ -217,7 +222,34 @@
     k.hd = Math.atan2(hy, hx); k.v = Math.max(k.v, 1500);
     if (b.z > 260) { k.z = Math.max(k.z, b.z - 80); k.vz = 200; k.air = true; }
     k.rotT = rnd(2.5, 3.8); k.cd = 0.8; k.dribbles = 0;
+    if (k.z < 40) this.dodge(k, this.flipKind(k, b), this.flipSide(k, b));
     this.lastTouch = k;
+  };
+
+  /** Front flip when the ball goes where the car points, side/diagonal flip when it goes off at an angle. */
+  Pitch.prototype.flipKind = function (k, b) { const a = Math.abs(wrap(Math.atan2(b.vy, b.vx) - k.hd)); return a < 0.35 ? 'front' : a < 1.1 ? 'diag' : 'side'; };
+  Pitch.prototype.flipSide = function (k, b) { return sgn(wrap(Math.atan2(b.vy, b.vx) - k.hd)); };
+
+  /** Dodges: front/diagonal/side flips (+500 uu/s), speed flips and half-flips (180° turn-around). */
+  Pitch.prototype.dodge = function (k, kind, side) {
+    if (k.flip || k.dead > 0 || k.wall) return;
+    const dur = kind === 'half' ? 0.7 : kind === 'speed' ? 0.5 : 0.62;
+    k.flip = { kind, t: 0, dur, side: side || (Math.random() < 0.5 ? -1 : 1), hd0: k.hd };
+    k.flipCd = kind === 'half' ? 1.1 : 1.5;
+    if (kind === 'half') { k.hd = wrap(k.hd + Math.PI); k.v = 350; }
+    else k.v = Math.min(2300, k.v + (kind === 'speed' ? 600 : kind === 'side' ? 380 : 500));
+  };
+
+  /** Both first men arrive together: the ball squirts out of the 50/50 and both cars bounce off. */
+  Pitch.prototype.fifty = function (a, o) {
+    const b = this.ball;
+    const [ux, uy] = norm(o.x - a.x, o.y - a.y);
+    const win = Math.random() < 0.5 ? 1 : -1, lat = Math.random() < 0.5 ? 1 : -1;
+    const sp = rnd(500, 1400), fw = rnd(200, 1000);
+    b.vx = -uy * sp * lat + ux * fw * win; b.vy = ux * sp * lat + uy * fw * win; b.vz = rnd(250, 950); capLift(b);
+    [a, o].forEach((k) => { this.dodge(k, 'front'); k.v = rnd(150, 450); k.cd = 0.6; k.rotT = rnd(0.6, 1.6); k.dribbles = 0; });
+    this.ring(b.x, b.y, '#ffffff', 700); this.burst(b.x, b.y, '#ffffff', 10);
+    this.lastTouch = Math.random() < 0.5 ? a : o;
   };
 
   Pitch.prototype.stage = function (e, t) {
@@ -250,7 +282,8 @@
     const wing = sgn(b.y || rnd(-1, 1));
     const carryTo = passer ? [s * rnd(L - 3200, L - 1600), wing * rnd(2300, 3300)] : spot;
     [shooter, passer, saver].forEach((k) => { if (k && k.dead) { k.dead = 0; k.x = b.x - s * 1500; k.y = clamp(b.y, -2000, 2000); k.z = 17; } });
-    this.cur = { e, s, spot, spotZ, target, shooter, passer, saver, tShot, tPass, carryTo, phase: tShot - t < 0.25 ? 'shoot' : 'carry', aerial };
+    const hood = !passer && !aerial && tShot - t > 1.6 && Math.random() < 0.4;
+    this.cur = { e, s, spot, spotZ, target, shooter, passer, saver, tShot, tPass, carryTo, phase: tShot - t < 0.25 ? 'shoot' : 'carry', aerial, hood };
   };
 
   /* ================= free play: where each car wants to be ================= */
@@ -328,7 +361,8 @@
       if (c.phase === 'carry') {
         const carrier = ps || sh;
         const [ux, uy] = norm(b2.vx || c.s, b2.vy);
-        out.set(carrier, { x: b2.x - ux * 200, y: b2.y - uy * 200, boost: true, role: 1, carry: true });
+        const off = c.onHood ? 30 : 200; // under the ball when it sits on the hood
+        out.set(carrier, { x: b2.x - ux * off, y: b2.y - uy * off, boost: true, role: 1, carry: true });
         if (ps) out.set(sh, { x: c.spot[0] - c.s * 900, y: c.spot[1] * 0.7, boost: true, role: 2 });
       } else if (c.phase === 'pass') {
         out.set(sh, { x: c.spot[0] - c.s * 220, y: c.spot[1], boost: true, role: 1, arriveBy: c.tShot });
@@ -370,12 +404,20 @@
     if (d < 700 && !(tg && tg.carry)) want = Math.min(want, d * 1.8 + (tg && tg.role === 1 ? 600 : 0));
     if (tg && tg.carry) want = Math.min(want, len(this.ball.vx, this.ball.vy) + 250);
     if (Math.abs(err) > 1.25 && d < 2600) want = Math.min(want, 650 + d * 0.15);
+    // dodges: half-flip to turn around, speed-flip on the kickoff, front flips for speed on long runs without boost
+    if (!k.flip && k.z <= 18 && !k.air && !k.wall && k.flipCd <= 0 && tg) {
+      const bd = len(this.ball.x - k.x, this.ball.y - k.y);
+      if (k.kick === 'go' && !k.kickFlip && bd < 1900 && k.v > 1000) { k.kickFlip = true; this.dodge(k, 'speed', sgn(k.y || 1)); }
+      else if (Math.abs(err) > 2.5 && k.v < 800 && d > 1100) this.dodge(k, 'half');
+      else if (!tg.carry && d > 2600 && Math.abs(err) < 0.15 && k.v > 1050 && k.v < 2000 && !(canBoost && k.boost > 12) && Math.random() < h * 0.5) this.dodge(k, 'front');
+    }
+    const fl = k.flip, locked = fl && (fl.kind !== 'half' || fl.t < 0.45);
     // steering
     const slide = Math.abs(err) > 1.0 && k.v > 500;
     const maxW = Math.max(k.v, 380) * curvature(k.v) * (slide ? 1.7 : 1);
     const w = clamp(err * 5, -maxW, maxW);
-    k.hd = wrap(k.hd + w * h);
-    k.slide = slide;
+    if (!locked) k.hd = wrap(k.hd + w * h);
+    k.slide = slide && !fl;
     // speed
     const aligned = Math.abs(err) < 0.45;
     k.boosting = false;
@@ -386,7 +428,9 @@
       k.v = Math.min(k.v + a * h, k.boosting ? 2300 : Math.max(k.v, 1410));
     } else {
       const over = k.v - want;
-      k.v = Math.max(0, k.v - (over > 400 ? 3500 : 525) * h * (slide ? 1.3 : 1));
+      // holding throttle above 1410 keeps the speed (flip and supersonic momentum carries); otherwise coast/brake
+      const dec = want >= 1410 || fl ? 40 : over > 400 ? 3500 : 525;
+      k.v = Math.max(0, k.v - dec * h * (slide ? 1.3 : 1));
     }
     if (slide) k.v *= 1 - 0.25 * h;
     k.x += Math.cos(k.hd) * k.v * h; k.y += Math.sin(k.hd) * k.v * h;
@@ -410,14 +454,24 @@
         }
         return;
       }
+      k.flipCd = Math.max(0, (k.flipCd || 0) - h);
+      if (k.flip) { k.flip.t += h; if (k.flip.t >= k.flip.dur) k.flip = null; }
       const tg = plan.get(k);
       this.drive(k, tg, h);
-      // jumping / aerials
-      if (k.z > 17 || k.air) {
-        k.vz -= G * h; k.z += k.vz * h;
-        if (k.z <= 17) { k.z = 17; k.vz = 0; k.air = false; }
-      }
       const role1 = tg && tg.role === 1;
+      // wall rides: the first man follows a ball up the side wall
+      const onWall = role1 && !k.flip && Math.abs(k.y) > W - 300 && Math.abs(b.y) > W - 900 && sgn(b.y) === sgn(k.y) && b.z > 260 && !this.flight;
+      if (onWall) { k.wall = true; k.air = false; k.vz = 0; k.z += (Math.min(b.z - 40, 1700) - k.z) * Math.min(1, 2.5 * h); k.z = Math.max(17, k.z); }
+      else if (k.wall) { k.wall = false; if (k.z > 30) { k.air = true; k.vz = -100; } }
+      // jumping / aerials
+      if (!k.wall && (k.z > 17 || k.air)) {
+        k.vz -= G * h; k.z += k.vz * h;
+        if (k.z <= 17) {
+          // landing: wheels first and keep the momentum (wavedash-style recovery)
+          if (k.vz < -450) { k.v = Math.min(2300, k.v + 250); this.burst(k.x, k.y, 'rgba(255,255,255,0.45)', 5); }
+          k.z = 17; k.vz = 0; k.air = false;
+        }
+      }
       const hd = len(b.x - k.x, b.y - k.y);
       k.airCd = Math.max(0, (k.airCd || 0) - h);
       if (role1 && !this.flight && b.z > 330 && b.z < 1400 && b.vz < 350 && hd < 900 && k.z < 40 && k.airCd <= 0 && (k.boost > 25 || b.z < 450) && k.cd <= 0) {
@@ -441,7 +495,10 @@
       if (k.dead > 0 || k.cd > 0) return;
       const dx = b.x - k.x, dy = b.y - k.y, dz = b.z - (k.z + 40), d = Math.sqrt(dx * dx + dy * dy + dz * dz);
       if (d > TOUCH) return;
-      this.touch(k, plan.get(k));
+      if (this.cur || this.kickT < 3) { this.touch(k, plan.get(k)); return; }
+      const o = this.cars.find((q) => q.side !== k.side && q.dead <= 0 && q.cd <= 0 && len(b.x - q.x, b.y - q.y) < TOUCH + 520 && Math.abs(b.z - q.z) < 300 && Math.cos(Math.atan2(b.y - q.y, b.x - q.x) - q.hd) > 0.5 && q.v > 600);
+      if (o && Math.random() < 0.85) this.fifty(k, o);
+      else this.touch(k, plan.get(k));
     });
   };
 
@@ -466,6 +523,13 @@
       // own third: clear it high toward the opponent's corner
       tx = s * rnd(L * 0.25, L * 0.85); ty = sgn(b.y || rnd(-1, 1)) * rnd(2200, 3600); tz = rnd(150, 700); T = rnd(1.2, 1.8);
     } else if (depth < L / 3) {
+      if (k.dribbles >= 2 && b.z < 260 && Math.random() < 0.55) {
+        // flick off the dribble toward goal
+        launch(b, s * rnd(L - 1600, L - 400), rnd(-1400, 1400), rnd(250, 750), rnd(0.8, 1.2)); capLift(b);
+        this.dodge(k, 'diag', sgn(rnd(-1, 1))); k.cd = 0.9; k.rotT = rnd(2, 3); k.dribbles = 0; this.lastTouch = k;
+        this.burst(b.x, b.y, 'rgba(255,255,255,0.7)', 6);
+        return;
+      }
       if (r < 0.45 && k.dribbles < 3 && b.z < 200) {
         // dribble: soft touch ahead, stay on it
         const [ux, uy] = norm(Math.cos(k.hd) + s * 0.3, Math.sin(k.hd));
@@ -488,6 +552,7 @@
     const spd = len(b.vx, b.vy);
     if (spd > 4200) { b.vx *= 4200 / spd; b.vy *= 4200 / spd; }
     k.cd = 0.9; k.rotT = rnd(2.2, 3.4); k.dribbles = 0;
+    if (k.z < 40 && b.z < 260 && Math.random() < 0.75) this.dodge(k, this.flipKind(k, b), this.flipSide(k, b));
     this.lastTouch = k;
     this.ring(b.x, b.y, 'rgba(255,255,255,0.3)', 200);
   };
@@ -685,10 +750,13 @@
 
   Pitch.prototype.drawCar = function (ctx, k) {
     const col = k.side === 'A' ? BLUE : ORANGE;
-    const lift = (k.z - 17) * S * LIFT;
+    const fl = k.flip, fp = fl ? fl.t / fl.dur : 0;
+    const hop = fl ? Math.sin(Math.PI * fp) * (fl.kind === 'half' ? 70 : 55) : 0;
+    const lift = (k.z - 17 + hop) * S * LIFT;
     const sc = 1 + Math.min(0.6, (k.z - 17) / 1600);
     const px = X(k.x), py = Y(k.y) - lift;
     const c = Math.cos(k.hd), s = Math.sin(k.hd);
+    if (k.wall) { ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px, Y(k.y)); ctx.stroke(); }
     // supersonic trail / boost flame
     if (k.v > 2200) {
       ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 2;
@@ -705,8 +773,19 @@
       ctx.fillStyle = 'rgba(255,255,255,0.12)';
       ctx.fillRect(px - c * 16 - 2, py - s * 16 - 2, 4, 4);
     }
-    ctx.save(); ctx.translate(px, py); ctx.rotate(k.hd); ctx.scale(sc, sc);
+    // flip rotation seen from above: the body foreshortens (and shows its dark underside) as it rolls
+    let ang = k.hd, fx = 1, fy = 1, under = false;
+    if (fl) {
+      const rot = Math.cos(2 * Math.PI * Math.min(1, fp * 1.15));
+      if (fl.kind === 'front') fx = rot;
+      else if (fl.kind === 'side') fy = rot;
+      else if (fl.kind === 'diag' || fl.kind === 'speed') { fx = 0.5 + 0.5 * rot; fy = rot; ang += fl.side * 0.35 * Math.sin(Math.PI * fp); }
+      else if (fl.kind === 'half') { const q = Math.min(1, fp / 0.65); ang = fl.hd0 + Math.PI * (q * q * (3 - 2 * q)); fx = q < 0.5 ? Math.cos(Math.PI * q) : 1; }
+      under = fx < 0 || fy < 0; fx = Math.max(0.28, Math.abs(fx)); fy = Math.max(0.3, Math.abs(fy));
+    }
+    ctx.save(); ctx.translate(px, py); ctx.rotate(ang); ctx.scale(sc * fx, sc * fy);
     ctx.fillStyle = col; rr(ctx, -14, -8.5, 29, 17, 5); ctx.fill();
+    if (under) { ctx.fillStyle = 'rgba(18,26,46,0.55)'; rr(ctx, -14, -8.5, 29, 17, 5); ctx.fill(); }
     ctx.fillStyle = 'rgba(255,255,255,0.18)'; rr(ctx, -12, -6.5, 10, 13, 3); ctx.fill();
     ctx.fillStyle = 'rgba(18,26,46,0.9)'; rr(ctx, 1, -6, 8, 12, 2); ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,0.92)'; ctx.fillRect(12, -6.5, 2.5, 3.5); ctx.fillRect(12, 3, 2.5, 3.5);
