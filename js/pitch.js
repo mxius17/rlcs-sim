@@ -81,7 +81,7 @@
     this.cars.forEach((c) => {
       const sp = SPAWNS[pick[c.i]];
       const m = c.side === 'A' ? 1 : -1;
-      Object.assign(c, { x: sp[0] * m, y: sp[1] * m, z: 17, vz: 0, v: 0, dead: 0, cd: 0, rotT: 0, dribbles: 0, air: false, boost: 33, boosting: false, kick: null, flip: null, flipCd: 0, wall: false, kickFlip: false });
+      Object.assign(c, { x: sp[0] * m, y: sp[1] * m, z: 17, vz: 0, v: 0, dead: 0, cd: 0, rotT: 0, dribbles: 0, air: false, boost: 33, boosting: false, kick: null, flip: null, flipCd: 0, wall: false, kickFlip: false, hasFlip: false, roll: 0, rollDir: 0 });
       c.hd = Math.atan2(-c.y, -c.x);
     });
     ['A', 'B'].forEach((side) => {
@@ -143,7 +143,7 @@
       if (t >= e.t) {
         this.handled.add(i); atk.demoOn = null;
         if (!vic.dead && !atk.dead) {
-          vic.dead = 3; // RL respawn time
+          vic.dead = 3; vic.hasFlip = false; // RL respawn time
           this.burst(vic.x, vic.y, vic.side === 'A' ? BLUE : ORANGE, 30); this.ring(vic.x, vic.y, '#ffffff', 900);
         }
       } else if (!atk.dead && !vic.dead && !this.isActor(atk)) {
@@ -233,6 +233,12 @@
         const f = gd > mx ? mx / gd : 1;
         k.x += (gx - k.x) * f; k.y += (gy - k.y) * f; k.z += (gz - k.z) * f; k.vz = 0; k.air = true; k.wall = false;
         k.hd = Math.atan2(uy, ux); k.v = len(b.vx, b.vy); k.boosting = true; k.boost = Math.max(0, k.boost - 20 / 90); k.pinned = true; k.flip = null;
+        if (c.reset) {
+          // flip reset: roll wheels-up into the ball, all four wheels touch it, roll back upright holding the flip
+          const ru = c.resetU, w = u < ru - 0.18 ? 0 : u < ru ? (u - (ru - 0.18)) / 0.18 : u < ru + 0.14 ? 1 - (u - ru) / 0.14 : 0;
+          k.rollDir = 0; k.roll = Math.PI * (w * w * (3 - 2 * w));
+          if (u >= ru && !c.didReset) { c.didReset = true; this.flipReset(k); }
+        }
       }
       if (t >= c.tShot) c.phase = 'shoot';
     }
@@ -263,8 +269,14 @@
       launch(b, c.target[0], c.target[1], c.target[2], Math.max(0.25, c.e.t - t));
       this.strike(c.shooter, b);
       if (c.onHood && !c.passer) this.burst(b.x, b.y, 'rgba(255,255,255,0.7)', 6); // the flick
+      const sk = c.shooter;
+      if (sk && sk.hasFlip && !sk.dead) {
+        // the reset is used: a dodge in mid-air straight into the ball
+        sk.hasFlip = false; sk.flip = { kind: this.flipKind(sk, b), t: 0, dur: 0.5, side: this.flipSide(sk, b), hd0: sk.hd };
+        this.burst(b.x, b.y, '#ffffff', 16); this.ring(b.x, b.y, c.e.side === 'A' ? BLUE : ORANGE, 700);
+      }
       const kmhNow = Math.round(Math.hypot(b.vx, b.vy, b.vz) * 0.036);
-      const label = { pinch: 'Pinch', doubletap: 'Double tap', redirect: c.spotZ > 250 ? 'Aerial redirect' : 'Redirect', pass: 'One-timer', chip: 'Chip', airdribble: 'Air dribble', power: c.spotZ > 200 ? 'Half-volley' : 'Power shot' }[c.kind] || 'Shot';
+      const label = { pinch: 'Pinch', doubletap: 'Double tap', redirect: c.spotZ > 250 ? 'Aerial redirect' : 'Redirect', pass: 'One-timer', chip: 'Chip', airdribble: c.didReset ? 'Flip reset' : 'Air dribble', power: c.spotZ > 200 ? 'Half-volley' : 'Power shot' }[c.kind] || 'Shot';
       if (c.kind === 'pinch') { this.burst(b.x, b.y, '#ffffff', 22); this.ring(b.x, b.y, '#ffffff', 900); this.shake = Math.max(this.shake || 0, 0.18); }
       if (c.kind === 'redirect' || c.kind === 'doubletap') this.burst(b.x, b.y, c.e.side === 'A' ? BLUE : ORANGE, 10);
       this.fx.push({ k: 'txt', x: b.x, y: b.y, z: b.z, text: label.toUpperCase() + ' · ' + kmhNow + ' KM/H', life: 0, max: 1.6, delay: 0 });
@@ -353,6 +365,14 @@
     k.rollDir = r < 0.4 ? 0 : (r < 0.7 ? 1 : -1) * rnd(0.6, 1.1);
     this.fx.push({ k: 'ring', x: k.x, y: k.y, z: 0, color: 'rgba(255,255,255,0.45)', r: 300, life: 0, max: 0.4, delay: 0 });
     if (k.vz > 700 || k.pinned) k.dj = 0.14;
+  };
+
+  /** All four wheels on the ball in mid-air: the car gets its flip back. */
+  Pitch.prototype.flipReset = function (k) {
+    k.hasFlip = true;
+    this.fx.push({ k: 'wh', car: k, life: 0, max: 0.55, delay: 0 });
+    this.fx.push({ k: 'txt', car: k, text: 'FLIP RESET', life: 0, max: 1.3, delay: 0 });
+    this.ring(k.x, k.y, '#ffffff', 420);
   };
 
   /** Front flip when the ball goes where the car points, side/diagonal flip when it goes off at an angle. */
@@ -469,7 +489,8 @@
       if (passer && tTo(passer, b.x, b.y) > tFirst + 0.3) passer = null, kind = 'power', build();
     }
     const hood = (kind === 'power' || kind === 'chip') && tShot - t > 1.6 && Math.random() < 0.35;
-    this.cur = { e, s, kind, spot, spotZ, target, shooter: shooterV, passer, saver, tShot, tPass, tBB, bb, carryTo, phase: tShot - t < 0.25 ? 'shoot' : 'carry', hood, airDrib: kind === 'airdribble', airDur, wall, tLift: tShot - airDur };
+    const reset = kind === 'airdribble' && airDur > 1.3 && Math.random() < 0.45;
+    this.cur = { e, s, kind, spot, spotZ, target, shooter: shooterV, passer, saver, tShot, tPass, tBB, bb, carryTo, phase: tShot - t < 0.25 ? 'shoot' : 'carry', hood, airDrib: kind === 'airdribble', airDur, wall, tLift: tShot - airDur, reset, resetU: rnd(0.4, 0.6) };
   };
 
   /* ================= free play: where each car wants to be ================= */
@@ -651,7 +672,7 @@
       // airborne body language: takeoff (jump + second jump), air roll, landing on the wheels
       const up = k.z > 22;
       if (up && !k.wasUp && !k.wall) this.takeoff(k);
-      if (!up && k.wasUp) { if (!k.wall) k.landT = 0.18; k.roll = 0; }
+      if (!up && k.wasUp) { if (!k.wall) k.landT = 0.18; k.roll = 0; k.hasFlip = false; }
       k.wasUp = up;
       k.jumpT = Math.max(0, (k.jumpT || 0) - h); k.landT = Math.max(0, (k.landT || 0) - h);
       if (k.dj > 0) { k.dj -= h; if (k.dj <= 0) this.fx.push({ k: 'ring', x: k.x, y: k.y, z: k.z, color: 'rgba(255,255,255,0.6)', r: 240, life: 0, max: 0.35, delay: 0 }); }
@@ -921,10 +942,21 @@
       if (p >= 1) return false;
       if (f.k === 'txt') {
         ctx.font = '700 12px "Inter Tight", Inter, sans-serif'; ctx.textAlign = 'center';
-        const tx = clamp(X(f.x), 90, VW - 90), ty = clamp(Y(f.y) - (f.z - BR) * S * LIFT - 22 - p * 14, 20, VH - 70);
+        const fc = f.car;
+        const tx = clamp(fc ? X(fc.x) : X(f.x), 90, VW - 90);
+        const ty = clamp(fc ? Y(fc.y) - (fc.z - 17) * S * LIFT - 32 * (1 + Math.min(0.6, (fc.z - 17) / 1600)) - p * 8 : Y(f.y) - (f.z - BR) * S * LIFT - 22 - p * 14, 20, VH - 70);
         ctx.globalAlpha = p < 0.75 ? 1 : (1 - p) * 4;
         ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillText(f.text, tx + 1, ty + 1); ctx.fillStyle = '#ffffff'; ctx.fillText(f.text, tx, ty);
         ctx.globalAlpha = 1;
+      } else if (f.k === 'wh') {
+        // the four wheels light up where they touched the ball
+        const fc = f.car, wsc = 1 + Math.min(0.6, (fc.z - 17) / 1600);
+        ctx.save(); ctx.translate(X(fc.x), Y(fc.y) - (fc.z - 17) * S * LIFT); ctx.rotate(fc.hd); ctx.scale(wsc, wsc);
+        [[-8, -9], [-8, 9], [9, -9], [9, 9]].forEach(([wx, wy]) => {
+          ctx.beginPath(); ctx.arc(wx, wy, 2.5 + 4 * p, 0, Math.PI * 2); ctx.fillStyle = `rgba(255,255,255,${0.75 * (1 - p)})`; ctx.fill();
+          ctx.beginPath(); ctx.arc(wx, wy, 2.2, 0, Math.PI * 2); ctx.fillStyle = '#ffffff'; ctx.globalAlpha = 1 - p; ctx.fill(); ctx.globalAlpha = 1;
+        });
+        ctx.restore();
       } else if (f.k === 'skid') {
         ctx.fillStyle = `rgba(255,255,255,${0.14 * (1 - p)})`; ctx.fillRect(X(f.x) - 1.5, Y(f.y) - 1.5, 3, 3);
       } else if (f.k === 'ring') {
@@ -977,6 +1009,12 @@
     const sc = 1 + Math.min(0.6, (k.z - 17) / 1600);
     const px = X(k.x), py = Y(k.y) - lift;
     const c = Math.cos(k.hd), s = Math.sin(k.hd);
+    if (k.hasFlip) {
+      // holding a reset flip: a pulsing ring of the four wheel lights
+      const pu = 0.55 + 0.45 * Math.sin(performance.now() / 90);
+      ctx.beginPath(); ctx.arc(px, py, 19 * sc, 0, Math.PI * 2); ctx.strokeStyle = `rgba(255,255,255,${0.35 + 0.4 * pu})`; ctx.lineWidth = 2; ctx.stroke();
+      for (let q = 0; q < 4; q++) { const a = k.hd + Math.PI / 4 + (q * Math.PI) / 2; ctx.beginPath(); ctx.arc(px + Math.cos(a) * 19 * sc, py + Math.sin(a) * 19 * sc, 2.4, 0, Math.PI * 2); ctx.fillStyle = '#ffffff'; ctx.fill(); }
+    }
     if (k.wall) { ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px, Y(k.y)); ctx.stroke(); }
     // supersonic trail / boost flame
     if (k.v > 2200) {
