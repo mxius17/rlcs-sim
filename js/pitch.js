@@ -176,7 +176,10 @@
         // ball balanced on the hood: it rides at roof height until the flick
         b.z += (175 - b.z) * 0.12; b.vz = 0; c.onHood = true;
       } else if (b.z > BR + 5) b.vz -= 200 * k; // settle it down
-      if (t >= c.tPass) {
+      if (c.airDrib && t >= c.tLift && t < c.tShot) {
+        c.phase = 'air'; c.a0 = [b.x, b.y, Math.max(b.z, BR)]; c.aT0 = t; c.taps = 0;
+        const k0 = c.shooter; if (k0 && !k0.dead) { k0.flip = null; this.ring(b.x, b.y, 'rgba(255,255,255,0.6)', 300); }
+      } else if (t >= c.tPass) {
         const hitter = c.passer || c.shooter;
         if (c.passer) {
           // centre / pass into the shooting spot
@@ -187,6 +190,26 @@
           c.phase = 'shoot';
         }
       }
+    }
+    if (c.phase === 'air') {
+      // ball and car fly the path together: the car stays just under and behind the ball, tapping it along
+      const D = Math.max(0.3, c.tShot - c.aT0), u = clamp((t - c.aT0) / D, 0, 1);
+      const e3 = (q) => q * q * (3 - 2 * q);
+      const [x0, y0, z0] = c.a0, [x1, y1] = c.spot, z1 = c.spotZ;
+      const nTaps = Math.max(2, Math.round(D / 0.42));
+      const pos = (q) => [x0 + (x1 - x0) * q, y0 + (y1 - y0) * e3(q), z0 + (z1 - z0) * Math.sin(Math.min(1, q * 1.35) * Math.PI / 2) + 45 * Math.abs(Math.sin(q * nTaps * Math.PI))];
+      const p0 = pos(u), p1 = pos(Math.min(1, u + 0.01));
+      b.x = p0[0]; b.y = p0[1]; b.z = Math.max(BR, p0[2]);
+      b.vx = (p1[0] - p0[0]) / (0.01 * D); b.vy = (p1[1] - p0[1]) / (0.01 * D); b.vz = (p1[2] - p0[2]) / (0.01 * D) + G / 90;
+      const tap = Math.floor(u * nTaps);
+      if (tap > c.taps) { c.taps = tap; this.ring(b.x, b.y, 'rgba(255,255,255,0.45)', 160); }
+      const k = c.shooter;
+      if (k && !k.dead) {
+        const [ux, uy] = norm(b.vx || c.s, b.vy);
+        k.x = b.x - ux * 150; k.y = b.y - uy * 150; k.z = Math.max(17, b.z - 105); k.vz = 0; k.air = true; k.wall = false;
+        k.hd = Math.atan2(uy, ux); k.v = len(b.vx, b.vy); k.boosting = true; k.boost = Math.max(0, k.boost - 20 / 90); k.pinned = true; k.flip = null;
+      }
+      if (t >= c.tShot) c.phase = 'shoot';
     }
     if (c.phase === 'pass' && t >= c.tShot) c.phase = 'shoot';
     if (c.phase === 'shoot') {
@@ -277,13 +300,25 @@
     const defSide = e.side === 'A' ? 'B' : 'A';
     const saver = e.type === 'save' ? this.carFor(defSide, e.saver) : null;
     const tShot = e.t - flightT;
+    // air dribble: pop it up (off the floor or out of a wall roll), then carry it through the air with light touches
+    const airDur = rnd(1.1, 2.0);
+    const airDrib = (!passer || (!e.assist && Math.random() < 0.5)) && tShot - t > airDur + 0.4 && Math.random() < (e.type === 'goal' ? 0.55 : 0.4);
+    if (airDrib) passer = null;
     const tPass = passer ? tShot - rnd(0.9, 1.4) : tShot;
     // where the carry goes: down a wing for a centre, or straight into the slot for a solo shot
     const wing = sgn(b.y || rnd(-1, 1));
     const carryTo = passer ? [s * rnd(L - 3200, L - 1600), wing * rnd(2300, 3300)] : spot;
     [shooter, passer, saver].forEach((k) => { if (k && k.dead) { k.dead = 0; k.x = b.x - s * 1500; k.y = clamp(b.y, -2000, 2000); k.z = 17; } });
-    const hood = !passer && !aerial && tShot - t > 1.6 && Math.random() < 0.4;
-    this.cur = { e, s, spot, spotZ, target, shooter, passer, saver, tShot, tPass, carryTo, phase: tShot - t < 0.25 ? 'shoot' : 'carry', aerial, hood };
+    let airZ = spotZ, carryTo2 = carryTo, wall = false;
+    if (airDrib) {
+      airZ = rnd(450, 1050);
+      wall = Math.random() < 0.4;
+      const back = airDur * rnd(1000, 1250);
+      carryTo2 = wall ? [s * clamp(spot[0] * s - back * 0.8, -L + 1500, L - 1600), sgn(spot[1] || b.y || 1) * (W - 260)]
+        : [s * clamp(spot[0] * s - back, -L + 1500, L - 1600), clamp(spot[1] * 0.6 + rnd(-500, 500), -2600, 2600)];
+    }
+    const hood = !passer && !aerial && !airDrib && tShot - t > 1.6 && Math.random() < 0.4;
+    this.cur = { e, s, spot, spotZ: airDrib ? airZ : spotZ, target, shooter, passer, saver, tShot, tPass, carryTo: carryTo2, phase: tShot - t < 0.25 ? 'shoot' : 'carry', aerial, hood, airDrib, airDur, wall, tLift: tShot - airDur };
   };
 
   /* ================= free play: where each car wants to be ================= */
@@ -457,6 +492,7 @@
       k.flipCd = Math.max(0, (k.flipCd || 0) - h);
       if (k.flip) { k.flip.t += h; if (k.flip.t >= k.flip.dur) k.flip = null; }
       const tg = plan.get(k);
+      if (k.pinned) { k.pinned = false; return; } // flown by the director (air dribble)
       this.drive(k, tg, h);
       const role1 = tg && tg.role === 1;
       // wall rides: the first man follows a ball up the side wall
