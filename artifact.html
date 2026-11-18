@@ -6,6 +6,18 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/styles.css">
 
+<div id="hero" class="hero" role="dialog" aria-modal="true" aria-labelledby="heroTitle">
+  <canvas id="heroCanvas" aria-hidden="true"></canvas>
+  <div class="hero-stage" aria-hidden="true"></div>
+  <div class="hero-ui">
+    <span class="hero-eyebrow">RLCS 2027 · Club Championship season</span>
+    <h1 id="heroTitle" class="hero-title">RL Esports<br><em>Simulator</em></h1>
+    <p class="hero-sub">Build tournaments with real RLCS rosters, watch every series play out live, and run your own organisation through Opens, Majors and Worlds.</p>
+    <button class="hero-play" type="button" data-hero-play>Click to play <span aria-hidden="true">→</span></button>
+    <p class="hero-note">Press Enter to start · Rosters and logos from Liquipedia</p>
+  </div>
+</div>
+
 <header class="topbar">
   <a class="brand" href="#" data-action="go-home" aria-label="RL Esports Simulator home">
     <span class="brand-mark">RL</span>
@@ -34,7 +46,9 @@
 <script src="js/data.js"></script>
 <script src="js/data27.js"></script>
 <script src="js/logos.js"></script>
+<script src="js/vendor/three.min.js"></script>
 <script src="js/engine.js"></script>
 <script src="js/pitch.js"></script>
 <script src="js/career.js"></script>
 <script src="js/app.js"></script>
+<script src="js/hero.js"></script>

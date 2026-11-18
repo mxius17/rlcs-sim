@@ -5,6 +5,7 @@ A Rocket League esports tournament simulator modelled on the 256Teams "Custom to
 Open `index.html` in a browser. There is no build step and nothing to install.
 
 ## Features
+- **3D intro:** a full-screen three.js scene greets you on arrival. It shows a silver championship cup with the RLCS 2027 partner teams' logos orbiting it, drifting boost sparks and the title. **Click to play** (or Enter) opens the menu. Without WebGL a 2D version of the same screen appears instead. three.js r128 is bundled in `js/vendor/` (MIT licence).
 - **Homepage** (modelled on the 256Teams home): resume banner, featured RLCS 2026 Worlds / Paris / Boston cards, a searchable competitions grid (real event fields plus 7 regional opens), regional leagues, and more simulators (Custom tournament, Custom match, 128-team knockout, Build a league). A Teams page ranks all 251 rosters.
 - **Live pitch** (`js/pitch.js`): a to-scale Soccar field (cut corners, goals, boost pads) with RLCS kickoff positions, cars rotating as first/second/third man, boost trails, demos and goal explosions. Every goal, shot, save and demo from the match engine is staged on the pitch at its game time.
 - **Setup**

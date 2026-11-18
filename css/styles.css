@@ -991,3 +991,51 @@ table.st th, .scorecard th { color: var(--text-3); }
 }
 .table-card, .group-card, .fx, .b-col { min-width: 0; }
 @media (max-width: 720px) { .tables-grid, .fixtures-grid, .team-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* =====================================================================
+   3D HERO — full-screen intro shown on arrival; "Click to play" opens the menu
+   ===================================================================== */
+body.hero-open { overflow: hidden; }
+.hero { position: fixed; inset: 0; z-index: 100; background: var(--ink); overflow: hidden; display: grid; transition: opacity 0.6s ease, transform 0.6s ease; }
+.hero canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.hero.hero-leave { opacity: 0; transform: scale(1.04); pointer-events: none; }
+.hero::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 90% at 20% 50%, rgba(18,26,46,0.85), rgba(18,26,46,0) 55%); }
+.hero-ui {
+  position: relative; z-index: 2; align-self: center; max-width: 560px;
+  padding-left: max(clamp(24px, 7vw, 120px), env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; align-items: flex-start; gap: 18px;
+  animation: heroIn 0.9s 0.35s ease both;
+}
+@keyframes heroIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.hero-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--vermilion); }
+.hero-title { margin: 0; font-family: var(--display); font-weight: 700; color: #fff; font-size: clamp(44px, 7vw, 92px); line-height: 0.95; letter-spacing: -0.035em; text-wrap: balance; }
+.hero-title em { font-style: normal; color: var(--azure); }
+.hero-sub { margin: 0; color: rgba(255,255,255,0.7); font-size: clamp(15px, 1.3vw, 17px); line-height: 1.55; max-width: 44ch; }
+.hero-play {
+  margin-top: 6px; display: inline-flex; align-items: center; gap: 12px; border: 0; border-radius: 999px; cursor: pointer;
+  padding: 16px 30px; font: 600 17px/1 var(--font); color: #fff; background: var(--vermilion);
+  box-shadow: 0 0 0 0 rgba(242,84,45,0.55); animation: heroPulse 2.4s 1.4s ease-out infinite;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.hero-play span { transition: transform 0.15s ease; }
+.hero-play:hover { background: #f46a48; transform: translateY(-1px); }
+.hero-play:hover span { transform: translateX(4px); }
+.hero-play:focus-visible { outline: 2px solid var(--azure); outline-offset: 4px; }
+@keyframes heroPulse { 0% { box-shadow: 0 0 0 0 rgba(242,84,45,0.5); } 70% { box-shadow: 0 0 0 18px rgba(242,84,45,0); } 100% { box-shadow: 0 0 0 0 rgba(242,84,45,0); } }
+.hero-note { margin: 0; color: rgba(255,255,255,0.42); font-size: 12px; }
+/* narrow / portrait: trophy in the upper part, text at the bottom */
+@media (max-aspect-ratio: 21/20) {
+  .hero::after { background: linear-gradient(to top, rgba(18,26,46,0.95) 30%, rgba(18,26,46,0) 70%); }
+  .hero-ui { align-self: end; max-width: none; padding-bottom: max(36px, env(safe-area-inset-bottom, 0px)); padding-left: max(24px, env(safe-area-inset-left, 0px)); align-items: center; text-align: center; margin: 0 auto; }
+  .hero-sub { max-width: 38ch; }
+  .hero-title { font-size: clamp(40px, 11vw, 72px); }
+}
+/* 2D fallback without WebGL: logos orbit a glowing ring */
+.hero-stage { position: absolute; inset: 0; pointer-events: none; }
+.hero-2d .hero-stage { background: radial-gradient(circle at 68% 50%, rgba(31,139,255,0.25), transparent 35%); }
+.hero-orbit2d { position: absolute; left: 68%; top: 50%; width: min(56vh, 40vw); aspect-ratio: 1; transform: translate(-50%, -50%); border: 1px solid rgba(31,139,255,0.35); border-radius: 50%; animation: spin2d 40s linear infinite; }
+.hero-orbit2d img { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; object-fit: contain; padding: 8px; border-radius: 50%; background: var(--ink); border: 1px solid rgba(31,139,255,0.6);
+  transform: rotate(calc(var(--i) / var(--n) * 360deg)) translateY(calc(min(56vh, 40vw) / -2)) rotate(calc(var(--i) / var(--n) * -360deg)) translate(-50%, -50%); }
+@keyframes spin2d { to { transform: translate(-50%, -50%) rotate(360deg); } }
+@media (max-aspect-ratio: 21/20) { .hero-orbit2d { left: 50%; top: 34%; width: min(70vw, 44vh); } }
+@media (prefers-reduced-motion: reduce) { .hero-play, .hero-ui, .hero-orbit2d { animation: none; } }
