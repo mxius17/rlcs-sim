@@ -1062,3 +1062,19 @@ body.hero-open { overflow: hidden; }
   .hero-play { padding: 12px 22px; font-size: 15px; }
   .hero-note { display: none; }
 }
+
+/* Logo safe area: every logo keeps a clear margin inside its badge at every size,
+   so square and tall logos never touch the rounded corners. */
+.badge.logo { box-sizing: border-box; padding: 6px; border-radius: 9px; }
+.badge.logo img { width: 100%; height: 100%; max-width: 100%; max-height: 100%; object-fit: contain; object-position: center; }
+.badge.logo.sm { padding: 4px; border-radius: 6px; }
+.badge.logo.lg { padding: 11px; border-radius: 16px; }
+.badge.logo.xl { padding: 16px; border-radius: 22px; }
+@media (max-width: 720px) { .badge.logo.lg { padding: 9px; border-radius: 14px; } }
+/* Pin the logo inside an explicit safe area (the grid track was letting the image render at its natural size) */
+.badge.logo { --lp: 6px; position: relative; display: inline-block; padding: 0; vertical-align: middle; }
+.badge.logo img { position: absolute; inset: var(--lp); width: calc(100% - 2 * var(--lp)); height: calc(100% - 2 * var(--lp)); object-fit: contain; }
+.badge.logo.sm { --lp: 4px; padding: 0; }
+.badge.logo.lg { --lp: 11px; padding: 0; }
+.badge.logo.xl { --lp: 16px; padding: 0; }
+@media (max-width: 720px) { .badge.logo.lg { --lp: 9px; padding: 0; } }
