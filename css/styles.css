@@ -1078,3 +1078,7 @@ body.hero-open { overflow: hidden; }
 .badge.logo.lg { --lp: 11px; padding: 0; }
 .badge.logo.xl { --lp: 16px; padding: 0; }
 @media (max-width: 720px) { .badge.logo.lg { --lp: 9px; padding: 0; } }
+
+/* Season picker (roster season select) */
+.season-pick { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-3); }
+.season-pick .select { width: auto; min-width: 170px; padding-top: 7px; padding-bottom: 7px; }

@@ -53,7 +53,8 @@
   function allTeams() {
     if (teamCache) return teamCache;
     const d27 = (window.RL_DATA27 && window.RL_DATA27.teams) || [];
-    const list = DATA.teams.map((t) => Object.assign({ season: '2026' }, t)).concat(d27.map((t) => Object.assign({ season: '2027' }, t)), state.customTeams.map((t) => Object.assign({ custom: true, season: 'custom' }, t)));
+    const hist = ((window.RL_HIST && window.RL_HIST.seasons) || []).flatMap((se) => se.teams.map((t) => Object.assign({ season: se.key }, t)));
+    const list = DATA.teams.map((t) => Object.assign({ season: '2026' }, t)).concat(d27.map((t) => Object.assign({ season: '2027' }, t)), hist, state.customTeams.map((t) => Object.assign({ custom: true, season: 'custom' }, t)));
     teamCache = list.map((t) => {
       const ed = state.teamEdits[t.id];
       const merged = Object.assign({}, t, ed ? { players: ed.players || t.players, name: ed.name || t.name, tag: ed.tag || t.tag, color: ed.color || t.color } : {});
@@ -68,14 +69,17 @@
   function getTeam(id) { if (typeof id === 'string' && id.startsWith('c:') && window.RLCareer) { const ct = window.RLCareer.teamObj(id); if (ct) return ct; } if (!tmap) tmap = teamMap(); return tmap[id] || { id, name: 'Unknown', tag: '??', color: '#555', players: [{ name: 'P1', rating: 60 }, { name: 'P2', rating: 60 }, { name: 'P3', rating: 60 }], region: 'EU' }; }
   function invalidateTeams() { teamCache = null; tmap = null; }
   const HAS27 = !!(window.RL_DATA27 && window.RL_DATA27.teams && window.RL_DATA27.teams.length);
-  const curSeason = () => (HAS27 ? state.settings.season || '2027' : '2026');
-  const seasonLabel = (s) => (s === '2027' ? 'RLCS 2027' : 'RLCS 2026');
+  const HIST = (window.RL_HIST && window.RL_HIST.seasons) || [];
+  /** Every roster season the app knows, newest first: 2027 (current), 2026, then the archive (2025 … 2021-22). */
+  const SEASON_KEYS = (HAS27 ? ['2027'] : []).concat(['2026'], HIST.map((x) => x.key));
+  const curSeason = () => { const v = state.settings.season; return SEASON_KEYS.includes(v) ? v : SEASON_KEYS[0]; };
+  const seasonLabel = (s) => 'RLCS ' + s;
   function rankedTeams(season) { const se = season || curSeason(); return allTeams().filter((t) => t.season === se || t.custom).sort((a, b) => b.ovr - a.ovr || a.name.localeCompare(b.name)); }
-  const seasonSeg = (action) => HAS27 ? `<div class="seg" role="tablist" aria-label="Roster season">${['2027', '2026'].map((k) => `<button class="${curSeason() === k ? 'active' : ''}" data-action="${action || 'set-season'}" data-v="${k}">${seasonLabel(k)}</button>`).join('')}</div>` : '';
+  const seasonSeg = (action) => SEASON_KEYS.length > 1 ? `<label class="season-pick"><span>Season</span><select class="select" data-season-select="${action || 'set-season'}" aria-label="Roster season">${SEASON_KEYS.map((k) => `<option value="${k}" ${curSeason() === k ? 'selected' : ''}>${seasonLabel(k)}${k === '2027' ? ' · current' : ''}</option>`).join('')}</select></label>` : '';
 
   const LOGOS = window.RL_LOGOS || {};
   const badge = (t, cls) => {
-    const logo = t && LOGOS[t.name];
+    const logo = t && (LOGOS[t.logoKey] || LOGOS[t.name]);
     if (logo) return `<span class="badge logo ${cls || ''}" style="--c:${esc(t.color || '#2f8cff')}" title="${esc(t.name)}" aria-hidden="true"><img src="${logo}" alt="" decoding="async" /></span>`;
     return `<span class="badge ${cls || ''}" style="--c:${esc(t.color || '#2f8cff')}" aria-hidden="true">${esc((t.tag || t.name || '?').slice(0, 4))}</span>`;
   };
@@ -1106,6 +1110,12 @@
     ];
     list.forEach((c) => (c.season = c.season || '2026'));
     if (HAS27) list.unshift(...competitions27());
+    HIST.forEach((se) => se.events.forEach((e, i) => {
+      const byName = {}; se.teams.forEach((t) => (byName[t.name] = 'h' + se.key + '-' + t.id.replace(/^h[^-]*-/, '')));
+      const ids = e.teams.map((n) => { const t = se.teams.find((x) => x.name === n); return t && t.id; }).filter(Boolean);
+      list.push({ id: 'arch-' + se.key + '-' + i, season: se.key, mono: e.worlds ? 'WC' : 'M' + (i + 1), color: e.worlds ? '#F2542D' : '#1F8BFF', name: e.name, sub: se.key + ' · ' + e.size + ' teams · won by ' + (e.winner || 'TBD'),
+        info: { where: e.where, date: e.date, winner: e.winner || '—', runnerUp: e.runnerUp || '—' }, format: e.format, groupSize: e.groupSize, advance: e.advance, size: e.size, teams: () => ids, fmtText: e.fmtText });
+    }));
     Object.entries(REGIONS).forEach(([k, v]) => list.push({ id: 'open-' + k, mono: k, color: REGION_COLORS[k], name: v + ' Open', sub: '2026 · regional open · 16 teams', season: '2026', region: k, format: 'swiss', size: 16, teams: () => rankedTeams('2026').filter((t) => t.region === k).map((t) => t.id), fmtText: '16-team Swiss stage (3 wins to qualify, 3 losses out), then an eight-team playoff.' }));
     return list;
   }
@@ -1228,7 +1238,15 @@
         </div>
       </div>
 
-      <div class="tile-grid">${compList.filter((c) => c.season !== '2027').map((c) => `<button class="comp-tile" data-action="comp" data-v="${c.id}" style="--c:${c.color}"><span class="comp-ico">${esc(c.mono)}</span><span class="comp-txt"><b>${esc(c.name)}</b><small>${esc(c.sub)}</small></span></button>`).join('') || '<p class="muted">No competitions match.</p>'}</div>
+      <div class="tile-grid">${compList.filter((c) => c.season === '2026').map((c) => `<button class="comp-tile" data-action="comp" data-v="${c.id}" style="--c:${c.color}"><span class="comp-ico">${esc(c.mono)}</span><span class="comp-txt"><b>${esc(c.name)}</b><small>${esc(c.sub)}</small></span></button>`).join('') || '<p class="muted">No competitions match.</p>'}</div>
+
+      ${HIST.length ? (() => {
+        const ak = HIST.some((x) => x.key === state.ui.archive) ? state.ui.archive : HIST[0].key;
+        const se = HIST.find((x) => x.key === ak);
+        return `<div class="home-h-row"><h2 class="home-h">Season archive</h2><div class="seg" role="tablist" aria-label="Archive season">${HIST.map((x) => `<button class="${x.key === ak ? 'active' : ''}" data-action="archive" data-v="${x.key}">${x.key}</button>`).join('')}</div></div>
+        <p class="help" style="margin:-6px 0 0">${esc(se.label)}: real fields and rosters from every Major and the World Championship. Pick one to simulate it again.</p>
+        <div class="tile-grid">${compList.filter((c) => c.season === ak).map((c) => `<button class="comp-tile" data-action="comp" data-v="${c.id}" style="--c:${c.color}"><span class="comp-ico">${esc(c.mono)}</span><span class="comp-txt"><b>${esc(c.name)}</b><small>${esc(c.sub)}</small></span></button>`).join('') || '<p class="muted">No competitions match.</p>'}</div>`;
+      })() : ''}
 
       <div class="home-h-row"><h2 class="home-h">Regional leagues</h2>${seasonSeg()}</div>
       <div class="tile-grid">${Object.entries(REGIONS).map(([k, v]) => `<button class="comp-tile" data-action="region-league" data-v="${k}" style="--c:${REGION_COLORS[k]}"><span class="comp-ico">${k}</span><span class="comp-txt"><b>${esc(v)}</b><small>${regionCounts[k] || 0} teams · ${seasonLabel(curSeason())} · league + playoffs</small></span></button>`).join('')}</div>
@@ -1308,7 +1326,7 @@
       <div class="page-head"><button class="btn sm" data-action="nav" data-v="home">← Back to modes</button><h1>Team rankings</h1><div class="head-actions">${seasonSeg()}<span class="count-pill">${rankedTeams().length} teams</span></div></div>
       <div class="bento">
         <section class="tile c-12">
-          <div class="tile-head"><div><h2>${seasonLabel(curSeason())} rosters</h2><p>${curSeason() === '2027' ? 'Current rosters as of ' + esc((window.RL_DATA27 || {}).asOf || '') + '. ' : ''}Ratings are estimates from 2026 results. Select a team to edit its name, players or ratings.</p></div>
+          <div class="tile-head"><div><h2>${seasonLabel(curSeason())} rosters</h2><p>${curSeason() === '2027' ? 'Current rosters as of ' + esc((window.RL_DATA27 || {}).asOf || '') + '. ' : HIST.some((x) => x.key === curSeason()) ? 'Rosters from that season\'s Majors and World Championship. ' : ''}Ratings are estimates from ${curSeason() === '2027' || curSeason() === '2026' ? '2026' : 'that season\'s'} results. Select a team to edit its name, players or ratings.</p></div>
             <div class="toolbar"><div class="search"><input class="input" id="rankQ" placeholder="Search teams or players" value="${esc(state.ui.rankQuery || '')}" aria-label="Search teams or players" /></div></div></div>
           <div class="seg" style="margin-bottom:12px">${[['all', 'All'], ...Object.keys(REGIONS).map((k) => [k, k])].map(([k, v]) => `<button class="${k === reg ? 'active' : ''}" data-action="rank-region" data-v="${k}" title="${esc(REGIONS[k] || 'All regions')}">${v}</button>`).join('')}</div>
           <div class="table-wrap"><table class="st rank-table"><thead><tr><th>#</th><th class="l">Team</th><th class="l">Region</th><th class="l hide-sm">Roster</th><th class="l hide-sm">Worlds 2026</th><th>OVR</th></tr></thead><tbody>
@@ -1373,6 +1391,7 @@
       }
       case 'rank-region': state.ui.rankRegion = v; render(); break;
       case 'set-season': state.settings.season = v; save(); render(); break;
+      case 'archive': state.ui.archive = v; render(); break;
       case 'browse-season': state.settings.season = v; save(); openBrowse(); break;
       case 'discard-t': stopLive(); state.T = null; persistRender(); toast('Saved tournament deleted.'); break;
       case 'format': s.title = null; s.format = v; if (v === 'major') s.size = 16; snapSize(); s.overrides = {}; if (s.teams.length) s.teams = s.quickFill === 'random' ? s.teams : arrangeForFormat(s.teams); persistRender(); break;
@@ -1459,6 +1478,11 @@
 
   document.addEventListener('change', (ev) => {
     const el = ev.target;
+    if (el.dataset && el.dataset.seasonSelect) {
+      state.settings.season = el.value; save();
+      if (el.dataset.seasonSelect === 'browse-season') openBrowse(); else render();
+      return;
+    }
     const k = el.dataset && el.dataset.bind;
     if (!k) return;
     const s = state.setup;
@@ -1500,7 +1524,7 @@
     state.setup.quickFill = 'top';
     autoFill(false);
   }
-  $('#dataStamp').textContent = 'Rosters: ' + (HAS27 ? 'RLCS 2027 (as of ' + window.RL_DATA27.asOf + ') · ' : '') + 'RLCS 2026: ' + DATA.updated;
+  $('#dataStamp').textContent = 'Rosters: ' + (HAS27 ? 'RLCS 2027 (as of ' + window.RL_DATA27.asOf + ') · ' : '') + 'RLCS 2026: ' + DATA.updated + (HIST.length ? ' · archive: RLCS ' + HIST.map((x) => x.key).reverse().join(', ') : '');
   const fromHash = () => { const h = (location.hash || '').replace('#', ''); return h === 'custom-tournament' ? 'setup' : h === 'tournament' && state.T ? 'tournament' : h === 'teams' ? 'teams' : h === 'career' ? 'career' : 'home'; };
   state.view = fromHash();
   window.addEventListener('hashchange', () => { const v = fromHash(); if (v !== state.view) { stopLive(); state.view = v; render(); } });
