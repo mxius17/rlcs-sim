@@ -181,7 +181,11 @@
         const k0 = c.shooter; if (k0 && !k0.dead) { k0.flip = null; this.ring(b.x, b.y, 'rgba(255,255,255,0.6)', 300); }
       } else if (t >= c.tPass) {
         const hitter = c.passer || c.shooter;
-        if (c.passer) {
+        if (c.kind === 'doubletap') {
+          launch(b, c.bb[0], c.bb[1], c.bb[2], Math.max(0.4, c.tBB - t));
+          this.strike(c.shooter, b);
+          c.phase = 'bb';
+        } else if (c.passer) {
           // centre / pass into the shooting spot
           launch(b, c.spot[0], c.spot[1], c.spotZ, Math.max(0.5, c.tShot - t));
           this.strike(hitter, b);
@@ -211,11 +215,36 @@
       }
       if (t >= c.tShot) c.phase = 'shoot';
     }
-    if (c.phase === 'pass' && t >= c.tShot) c.phase = 'shoot';
+    if (c.phase === 'bb' && t >= c.tBB) {
+      // off the backboard and back out to where the second touch is made
+      launch(b, c.spot[0], c.spot[1], c.spotZ, Math.max(0.3, c.tShot - t));
+      this.ring(b.x, b.y, 'rgba(255,255,255,0.7)', 380);
+      c.phase = 'rebound';
+    }
+    if ((c.phase === 'pass' || c.phase === 'rebound' || c.phase === 'bb') && c.spotZ > 250) {
+      // aerial to meet it: take off in time, boost up the line of the shot
+      const k = c.shooter, tUp = clamp(c.spotZ / 750, 0.5, 1.35), rem = c.tShot - t;
+      if (k && !k.dead && rem < tUp) {
+        if (!c.up) c.up = [k.x, k.y, k.z];
+        const q = clamp(1 - rem / tUp, 0, 1);
+        const [ux, uy] = norm(c.target[0] - c.spot[0], c.target[1] - c.spot[1]);
+        const ex = c.spot[0] - ux * 170, ey = c.spot[1] - uy * 170, ez = Math.max(17, c.spotZ - 90);
+        const nx = c.up[0] + (ex - c.up[0]) * q, ny = c.up[1] + (ey - c.up[1]) * q;
+        k.hd = Math.atan2(ny - k.y, nx - k.x) || k.hd;
+        k.x = nx; k.y = ny; k.z = c.up[2] + (ez - c.up[2]) * (q * (2 - q));
+        k.vz = 0; k.air = true; k.wall = false; k.flip = null; k.boosting = true; k.boost = Math.max(0, k.boost - 25 / 90); k.v = 1400; k.pinned = true;
+      }
+    }
+    if ((c.phase === 'pass' || c.phase === 'rebound') && t >= c.tShot) c.phase = 'shoot';
     if (c.phase === 'shoot') {
       launch(b, c.target[0], c.target[1], c.target[2], Math.max(0.25, c.e.t - t));
       this.strike(c.shooter, b);
       if (c.onHood && !c.passer) this.burst(b.x, b.y, 'rgba(255,255,255,0.7)', 6); // the flick
+      const kmhNow = Math.round(Math.hypot(b.vx, b.vy, b.vz) * 0.036);
+      const label = { pinch: 'Pinch', doubletap: 'Double tap', redirect: c.spotZ > 250 ? 'Aerial redirect' : 'Redirect', pass: 'One-timer', chip: 'Chip', airdribble: 'Air dribble', power: c.spotZ > 200 ? 'Half-volley' : 'Power shot' }[c.kind] || 'Shot';
+      if (c.kind === 'pinch') { this.burst(b.x, b.y, '#ffffff', 22); this.ring(b.x, b.y, '#ffffff', 900); this.shake = Math.max(this.shake || 0, 0.18); }
+      if (c.kind === 'redirect' || c.kind === 'doubletap') this.burst(b.x, b.y, c.e.side === 'A' ? BLUE : ORANGE, 10);
+      this.fx.push({ k: 'txt', x: b.x, y: b.y, z: b.z, text: label.toUpperCase() + ' · ' + kmhNow + ' KM/H', life: 0, max: 1.6, delay: 0 });
       this.ring(b.x, b.y, 'rgba(255,255,255,0.9)', 420);
       c.phase = 'flight';
       this.flight = c;
@@ -279,46 +308,59 @@
     const s = e.side === 'A' ? 1 : -1; // attacking direction
     const b = this.ball;
     const kmh = e.speed || rnd(80, 120);
-    const v = clamp(kmh / 0.036, 1900, 5000);
-    const aerial = Math.random() < (e.type === 'goal' ? 0.32 : 0.22);
-    const spot = [s * rnd(L - 3000, L - 1300), rnd(-1500, 1500)];
-    const spotZ = aerial ? rnd(320, 900) : BR;
-    let target;
-    if (e.type === 'goal') target = [s * (L + BR + 120), rnd(-GW * 0.78, GW * 0.78), rnd(BR, GH - 140)];
-    else if (e.type === 'save') target = [s * (L - 40), rnd(-GW * 0.75, GW * 0.75), rnd(BR, GH - 160)];
-    else if (Math.random() < 0.5) target = [s * (L - BR), rnd(-GW, GW), rnd(GH + 150, GH + 600)]; // off the backboard
-    else target = [s * (L - BR), sgn(rnd(-1, 1)) * rnd(GW + 120, GW + 900), rnd(BR, 500)]; // wide of the post
-    const flightT = len(target[0] - spot[0], target[1] - spot[1]) / v;
+    let v = clamp(kmh / 0.036, 1900, 5000);
+    const avail = e.t - t;
     const shooter = this.carFor(e.side, e.shooter || e.scorer);
     const mates = this.cars.filter((k) => k.side === e.side && k !== shooter);
     let passer = null;
     if (e.assist) passer = this.carFor(e.side, e.assist);
     else if (Math.random() < 0.4) passer = mates[Math.floor(Math.random() * mates.length)];
     if (passer === shooter) passer = null;
-    const avail = e.t - t;
-    if (avail < flightT + 1.6) passer = null; // no time to build it up: a quick shot / rebound
+    // outcome target
+    let target;
+    if (e.type === 'goal') target = [s * (L + BR + 120), rnd(-GW * 0.78, GW * 0.78), rnd(BR, GH - 140)];
+    else if (e.type === 'save') target = [s * (L - 40), rnd(-GW * 0.75, GW * 0.75), rnd(BR, GH - 160)];
+    else if (Math.random() < 0.5) target = [s * (L - BR), rnd(-GW, GW), rnd(GH + 150, GH + 600)]; // off the backboard
+    else target = [s * (L - BR), sgn(rnd(-1, 1)) * rnd(GW + 120, GW + 900), rnd(BR, 500)]; // wide of the post
+    // how the shot is made
+    const airDur = rnd(1.1, 2.0);
+    let kind;
+    const r = Math.random();
+    if ((!passer || (!e.assist && Math.random() < 0.5)) && avail > airDur + 1.2 && Math.random() < (e.type === 'goal' ? 0.3 : 0.22)) { kind = 'airdribble'; passer = null; }
+    else if (passer) kind = r < 0.4 ? 'redirect' : 'pass';
+    else kind = r < 0.2 ? 'pinch' : r < 0.36 ? 'doubletap' : r < 0.5 ? 'chip' : 'power';
+    const wing = sgn(b.y || rnd(-1, 1));
+    let spot = [s * rnd(L - 3000, L - 1300), rnd(-1500, 1500)], spotZ = BR;
+    if (kind === 'pinch') { spot = [s * rnd(L - 2700, L - 1300), wing * (W - BR - 20)]; spotZ = rnd(BR, 260); v = rnd(4400, 5600); }
+    else if (kind === 'doubletap') { spot = [s * rnd(L - 1500, L - 950), rnd(-650, 650)]; spotZ = rnd(380, 820); v = clamp(v, 2600, 4600); }
+    else if (kind === 'redirect') { spot = [s * rnd(L - 2200, L - 1000), rnd(-1200, 1200)]; spotZ = rnd(320, 1000); v = clamp(v * 1.1, 2700, 5200); }
+    else if (kind === 'chip') { spot = [s * rnd(L - 3700, L - 2500), rnd(-1800, 1800)]; v = rnd(1500, 2100); if (e.type !== 'shot') target[2] = Math.max(target[2], rnd(380, GH - 120)); }
+    else if (kind === 'airdribble') spotZ = rnd(450, 1050);
+    else if (kind === 'power' && Math.random() < 0.3) spotZ = rnd(220, 480); // half-volley off a bounce
+    const flightT = len(target[0] - spot[0], target[1] - spot[1]) / v;
+    // not enough time to build the play: fall back to a quick shot / rebound
+    if ((passer && avail < flightT + 1.6) || (kind === 'doubletap' && avail < flightT + 2.4)) { passer = null; if (kind !== 'airdribble') { kind = 'power'; spotZ = Math.min(spotZ, 480); } }
     const defSide = e.side === 'A' ? 'B' : 'A';
     const saver = e.type === 'save' ? this.carFor(defSide, e.saver) : null;
     const tShot = e.t - flightT;
-    // air dribble: pop it up (off the floor or out of a wall roll), then carry it through the air with light touches
-    const airDur = rnd(1.1, 2.0);
-    const airDrib = (!passer || (!e.assist && Math.random() < 0.5)) && tShot - t > airDur + 0.4 && Math.random() < (e.type === 'goal' ? 0.55 : 0.4);
-    if (airDrib) passer = null;
-    const tPass = passer ? tShot - rnd(0.9, 1.4) : tShot;
-    // where the carry goes: down a wing for a centre, or straight into the slot for a solo shot
-    const wing = sgn(b.y || rnd(-1, 1));
-    const carryTo = passer ? [s * rnd(L - 3200, L - 1600), wing * rnd(2300, 3300)] : spot;
-    [shooter, passer, saver].forEach((k) => { if (k && k.dead) { k.dead = 0; k.x = b.x - s * 1500; k.y = clamp(b.y, -2000, 2000); k.z = 17; } });
-    let airZ = spotZ, carryTo2 = carryTo, wall = false;
-    if (airDrib) {
-      airZ = rnd(450, 1050);
+    let tPass = passer ? tShot - rnd(0.9, 1.4) : tShot, tBB = 0, bb = null;
+    if (kind === 'doubletap') {
+      // first hit onto the backboard, it comes back off the wall, second touch redirects it in
+      tBB = tShot - rnd(0.55, 0.8); tPass = tBB - rnd(0.7, 0.95);
+      bb = [s * (L - BR - 5), clamp(spot[1] * 1.3 + rnd(-300, 300), -1500, 1500), rnd(GH + 180, GH + 650)];
+    }
+    let carryTo = passer ? [s * rnd(L - 3200, L - 1600), wing * rnd(2300, 3300)] : spot;
+    if (kind === 'doubletap') carryTo = [s * rnd(L - 3300, L - 2400), rnd(-1200, 1200)];
+    let wall = false;
+    if (kind === 'airdribble') {
       wall = Math.random() < 0.4;
       const back = airDur * rnd(1000, 1250);
-      carryTo2 = wall ? [s * clamp(spot[0] * s - back * 0.8, -L + 1500, L - 1600), sgn(spot[1] || b.y || 1) * (W - 260)]
+      carryTo = wall ? [s * clamp(spot[0] * s - back * 0.8, -L + 1500, L - 1600), sgn(spot[1] || b.y || 1) * (W - 260)]
         : [s * clamp(spot[0] * s - back, -L + 1500, L - 1600), clamp(spot[1] * 0.6 + rnd(-500, 500), -2600, 2600)];
     }
-    const hood = !passer && !aerial && !airDrib && tShot - t > 1.6 && Math.random() < 0.4;
-    this.cur = { e, s, spot, spotZ: airDrib ? airZ : spotZ, target, shooter, passer, saver, tShot, tPass, carryTo: carryTo2, phase: tShot - t < 0.25 ? 'shoot' : 'carry', aerial, hood, airDrib, airDur, wall, tLift: tShot - airDur };
+    [shooter, passer, saver].forEach((k) => { if (k && k.dead) { k.dead = 0; k.x = b.x - s * 1500; k.y = clamp(b.y, -2000, 2000); k.z = 17; } });
+    const hood = (kind === 'power' || kind === 'chip') && tShot - t > 1.6 && Math.random() < 0.35;
+    this.cur = { e, s, kind, spot, spotZ, target, shooter, passer, saver, tShot, tPass, tBB, bb, carryTo, phase: tShot - t < 0.25 ? 'shoot' : 'carry', hood, airDrib: kind === 'airdribble', airDur, wall, tLift: tShot - airDur };
   };
 
   /* ================= free play: where each car wants to be ================= */
@@ -399,7 +441,7 @@
         const off = c.onHood ? 30 : 200; // under the ball when it sits on the hood
         out.set(carrier, { x: b2.x - ux * off, y: b2.y - uy * off, boost: true, role: 1, carry: true });
         if (ps) out.set(sh, { x: c.spot[0] - c.s * 900, y: c.spot[1] * 0.7, boost: true, role: 2 });
-      } else if (c.phase === 'pass') {
+      } else if (c.phase === 'pass' || c.phase === 'bb' || c.phase === 'rebound') {
         out.set(sh, { x: c.spot[0] - c.s * 220, y: c.spot[1], boost: true, role: 1, arriveBy: c.tShot });
       }
       if (sv && !sv.dead && c.e.type === 'save') {
@@ -579,6 +621,13 @@
         tx = mate ? clamp(mate.x + s * 1400, -L + 600, L - 600) : s * L * 0.5; ty = mate ? clamp(mate.y * 0.7, -3000, 3000) : rnd(-2500, 2500); tz = rnd(BR, 450); T = rnd(1, 1.6);
       } else { tx = s * rnd(L * 0.5, L * 0.9); ty = sgn(rnd(-1, 1)) * rnd(1500, 3600); tz = rnd(BR, 700); T = rnd(1.1, 1.8); }
     } else {
+      if (Math.abs(b.y) > 2300 && depth > L - 2400 && r < 0.3) {
+        // pinched against the corner/side wall: it shoots out across the face of goal
+        launch(b, s * rnd(L - 2400, L - 900), -sgn(b.y) * rnd(0, 1600), rnd(150, 650), rnd(0.4, 0.6)); capLift(b);
+        k.cd = 0.9; k.rotT = rnd(2.2, 3.4); k.dribbles = 0; this.lastTouch = k;
+        this.burst(b.x, b.y, '#ffffff', 14); this.ring(b.x, b.y, '#ffffff', 600);
+        return;
+      }
       if (r < 0.5) { tx = s * rnd(L - 2200, L - 1200); ty = rnd(-1000, 1000); tz = rnd(250, 950); T = rnd(0.9, 1.4); } // centre
       else if (r < 0.8) { tx = s * (L - BR); ty = rnd(-GW, GW); tz = rnd(GH + 200, GH + 700); T = rnd(0.7, 1.1); } // backboard read
       else { tx = s * rnd(L * 0.4, L * 0.75); ty = sgn(b.y || 1) * rnd(2600, 3600); tz = rnd(BR, 400); T = rnd(0.8, 1.3); } // reset to the corner
@@ -742,7 +791,13 @@
       f.life += dtReal;
       const p = f.life / f.max;
       if (p >= 1) return false;
-      if (f.k === 'ring') {
+      if (f.k === 'txt') {
+        ctx.font = '700 12px "Inter Tight", Inter, sans-serif'; ctx.textAlign = 'center';
+        const tx = clamp(X(f.x), 90, VW - 90), ty = clamp(Y(f.y) - (f.z - BR) * S * LIFT - 22 - p * 14, 20, VH - 70);
+        ctx.globalAlpha = p < 0.75 ? 1 : (1 - p) * 4;
+        ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillText(f.text, tx + 1, ty + 1); ctx.fillStyle = '#ffffff'; ctx.fillText(f.text, tx, ty);
+        ctx.globalAlpha = 1;
+      } else if (f.k === 'ring') {
         ctx.beginPath(); ctx.arc(X(f.x), Y(f.y), f.r * S * p + 4, 0, Math.PI * 2);
         ctx.strokeStyle = f.color; ctx.globalAlpha = 1 - p; ctx.lineWidth = 4 * (1 - p) + 1; ctx.stroke(); ctx.globalAlpha = 1;
       } else {
