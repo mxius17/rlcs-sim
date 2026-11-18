@@ -1039,3 +1039,26 @@ body.hero-open { overflow: hidden; }
 @keyframes spin2d { to { transform: translate(-50%, -50%) rotate(360deg); } }
 @media (max-aspect-ratio: 21/20) { .hero-orbit2d { left: 50%; top: 34%; width: min(70vw, 44vh); } }
 @media (prefers-reduced-motion: reduce) { .hero-play, .hero-ui, .hero-orbit2d { animation: none; } }
+
+/* Hero on phones and small screens */
+.hero { overscroll-behavior: none; height: 100vh; height: 100dvh; }
+.hero canvas { touch-action: pan-y; }
+@media (max-aspect-ratio: 21/20) and (max-height: 700px) {
+  .hero-ui { gap: 12px; padding-bottom: max(24px, env(safe-area-inset-bottom, 0px)); }
+  .hero-title { font-size: clamp(36px, 10.5vw, 52px); }
+  .hero-sub { font-size: 14px; line-height: 1.45; }
+  .hero-play { padding: 14px 26px; font-size: 16px; }
+  .hero-note { display: none; }
+}
+@media (max-aspect-ratio: 21/20) and (max-height: 600px) {
+  .hero-eyebrow { font-size: 11px; letter-spacing: 0.12em; }
+  .hero-sub { display: none; }
+}
+/* phones held sideways: compact text column on the left */
+@media (min-aspect-ratio: 21/20) and (max-height: 520px) {
+  .hero-ui { max-width: 46%; gap: 10px; padding-left: max(24px, env(safe-area-inset-left, 0px)); }
+  .hero-title { font-size: clamp(30px, 9vh, 46px); }
+  .hero-sub { font-size: 13px; line-height: 1.45; }
+  .hero-play { padding: 12px 22px; font-size: 15px; }
+  .hero-note { display: none; }
+}

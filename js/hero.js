@@ -200,22 +200,57 @@
   scene.add(sparks);
 
   /* ---------- layout: trophy beside the title on wide screens, above it on narrow ones ---------- */
+  /* ---------- layout: fit the trophy and its orbit into the space the text leaves free ----------
+     Wide screens: the area right of the text column. Tall screens (phones): the area above the text.
+     Works for any size, from an iPhone SE to a phone held sideways to a desktop monitor. */
   let wide = true;
+  const BASE_POS = new T.Vector3(0, 3.6, 13), BASE_LOOK = new T.Vector3(0, 2.2, 0);
+  const uiEl = hero.querySelector('.hero-ui');
+  function basePose() { camera.position.copy(BASE_POS); camera.lookAt(BASE_LOOK); camera.updateMatrixWorld(); }
+  function projectedBox(w, h) {
+    // the trophy (0..4.4 high) plus the orbit (radius ~3.6) in world units, projected to pixels
+    const pts = [[0, 0, 0], [0, 4.45, 0], [-4.2, 2.2, 0], [4.2, 2.2, 0], [0, 3.5, 3.6], [0, 1.4, 2.8]];
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    const v = new T.Vector3();
+    pts.forEach(([x, y, z]) => { v.set(x, y, z); world.localToWorld(v); v.project(camera); const px = (v.x + 1) / 2 * w, py = (1 - v.y) / 2 * h; x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py); });
+    return { x0, x1, y0, y1, w: x1 - x0, h: y1 - y0, cx: (x0 + x1) / 2, cy: (y0 + y1) / 2 };
+  }
   function resize() {
     const w = hero.clientWidth, h = hero.clientHeight;
     renderer.setSize(w, h, false);
-    camera.aspect = w / h;
     wide = w / h > 1.05;
-    camera.fov = wide ? 34 : 46;
+    camera.aspect = w / h; camera.fov = 38;
+    camera.clearViewOffset(); camera.updateProjectionMatrix();
+    world.position.set(0, 0, 0); world.scale.setScalar(1); world.updateMatrixWorld();
+    basePose();
+    const r = uiEl.getBoundingClientRect();
+    // free rectangle for the 3D scene
+    const free = wide ? { x0: Math.min(w * 0.62, r.left + Math.min(r.width, 560)), x1: w, y0: 0, y1: h }
+      : { x0: 0, x1: w, y0: Math.min(64, h * 0.08), y1: Math.max(h * 0.32, r.top - 8) };
+    const fw = free.x1 - free.x0, fh = free.y1 - free.y0;
+    const box = projectedBox(w, h);
+    const s = Math.min(1.25, (fw * 0.94) / box.w, (fh * 0.9) / box.h);
+    world.scale.setScalar(s); world.updateMatrixWorld();
+    const b2 = projectedBox(w, h);
+    // shift the rendered view so the scene's centre lands in the middle of the free rectangle
+    camera.setViewOffset(w, h, b2.cx - (free.x0 + fw / 2), b2.cy - (free.y0 + fh / 2), w, h);
     camera.updateProjectionMatrix();
-    world.position.set(wide ? 4.0 : 0, wide ? 0.2 : 3.1, 0);
-    world.scale.setScalar(wide ? 0.88 : 0.8);
   }
   window.addEventListener('resize', resize);
+  window.addEventListener('orientationchange', () => setTimeout(resize, 250));
   resize();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(resize);
+  setTimeout(resize, 400);
 
-  let mx = 0, my = 0;
-  hero.addEventListener('pointermove', (e) => { mx = (e.clientX / window.innerWidth - 0.5) * 2; my = (e.clientY / window.innerHeight - 0.5) * 2; });
+  // pointer parallax on desktop; on touch screens a swipe across the scene spins the trophy
+  let mx = 0, my = 0, spin = 0, spinVel = 0, dragX = null;
+  hero.addEventListener('pointermove', (e) => {
+    if (e.pointerType === 'mouse') { mx = (e.clientX / window.innerWidth - 0.5) * 2; my = (e.clientY / window.innerHeight - 0.5) * 2; }
+    else if (dragX != null) { spinVel += (e.clientX - dragX) * 0.0025; dragX = e.clientX; }
+  });
+  canvas.addEventListener('pointerdown', (e) => { dragX = e.clientX; });
+  window.addEventListener('pointerup', () => { dragX = null; });
+  window.addEventListener('pointercancel', () => { dragX = null; });
 
   const tmp = new T.Vector3();
   const ui = hero.querySelector('.hero-ui');
@@ -234,13 +269,13 @@
     const t = (now - t0) / 1000;
     const speed = reduceMotion ? 0.25 : 1;
     // camera: slow drift with a little parallax from the pointer
-    const camX = (wide ? 2.2 : 0) + mx * 0.6, camY = (wide ? 3.3 : 4.6) - my * 0.35 + Math.sin(t * 0.3 * speed) * 0.08;
-    camera.position.set(camX, camY, wide ? 11.5 : 14);
-    camera.lookAt(wide ? 2.4 : 0, wide ? 2.2 : 3.2, 0);
+    camera.position.set(BASE_POS.x + mx * 0.5, BASE_POS.y - my * 0.3 + Math.sin(t * 0.3 * speed) * 0.06, BASE_POS.z);
+    camera.lookAt(BASE_LOOK);
     // trophy rises in, then turns slowly
     const rise = reduceMotion ? 1 : ease(t / 1.6);
     cup.position.y = (1 - rise) * -2.2;
-    cup.rotation.y = t * 0.35 * speed;
+    spin += spinVel; spinVel *= 0.94;
+    cup.rotation.y = t * 0.35 * speed + spin;
     ball.rotation.y = -t * 0.9 * speed; ball.rotation.x = t * 0.4 * speed;
     ball.position.y = 3.95 + Math.sin(t * 1.6 * speed) * 0.08;
     azureGlow.emissiveIntensity = 1.2 + Math.sin(t * 2 * speed) * 0.3;
