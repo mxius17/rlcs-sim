@@ -32,6 +32,7 @@
   const norm = (x, y) => { const l = Math.hypot(x, y) || 1; return [x / l, y / l]; };
   const wrap = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
   const sgn = (v) => (v < 0 ? -1 : 1);
+  const d3 = (b, p) => Math.hypot(p[0] - b.x, p[1] - b.y, (p[2] == null ? b.z : p[2]) - b.z);
   function curvature(v) {
     for (let i = 1; i < CURV.length; i++) if (v <= CURV[i][0]) { const [a, ca] = CURV[i - 1], [b, cb] = CURV[i]; return ca + ((v - a) / (b - a)) * (cb - ca); }
     return CURV[CURV.length - 1][1];
@@ -101,7 +102,7 @@
       const tt = t - dt + h * (k + 1);
       if (frozen) { this.coast(h); continue; }
       this.kickT += h;
-      this.direct(tt, game);
+      this.direct(tt, game, h);
       this.stepCars(h, tt);
       this.stepBall(h);
       this.stepPads(h);
@@ -130,7 +131,8 @@
   function capLift(b) { const vmax = Math.sqrt(Math.max(0, 2 * G * (1300 - b.z))); if (b.vz > vmax) b.vz = vmax; }
 
   /* ================= director: stage the engine's events ================= */
-  Pitch.prototype.direct = function (t, game) {
+  Pitch.prototype.direct = function (t, game, h) {
+    h = h || 1 / 90;
     const evs = game.events;
     // demos: the attacker boosts into the victim
     for (let i = 0; i < evs.length; i++) {
@@ -143,9 +145,11 @@
         if (!vic.dead && !atk.dead) {
           vic.dead = 3; // RL respawn time
           this.burst(vic.x, vic.y, vic.side === 'A' ? BLUE : ORANGE, 30); this.ring(vic.x, vic.y, '#ffffff', 900);
-          atk.x = vic.x - Math.cos(atk.hd) * 200; atk.y = vic.y - Math.sin(atk.hd) * 200;
         }
-      } else if (!atk.dead && !vic.dead && !this.isActor(atk)) atk.demoOn = vic;
+      } else if (!atk.dead && !vic.dead && !this.isActor(atk)) {
+        atk.demoOn = vic;
+        this.hurry(atk, vic.x, vic.y, null, e.t - t, h, 150);
+      }
     }
     if (this.cur && this.cur.done) this.cur = null;
     if (!this.cur) {
@@ -162,6 +166,16 @@
     const c = this.cur;
     if (!c) return;
     const b = this.ball;
+    this.marks(c, t, h);
+    // look ahead: whoever takes the next shot starts closing in on the play while this one finishes
+    for (let i = 0; i < evs.length; i++) {
+      const e = evs[i];
+      if (this.handled.has(i) || e.type === 'demo' || e.t < t) continue;
+      if (e.t - t > 4) break;
+      const nk = this.carFor(e.side, e.shooter || e.scorer);
+      if (nk && !this.isActor(nk) && nk.dead <= 0) { const sx = e.side === 'A' ? 1 : -1; this.hurry(nk, clamp(b.x - sx * 700, -L + 600, L - 600), clamp(b.y, -W + 600, W - 600), null, Math.max(0.6, e.t - t - 0.8), h, 900); }
+      break;
+    }
     if (c.phase === 'carry') {
       // carry the ball to where the play is made (a dribble down the wing or into the slot)
       const [ox, oy] = c.carryTo;
@@ -181,15 +195,19 @@
         const k0 = c.shooter; if (k0 && !k0.dead) { k0.flip = null; this.ring(b.x, b.y, 'rgba(255,255,255,0.6)', 300); }
       } else if (t >= c.tPass) {
         const hitter = c.passer || c.shooter;
-        if (c.kind === 'doubletap') {
-          launch(b, c.bb[0], c.bb[1], c.bb[2], Math.max(0.4, c.tBB - t));
+        // the hit waits for the car to actually be on the ball, up to a deadline that still lets the ball arrive in time
+        const dl = c.kind === 'doubletap' ? c.tBB - Math.max(0.3, d3(b, c.bb) / 5000) : c.passer ? c.tShot - Math.max(0.45, d3(b, [c.spot[0], c.spot[1], c.spotZ]) / 4500) : 0;
+        const ready = this.near(hitter) || t >= dl;
+        if (!ready) { /* still on the way */ }
+        else if (c.kind === 'doubletap') {
+          launch(b, c.bb[0], c.bb[1], c.bb[2], Math.max(0.3, c.tBB - t));
           this.strike(c.shooter, b);
-          c.phase = 'bb';
+          c.phase = 'bb'; this.flight = c;
         } else if (c.passer) {
           // centre / pass into the shooting spot
-          launch(b, c.spot[0], c.spot[1], c.spotZ, Math.max(0.5, c.tShot - t));
+          launch(b, c.spot[0], c.spot[1], c.spotZ, Math.max(0.45, c.tShot - t));
           this.strike(hitter, b);
-          c.phase = 'pass';
+          c.phase = 'pass'; this.flight = c;
         } else {
           c.phase = 'shoot';
         }
@@ -208,9 +226,12 @@
       const tap = Math.floor(u * nTaps);
       if (tap > c.taps) { c.taps = tap; this.ring(b.x, b.y, 'rgba(255,255,255,0.45)', 160); }
       const k = c.shooter;
-      if (k && !k.dead) {
+      if (k && !k.dead && !k.pinned) {
         const [ux, uy] = norm(b.vx || c.s, b.vy);
-        k.x = b.x - ux * 150; k.y = b.y - uy * 150; k.z = Math.max(17, b.z - 105); k.vz = 0; k.air = true; k.wall = false;
+        const gx = b.x - ux * 150, gy = b.y - uy * 150, gz = Math.max(17, b.z - 105);
+        const gd = Math.hypot(gx - k.x, gy - k.y, gz - k.z), mx = 3400 * h;
+        const f = gd > mx ? mx / gd : 1;
+        k.x += (gx - k.x) * f; k.y += (gy - k.y) * f; k.z += (gz - k.z) * f; k.vz = 0; k.air = true; k.wall = false;
         k.hd = Math.atan2(uy, ux); k.v = len(b.vx, b.vy); k.boosting = true; k.boost = Math.max(0, k.boost - 20 / 90); k.pinned = true; k.flip = null;
       }
       if (t >= c.tShot) c.phase = 'shoot';
@@ -218,7 +239,7 @@
     if (c.phase === 'bb' && t >= c.tBB) {
       // off the backboard and back out to where the second touch is made
       launch(b, c.spot[0], c.spot[1], c.spotZ, Math.max(0.3, c.tShot - t));
-      this.ring(b.x, b.y, 'rgba(255,255,255,0.7)', 380);
+      this.ring(b.x, b.y, 'rgba(255,255,255,0.7)', 380); this.flight = c;
       c.phase = 'rebound';
     }
     if ((c.phase === 'pass' || c.phase === 'rebound' || c.phase === 'bb') && c.spotZ > 250) {
@@ -229,14 +250,16 @@
         const q = clamp(1 - rem / tUp, 0, 1);
         const [ux, uy] = norm(c.target[0] - c.spot[0], c.target[1] - c.spot[1]);
         const ex = c.spot[0] - ux * 170, ey = c.spot[1] - uy * 170, ez = Math.max(17, c.spotZ - 90);
-        const nx = c.up[0] + (ex - c.up[0]) * q, ny = c.up[1] + (ey - c.up[1]) * q;
+        const nx = c.up[0] + (ex - c.up[0]) * q, ny = c.up[1] + (ey - c.up[1]) * q, nz = c.up[2] + (ez - c.up[2]) * (q * (2 - q));
         k.hd = Math.atan2(ny - k.y, nx - k.x) || k.hd;
-        k.x = nx; k.y = ny; k.z = c.up[2] + (ez - c.up[2]) * (q * (2 - q));
+        // follow the take-off path, but never faster than a boosting car can fly
+        const md = Math.hypot(nx - k.x, ny - k.y, nz - k.z), mx = 3400 * h, f = md > mx ? mx / md : 1;
+        k.x += (nx - k.x) * f; k.y += (ny - k.y) * f; k.z += (nz - k.z) * f;
         k.vz = 0; k.air = true; k.wall = false; k.flip = null; k.boosting = true; k.boost = Math.max(0, k.boost - 25 / 90); k.v = 1400; k.pinned = true;
       }
     }
-    if ((c.phase === 'pass' || c.phase === 'rebound') && t >= c.tShot) c.phase = 'shoot';
-    if (c.phase === 'shoot') {
+    if ((c.phase === 'pass' || c.phase === 'rebound') && t >= c.tShot) { c.phase = 'shoot'; this.flight = null; }
+    if (c.phase === 'shoot' && (c.kind === 'airdribble' || this.near(c.shooter) || t >= this.shotDeadline(c))) {
       launch(b, c.target[0], c.target[1], c.target[2], Math.max(0.25, c.e.t - t));
       this.strike(c.shooter, b);
       if (c.onHood && !c.passer) this.burst(b.x, b.y, 'rgba(255,255,255,0.7)', 6); // the flick
@@ -253,7 +276,7 @@
       if (c.e.type === 'save') {
         const sv = c.saver;
         b.vx = -b.vx * rnd(0.25, 0.45); b.vy = b.vy * 0.3 + rnd(-1400, 1400); b.vz = rnd(300, 800);
-        if (sv && !sv.dead) { sv.x = b.x - c.s * 180; sv.y = b.y + rnd(-60, 60); sv.z = Math.max(17, b.z - 60); sv.vz = 300; sv.hd = c.s > 0 ? Math.PI : 0; sv.v = 600; sv.rotT = 1.5; }
+        if (sv && !sv.dead) { sv.vz = Math.max(sv.vz, 300); sv.air = sv.z > 20 || sv.air; sv.v = 600; sv.rotT = 1.5; }
         this.ring(b.x, b.y, '#ffffff', 600); this.burst(b.x, b.y, '#ffffff', 12);
         this.lastTouch = sv;
       }
@@ -263,16 +286,61 @@
     }
   };
 
+  /** Get a car to (x, y[, z]) within tLeft seconds. If its own driving won't make it, it is flown there on
+   *  a hard boost (visibly, never more than 3400 uu/s): cars move continuously and never jump across the pitch. */
+  Pitch.prototype.hurry = function (k, x, y, z, tLeft, h, slack, force) {
+    if (!k || k.dead > 0 || k.pinned) return false; // one move per step
+    const dx = x - k.x, dy = y - k.y, dz = z == null ? 0 : z - k.z, d = Math.hypot(dx, dy, dz);
+    if (d <= (slack || 120)) return false;
+    const need = d / Math.max(0.08, tLeft);
+    const facing = Math.abs(wrap(Math.atan2(dy, dx) - k.hd)) < 0.5;
+    if (!force && need < 1100 && (facing || tLeft > 1.2)) return false; // its own driving gets there
+    const sp = clamp(Math.max(need * 1.05, k.v), 1400, 3400), step = Math.min(d, sp * h);
+    k.x += (dx / d) * step; k.y += (dy / d) * step; k.z = Math.max(17, k.z + (dz / d) * step);
+    k.hd = wrap(k.hd + clamp(wrap(Math.atan2(dy, dx) - k.hd), -9 * h, 9 * h));
+    k.v = sp; k.boosting = k.boost > 0; k.boost = Math.max(0, k.boost - 33.3 * h); k.pinned = true; k.flip = null;
+    if (k.z > 22) { k.air = true; k.vz = 0; }
+    return true;
+  };
+
+  /** Keep the play's actors on schedule: carrier on the ball, shooter at the shooting spot, keeper on the line. */
+  Pitch.prototype.marks = function (c, t, h) {
+    const b = this.ball;
+    const carrier = c.passer || c.shooter;
+    if (c.phase === 'carry' && carrier) {
+      const [ux, uy] = norm(b.vx || c.s, b.vy);
+      const gx = b.x - ux * 200, gy = b.y - uy * 200, gd = len(gx - carrier.x, gy - carrier.y);
+      if (gd < 1000) this.hurry(carrier, gx, gy, null, gd / (len(b.vx, b.vy) + 2.5 * gd + 1), h, 60, true); // on the ball: stay on it
+      else this.hurry(carrier, gx, gy, null, Math.max(0.35, (c.tPass - t) * 0.5), h, 260);
+    }
+    if (c.passer && (c.phase === 'carry' || c.phase === 'pass') && !(c.spotZ > 250 && c.tShot - t < clamp(c.spotZ / 750, 0.5, 1.35)))
+      this.hurry(c.shooter, c.spot[0] - c.s * 220, c.spot[1], null, c.tShot - t, h, 260);
+    if ((c.phase === 'bb' || c.phase === 'rebound') && c.tShot - t > clamp(c.spotZ / 750, 0.5, 1.35))
+      this.hurry(c.shooter, c.spot[0] - c.s * 400, c.spot[1], null, c.tShot - t - 0.4, h, 300);
+    if (c.phase === 'shoot' && c.kind !== 'airdribble') {
+      const [ux, uy] = norm(c.target[0] - b.x, c.target[1] - b.y);
+      this.hurry(c.shooter, b.x - ux * 170, b.y - uy * 170, b.z > 220 ? b.z - 80 : null, Math.max(0.1, this.shotDeadline(c) - t), h, 100, true);
+    }
+    const sv = c.saver;
+    if (sv && !sv.dead && c.e.type === 'save') {
+      // be where the shot arrives, a car length off the line, at its height
+      const tz = c.target[2] > 200 ? c.target[2] - 60 : 17;
+      this.hurry(sv, c.target[0] - c.s * 180, c.target[1], c.phase === 'flight' && c.e.t - t < 0.6 ? tz : null, c.e.t - t, h, 220);
+    }
+  };
+
+  Pitch.prototype.near = function (k) { const b = this.ball; return !!k && k.dead <= 0 && Math.hypot(k.x - b.x, k.y - b.y, k.z + 40 - b.z) < 330; };
+  /** Latest moment a shot can still be struck and reach its target at a believable speed (≤ ~215 km/h). */
+  Pitch.prototype.shotDeadline = function (c) { return c.e.t - Math.max(0.25, d3(this.ball, c.target) / 6000); };
+
   Pitch.prototype.isActor = function (k) { const c = this.cur; return !!c && (k === c.shooter || k === c.passer || k === c.saver); };
 
   /** A car strikes the ball: put it on the ball for the hit, facing where the ball goes. */
   Pitch.prototype.strike = function (k, b) {
     if (!k || k.dead) return;
     const [hx, hy] = norm(b.vx, b.vy);
-    const tx = b.x - hx * 200, ty = b.y - hy * 200;
-    k.x += (tx - k.x) * 0.9; k.y += (ty - k.y) * 0.9;
-    k.hd = Math.atan2(hy, hx); k.v = Math.max(k.v, 1500);
-    if (b.z > 260) { k.z = Math.max(k.z, b.z - 80); k.vz = 200; k.air = true; }
+    k.v = Math.max(k.v, 1500);
+    if (b.z > 260 && k.z > 40) { k.vz = 200; k.air = true; }
     k.rotT = rnd(2.5, 3.8); k.cd = 0.8; k.dribbles = 0;
     if (k.z < 40) this.dodge(k, this.flipKind(k, b), this.flipSide(k, b));
     this.lastTouch = k;
@@ -319,11 +387,13 @@
     const kmh = e.speed || rnd(80, 120);
     let v = clamp(kmh / 0.036, 1900, 5000);
     const avail = e.t - t;
-    const shooter = this.carFor(e.side, e.shooter || e.scorer);
+    const alive = (k, side) => (k && k.dead <= 0 ? k : this.cars.filter((q) => q.side === side && q.dead <= 0).sort((p, q) => len(p.x - b.x, p.y - b.y) - len(q.x - b.x, q.y - b.y))[0] || k);
+    const shooter = alive(this.carFor(e.side, e.shooter || e.scorer), e.side);
     const mates = this.cars.filter((k) => k.side === e.side && k !== shooter);
     let passer = null;
     if (e.assist) passer = this.carFor(e.side, e.assist);
     else if (Math.random() < 0.4) passer = mates[Math.floor(Math.random() * mates.length)];
+    if (passer && passer.dead > 0) passer = null;
     if (passer === shooter) passer = null;
     // outcome target
     let target;
@@ -346,30 +416,60 @@
     else if (kind === 'chip') { spot = [s * rnd(L - 3700, L - 2500), rnd(-1800, 1800)]; v = rnd(1500, 2100); if (e.type !== 'shot') target[2] = Math.max(target[2], rnd(380, GH - 120)); }
     else if (kind === 'airdribble') spotZ = rnd(450, 1050);
     else if (kind === 'power' && Math.random() < 0.3) spotZ = rnd(220, 480); // half-volley off a bounce
-    const flightT = len(target[0] - spot[0], target[1] - spot[1]) / v;
-    // not enough time to build the play: fall back to a quick shot / rebound
-    if ((passer && avail < flightT + 1.6) || (kind === 'doubletap' && avail < flightT + 2.4)) { passer = null; if (kind !== 'airdribble') { kind = 'power'; spotZ = Math.min(spotZ, 480); } }
     const defSide = e.side === 'A' ? 'B' : 'A';
-    const saver = e.type === 'save' ? this.carFor(defSide, e.saver) : null;
-    const tShot = e.t - flightT;
-    let tPass = passer ? tShot - rnd(0.9, 1.4) : tShot, tBB = 0, bb = null;
-    if (kind === 'doubletap') {
-      // first hit onto the backboard, it comes back off the wall, second touch redirects it in
-      tBB = tShot - rnd(0.55, 0.8); tPass = tBB - rnd(0.7, 0.95);
-      bb = [s * (L - BR - 5), clamp(spot[1] * 1.3 + rnd(-300, 300), -1500, 1500), rnd(GH + 180, GH + 650)];
+    const saver = e.type === 'save' ? alive(this.carFor(defSide, e.saver), defSide) : null;
+    let shooterV = shooter; // the car that is shown taking the shot
+    let flightT, tShot, tPass, tBB, bb, carryTo, wall;
+    const build = () => {
+      flightT = len(target[0] - spot[0], target[1] - spot[1]) / v;
+      // not enough time to build the play: fall back to a quick shot / rebound
+      if ((passer && avail < flightT + 1.6) || (kind === 'doubletap' && avail < flightT + 2.4)) { passer = null; if (kind !== 'airdribble') { kind = 'power'; spotZ = Math.min(spotZ, 480); } }
+      if (kind === 'airdribble' && avail < flightT + airDur + 0.6) { kind = 'power'; spotZ = BR; }
+      tShot = e.t - flightT;
+      tPass = passer ? tShot - rnd(0.9, 1.4) : tShot; tBB = 0; bb = null;
+      if (kind === 'doubletap') {
+        // first hit onto the backboard, it comes back off the wall, second touch redirects it in
+        tBB = tShot - rnd(0.55, 0.8); tPass = tBB - rnd(0.7, 0.95);
+        bb = [s * (L - BR - 5), clamp(spot[1] * 1.3 + rnd(-300, 300), -1500, 1500), rnd(GH + 180, GH + 650)];
+      }
+      carryTo = passer ? [s * rnd(L - 3200, L - 1600), wing * rnd(2300, 3300)] : spot;
+      if (kind === 'doubletap') carryTo = [s * rnd(L - 3300, L - 2400), rnd(-1200, 1200)];
+      wall = false;
+      if (kind === 'airdribble') {
+        wall = Math.random() < 0.4;
+        const back = airDur * rnd(1000, 1250);
+        carryTo = wall ? [s * clamp(spot[0] * s - back * 0.8, -L + 1500, L - 1600), sgn(spot[1] || b.y || 1) * (W - 260)]
+          : [s * clamp(spot[0] * s - back, -L + 1500, L - 1600), clamp(spot[1] * 0.6 + rnd(-500, 500), -2600, 2600)];
+      }
+      // when the ball's first toucher must be on it, and where the ball is heading meanwhile
+      const tFirst = (kind === 'airdribble' ? tShot - airDur : tPass) - t;
+      return tFirst;
+    };
+    // can the cars actually get there? (a boosting car covers ~2600 uu/s with turns; the ball also comes toward them)
+    const REACH = 2600;
+    const tTo = (k, x, y) => (k ? len(k.x - x, k.y - y) / REACH : 99);
+    const nearest = (ex) => mates.concat([shooter]).filter((k) => k.dead <= 0 && !ex.includes(k)).sort((p, q) => tTo(p, b.x, b.y) - tTo(q, b.x, b.y))[0];
+    let tFirst = build();
+    const first = () => passer || shooterV;
+    if (tTo(first(), b.x, b.y) > tFirst + 0.15) {
+      if (passer) {
+        const n = nearest([shooterV]);
+        if (n && tTo(n, b.x, b.y) <= tFirst + 0.15) passer = n; else { passer = null; kind = 'power'; spotZ = Math.min(spotZ, 480); }
+      } else {
+        const n = nearest([shooterV]);
+        if (n && tTo(n, b.x, b.y) <= tFirst + 0.6 && avail > 2.2) { passer = n; kind = 'pass'; spotZ = BR; } // a teammate on the ball sets the shooter up
+      }
+      tFirst = build();
+      if (tTo(first(), b.x, b.y) > tFirst + 0.15) { const n = nearest([]); if (n) { if (passer && n !== shooterV) passer = n; else { shooterV = n; passer = null; } } tFirst = build(); }
     }
-    let carryTo = passer ? [s * rnd(L - 3200, L - 1600), wing * rnd(2300, 3300)] : spot;
-    if (kind === 'doubletap') carryTo = [s * rnd(L - 3300, L - 2400), rnd(-1200, 1200)];
-    let wall = false;
-    if (kind === 'airdribble') {
-      wall = Math.random() < 0.4;
-      const back = airDur * rnd(1000, 1250);
-      carryTo = wall ? [s * clamp(spot[0] * s - back * 0.8, -L + 1500, L - 1600), sgn(spot[1] || b.y || 1) * (W - 260)]
-        : [s * clamp(spot[0] * s - back, -L + 1500, L - 1600), clamp(spot[1] * 0.6 + rnd(-500, 500), -2600, 2600)];
+    // the receiver of a pass must reach the shooting spot: bring the spot to them if needed
+    if (passer && tTo(shooterV, spot[0], spot[1]) > tShot - t - 0.2) {
+      spot = [clamp(shooterV.x + s * 700, -L + 900, L - 900), clamp(shooterV.y * 0.85, -W + 900, W - 900)];
+      tFirst = build();
+      if (passer && tTo(passer, b.x, b.y) > tFirst + 0.3) passer = null, kind = 'power', build();
     }
-    [shooter, passer, saver].forEach((k) => { if (k && k.dead) { k.dead = 0; k.x = b.x - s * 1500; k.y = clamp(b.y, -2000, 2000); k.z = 17; } });
     const hood = (kind === 'power' || kind === 'chip') && tShot - t > 1.6 && Math.random() < 0.35;
-    this.cur = { e, s, kind, spot, spotZ, target, shooter, passer, saver, tShot, tPass, tBB, bb, carryTo, phase: tShot - t < 0.25 ? 'shoot' : 'carry', hood, airDrib: kind === 'airdribble', airDur, wall, tLift: tShot - airDur };
+    this.cur = { e, s, kind, spot, spotZ, target, shooter: shooterV, passer, saver, tShot, tPass, tBB, bb, carryTo, phase: tShot - t < 0.25 ? 'shoot' : 'carry', hood, airDrib: kind === 'airdribble', airDur, wall, tLift: tShot - airDur };
   };
 
   /* ================= free play: where each car wants to be ================= */
@@ -570,6 +670,7 @@
       // jumping / aerials
       if (!k.wall && (k.z > 17 || k.air)) {
         k.vz -= G * h; k.z += k.vz * h;
+        if (k.z > CEIL - 40) { k.z = CEIL - 40; k.vz = Math.min(0, k.vz); } // ceiling
         if (k.z <= 17) {
           // landing: wheels first and keep the momentum (wavedash-style recovery)
           if (k.vz < -450) { k.v = Math.min(2300, k.v + 250); this.burst(k.x, k.y, 'rgba(255,255,255,0.45)', 5); }
@@ -582,7 +683,7 @@
         k.airCd = rnd(3, 6);
         // go up for it: jump + boost toward the ball's height
         const tUp = clamp(hd / Math.max(800, k.v), 0.35, 1.3);
-        k.vz = (b.z + b.vz * tUp - k.z + 0.5 * G * tUp * tUp) / tUp; k.air = true; k.boost = Math.max(0, k.boost - 10);
+        k.vz = Math.min(1250, (b.z + b.vz * tUp - k.z + 0.5 * G * tUp * tUp) / tUp); k.air = true; k.boost = Math.max(0, k.boost - 10);
       }
     });
     // spacing: cars bump rather than overlap
