@@ -1279,7 +1279,7 @@
         ${i27 ? `<div class="kv"><span>Status</span><b>${esc(i27.status)}</b></div>${i27.prize ? `<div class="kv"><span>Prize pool</span><span>${esc(i27.prize)}</span></div>` : ''}` : ''}
         ${c.projected && c.projected.length ? `<div class="kv"><span>Projected</span><span class="muted">${esc(c.projected.join('; '))}</span></div>` : ''}
         <div class="kv"><span>Format</span><span>${esc(c.fmtText)}</span></div>
-        <div class="field-label" style="margin:14px 0 8px">Field · ${teams.length} teams (${se === '2027' ? 'RLCS 2027 rosters as of ' + esc(window.RL_DATA27.asOf) : 'RLCS 2026 rosters'})</div>
+        <div class="field-label" style="margin:14px 0 8px">Field · ${teams.length} teams (${se === '2027' ? 'RLCS 2027 rosters as of ' + esc(window.RL_DATA27.asOf) : seasonLabel(se) + ' rosters'})</div>
         <div class="team-grid">${teams.map((t) => `<div class="team-chip">${badge(t)}<div class="meta"><div class="name">${esc(t.name)}</div><div class="sub">OVR ${t.ovr} ${flagsOf(t)}</div></div></div>`).join('')}</div>
       </div>
       <div class="modal-foot"><button class="btn" data-action="comp-customise" data-v="${c.id}">Customise</button><button class="btn primary" data-action="comp-start" data-v="${c.id}">Start tournament →</button></div>`, { size: 'md' });
@@ -1512,6 +1512,11 @@
 
   /* ---------------- Boot ---------------- */
   load();
+  { // drop saved team ids that no longer exist (e.g. after a roster data refresh)
+    const known = new Set(allTeams().map((t) => t.id));
+    state.setup.teams = (state.setup.teams || []).filter((id) => known.has(id));
+    if (state.setup.managed && !known.has(state.setup.managed)) state.setup.managed = '';
+  }
   window.RLCareer.init({
     E, state, esc, badge, toast, openModal, closeModal, modalHead, launch, go, render: () => render(), getTeam,
     regions: REGIONS, libraryTeams: () => rankedTeams(HAS27 ? '2027' : '2026').filter((t) => !t.custom).map((t) => Object.assign({}, t)),

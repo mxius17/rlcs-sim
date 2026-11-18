@@ -29,6 +29,8 @@ Open `index.html` in a browser. There is no build step and nothing to install.
 - Your setup and tournament save automatically in localStorage.
 
 ## Data
+**Season archive.** `js/data_hist.js` holds RLCS 2021-22, 2022-23, 2024 and 2025: every Major and World Championship (14 events), with venue, dates, prize pool, the real field and each team's roster at the time, plus the real champion and runner-up. Team ratings for these seasons are estimates from how teams placed at that season's events. Real formats with stages the simulator doesn't model (wildcard rounds, play-ins) are run with the closest format, and each event says how.
+
 **Player ages.** `js/births.js` holds the birth dates of 612 players, read from their Liquipedia player pages. Career mode uses them for real ages as of the 2027 season start, rolling forward each season. Players without a Liquipedia birth date (mostly amateur open-qualifier players) get an estimated age, shown as "~22".
 
 **Team logos.** `js/logos.js` bundles 148 team logos from Liquipedia: every team in the library that has a logo there. They're bundled as small inline images so the page works offline and on the published artifact. Logos are trademarks of their organisations. Teams without a Liquipedia logo keep their coloured tag badge.

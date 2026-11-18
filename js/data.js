@@ -596,11 +596,11 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "radosin",
-"name": "Radosin",
-"tag": "RAD",
+"id": "kaydop-corp",
+"name": "Kaydop Corp",
+"tag": "KC",
 "region": "EU",
-"color": "#ef4444",
+"color": "#ff8a1f",
 "players": [
 {
 "name": "Radosin",
@@ -612,13 +612,13 @@ window.RL_DATA = {
 "name": "Alpha54",
 "country": "France",
 "flag": "🇫🇷",
-"rating": 81
+"rating": 83
 },
 {
 "name": "mtzr",
 "country": "France",
 "flag": "🇫🇷",
-"rating": 88
+"rating": 85
 }
 ]
 },
@@ -1109,29 +1109,29 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "ray",
-"name": "Ray",
-"tag": "RAY",
+"id": "aura-european-team",
+"name": "Aura (European Team)",
+"tag": "AT",
 "region": "EU",
-"color": "#eab308",
+"color": "#a855f7",
 "players": [
 {
 "name": "ray",
 "country": "Morocco",
 "flag": "🇲🇦",
-"rating": 74
+"rating": 77
 },
 {
 "name": "m7md",
 "country": "Morocco",
 "flag": "🇲🇦",
-"rating": 77
+"rating": 75
 },
 {
 "name": "noxvas",
 "country": "Scotland",
 "flag": "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
-"rating": 78
+"rating": 77
 }
 ]
 },
@@ -1406,29 +1406,29 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "vksailen",
-"name": "VKSailen",
-"tag": "VKS",
+"id": "pro-vs-bot-vs-hacker",
+"name": "Pro vs Bot vs Hacker",
+"tag": "PVBV",
 "region": "EU",
-"color": "#10b981",
+"color": "#84cc16",
 "players": [
 {
 "name": "VKSailen",
 "country": "Spain",
 "flag": "🇪🇸",
-"rating": 66
+"rating": 69
 },
 {
 "name": "Leoro",
 "country": "Spain",
 "flag": "🇪🇸",
-"rating": 67
+"rating": 69
 },
 {
 "name": "Denisinho",
 "country": "Spain",
 "flag": "🇪🇸",
-"rating": 72
+"rating": 67
 }
 ]
 },
@@ -1460,6 +1460,60 @@ window.RL_DATA = {
 ]
 },
 {
+"id": "whatever",
+"name": "Whatever",
+"tag": "WHA",
+"region": "EU",
+"color": "#f43f5e",
+"players": [
+{
+"name": "Nxlly",
+"country": "Netherlands",
+"flag": "🇳🇱",
+"rating": 67
+},
+{
+"name": "rcrcrcrcrcrc.",
+"country": "England",
+"flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+"rating": 67
+},
+{
+"name": "Cofam",
+"country": "England",
+"flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+"rating": 72
+}
+]
+},
+{
+"id": "smartizz-company",
+"name": "SMARTIZZ Company",
+"tag": "SC",
+"region": "EU",
+"color": "#2f8cff",
+"players": [
+{
+"name": "fakeswaysy",
+"country": "France",
+"flag": "🇫🇷",
+"rating": 72
+},
+{
+"name": "esostek",
+"country": "France",
+"flag": "🇫🇷",
+"rating": 69
+},
+{
+"name": "k3laer",
+"country": "France",
+"flag": "🇫🇷",
+"rating": 68
+}
+]
+},
+{
 "id": "123",
 "name": "123",
 "tag": "123",
@@ -1467,22 +1521,49 @@ window.RL_DATA = {
 "color": "#10b981",
 "players": [
 {
-"name": "fakeswaysy",
-"country": "France",
-"flag": "🇫🇷",
-"rating": 67
+"name": "Ne0n",
+"country": "Germany",
+"flag": "🇩🇪",
+"rating": 66
 },
 {
-"name": "esostek",
-"country": "France",
-"flag": "🇫🇷",
-"rating": 71
+"name": "ringa",
+"country": "Albania",
+"flag": "",
+"rating": 69
 },
 {
-"name": "k3laer",
+"name": "icon",
+"country": "Scotland",
+"flag": "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+"rating": 66
+}
+]
+},
+{
+"id": "l-antique-esport",
+"name": "L'Antique Esport",
+"tag": "LE",
+"region": "EU",
+"color": "#f97316",
+"players": [
+{
+"name": "Nolta",
 "country": "France",
 "flag": "🇫🇷",
 "rating": 65
+},
+{
+"name": "Braax",
+"country": "France",
+"flag": "🇫🇷",
+"rating": 68
+},
+{
+"name": "Shuuya.",
+"country": "France",
+"flag": "🇫🇷",
+"rating": 69
 }
 ]
 },
@@ -1494,22 +1575,49 @@ window.RL_DATA = {
 "color": "#14b8a6",
 "players": [
 {
-"name": "Nolta",
-"country": "France",
-"flag": "🇫🇷",
+"name": "Jraws",
+"country": "Germany",
+"flag": "🇩🇪",
 "rating": 66
 },
 {
-"name": "Braax",
-"country": "France",
-"flag": "🇫🇷",
-"rating": 66
-},
-{
-"name": "Shuuya.",
-"country": "France",
-"flag": "🇫🇷",
+"name": "Lethal",
+"country": "Germany",
+"flag": "🇩🇪",
 "rating": 69
+},
+{
+"name": "Krabby!",
+"country": "Poland",
+"flag": "🇵🇱",
+"rating": 63
+}
+]
+},
+{
+"id": "2-swedes-1-bruv",
+"name": "2 Swedes 1 Bruv",
+"tag": "2S1B",
+"region": "EU",
+"color": "#0ea5e9",
+"players": [
+{
+"name": "wzy",
+"country": "Sweden",
+"flag": "🇸🇪",
+"rating": 68
+},
+{
+"name": "Crisps",
+"country": "England",
+"flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+"rating": 68
+},
+{
+"name": "Kesha",
+"country": "Sweden",
+"flag": "🇸🇪",
+"rating": 66
 }
 ]
 },
@@ -1521,37 +1629,64 @@ window.RL_DATA = {
 "color": "#f97316",
 "players": [
 {
-"name": "wzy",
-"country": "Sweden",
-"flag": "🇸🇪",
+"name": "syracks",
+"country": "Czechia",
+"flag": "🇨🇿",
+"rating": 68
+},
+{
+"name": "Aero",
+"country": "Poland",
+"flag": "🇵🇱",
 "rating": 65
 },
 {
-"name": "Crisps",
-"country": "England",
-"flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-"rating": 67
-},
-{
-"name": "Kesha",
-"country": "Sweden",
-"flag": "🇸🇪",
-"rating": 70
+"name": "sedou",
+"country": "Czechia",
+"flag": "🇨🇿",
+"rating": 64
 }
 ]
 },
 {
-"id": "exodreams",
-"name": "ExOdreams",
-"tag": "EXO",
+"id": "the-duckmen",
+"name": "The Duckmen",
+"tag": "TD",
 "region": "EU",
 "color": "#a855f7",
+"players": [
+{
+"name": "Mathy",
+"country": "Finland",
+"flag": "🇫🇮",
+"rating": 66
+},
+{
+"name": "Blue Lightning",
+"country": "Netherlands",
+"flag": "🇳🇱",
+"rating": 68
+},
+{
+"name": "Kamppu",
+"country": "Finland",
+"flag": "🇫🇮",
+"rating": 64
+}
+]
+},
+{
+"id": "arn",
+"name": "ARN",
+"tag": "ARN",
+"region": "EU",
+"color": "#eab308",
 "players": [
 {
 "name": "Atom.",
 "country": "England",
 "flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-"rating": 72
+"rating": 66
 },
 {
 "name": "NEO",
@@ -1568,23 +1703,77 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "wylew",
-"name": "Wylew",
-"tag": "WYL",
+"id": "exodreams",
+"name": "ExOdreams",
+"tag": "EXO",
 "region": "EU",
-"color": "#ec4899",
+"color": "#a855f7",
+"players": [
+{
+"name": "Deto",
+"country": "Netherlands",
+"flag": "🇳🇱",
+"rating": 63
+},
+{
+"name": "Viktor",
+"country": "Sweden",
+"flag": "🇸🇪",
+"rating": 68
+},
+{
+"name": "dabbe",
+"country": "Sweden",
+"flag": "🇸🇪",
+"rating": 64
+}
+]
+},
+{
+"id": "zura-e-sports",
+"name": "Zura E-Sports",
+"tag": "ZE",
+"region": "EU",
+"color": "#2f8cff",
+"players": [
+{
+"name": "ghosttinhoo.",
+"country": "France",
+"flag": "🇫🇷",
+"rating": 64
+},
+{
+"name": "qatixx",
+"country": "Germany",
+"flag": "🇩🇪",
+"rating": 67
+},
+{
+"name": "dj.",
+"country": "Germany",
+"flag": "🇩🇪",
+"rating": 63
+}
+]
+},
+{
+"id": "polska-lovers",
+"name": "Polska Lovers",
+"tag": "PL",
+"region": "EU",
+"color": "#f97316",
 "players": [
 {
 "name": "akyyra",
 "country": "France",
 "flag": "🇫🇷",
-"rating": 69
+"rating": 65
 },
 {
 "name": "wylew",
 "country": "Poland",
 "flag": "🇵🇱",
-"rating": 68
+"rating": 63
 },
 {
 "name": "Yukoko",
@@ -1595,29 +1784,29 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "acqua",
-"name": "Acqua",
-"tag": "ACQ",
+"id": "extinction",
+"name": "Extinction",
+"tag": "EXT",
 "region": "EU",
-"color": "#14b8a6",
+"color": "#0ea5e9",
 "players": [
 {
 "name": "Teggy",
 "country": "France",
 "flag": "🇫🇷",
-"rating": 67
+"rating": 62
 },
 {
 "name": "Pabl0",
 "country": "France",
 "flag": "🇫🇷",
-"rating": 61
+"rating": 65
 },
 {
 "name": "Rife31",
 "country": "Spain",
 "flag": "🇪🇸",
-"rating": 68
+"rating": 64
 }
 ]
 },
@@ -1632,19 +1821,19 @@ window.RL_DATA = {
 "name": "JWeyts",
 "country": "Belgium",
 "flag": "🇧🇪",
-"rating": 63
+"rating": 61
 },
 {
 "name": "badnezz",
 "country": "Belgium",
 "flag": "🇧🇪",
-"rating": 66
+"rating": 64
 },
 {
 "name": "wozyen",
 "country": "Norway",
 "flag": "🇳🇴",
-"rating": 64
+"rating": 62
 }
 ]
 },
@@ -1659,19 +1848,19 @@ window.RL_DATA = {
 "name": "James",
 "country": "England",
 "flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-"rating": 66
+"rating": 63
 },
 {
 "name": "Hayze",
 "country": "Scotland",
 "flag": "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
-"rating": 64
+"rating": 61
 },
 {
 "name": "tomster",
 "country": "Ireland",
 "flag": "🇮🇪",
-"rating": 68
+"rating": 65
 }
 ]
 },
@@ -1686,208 +1875,19 @@ window.RL_DATA = {
 "name": "maaivy",
 "country": "France",
 "flag": "🇫🇷",
-"rating": 65
+"rating": 63
 },
 {
 "name": "Zzrotex",
 "country": "France",
 "flag": "🇫🇷",
-"rating": 64
+"rating": 62
 },
 {
 "name": "parka",
 "country": "France",
 "flag": "🇫🇷",
-"rating": 63
-}
-]
-},
-{
-"id": "thooberr",
-"name": "Thooberr",
-"tag": "THO",
-"region": "EU",
-"color": "#f97316",
-"players": [
-{
-"name": "Thooberr",
-"country": "England",
-"flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
 "rating": 61
-},
-{
-"name": "Hopeless",
-"country": "Sweden",
-"flag": "🇸🇪",
-"rating": 64
-},
-{
-"name": "ymarshyy",
-"country": "England",
-"flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-"rating": 67
-}
-]
-},
-{
-"id": "kuxir-s-minions",
-"name": "Kuxir's Minions",
-"tag": "KM",
-"region": "EU",
-"color": "#ff8a1f",
-"players": [
-{
-"name": "tokyo",
-"country": "Croatia",
-"flag": "🇭🇷",
-"rating": 65
-},
-{
-"name": "vieem",
-"country": "Croatia",
-"flag": "🇭🇷",
-"rating": 65
-},
-{
-"name": "Encore",
-"country": "England",
-"flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-"rating": 63
-}
-]
-},
-{
-"id": "kekkoz",
-"name": "Kekkoz",
-"tag": "KEK",
-"region": "EU",
-"color": "#22c55e",
-"players": [
-{
-"name": "kekkoz",
-"country": "Italy",
-"flag": "🇮🇹",
-"rating": 62
-},
-{
-"name": "Mira",
-"country": "Spain",
-"flag": "🇪🇸",
-"rating": 63
-},
-{
-"name": "Shice",
-"country": "Netherlands",
-"flag": "🇳🇱",
-"rating": 63
-}
-]
-},
-{
-"id": "marc",
-"name": "Marc",
-"tag": "MAR",
-"region": "EU",
-"color": "#f43f5e",
-"players": [
-{
-"name": "krow",
-"country": "Kazakhstan",
-"flag": "🇰🇿",
-"rating": 62
-},
-{
-"name": "Marc :(",
-"country": "Netherlands",
-"flag": "🇳🇱",
-"rating": 62
-},
-{
-"name": "Mimical",
-"country": "Netherlands",
-"flag": "🇳🇱",
-"rating": 64
-}
-]
-},
-{
-"id": "astellia-esports",
-"name": "Astellia eSports",
-"tag": "AE",
-"region": "EU",
-"color": "#eab308",
-"players": [
-{
-"name": "Jazz.",
-"country": "Wales",
-"flag": "🏴󠁧󠁢󠁷󠁬󠁳󠁿",
-"rating": 60
-},
-{
-"name": "Ty",
-"country": "England",
-"flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-"rating": 66
-},
-{
-"name": "Brainiac",
-"country": "Germany",
-"flag": "🇩🇪",
-"rating": 64
-}
-]
-},
-{
-"id": "iryzer",
-"name": "Iryzer",
-"tag": "IRY",
-"region": "EU",
-"color": "#f97316",
-"players": [
-{
-"name": "iryzer",
-"country": "France",
-"flag": "🇫🇷",
-"rating": 57
-},
-{
-"name": "Sotex",
-"country": "France",
-"flag": "🇫🇷",
-"rating": 64
-},
-{
-"name": "purposa",
-"country": "Netherlands",
-"flag": "🇳🇱",
-"rating": 65
-}
-]
-},
-{
-"id": "trkf-esport",
-"name": "TRKF Esport",
-"tag": "TE",
-"region": "EU",
-"color": "#2f8cff",
-"players": [
-{
-"name": "Xelty",
-"country": "France",
-"flag": "🇫🇷",
-"rating": 63
-},
-{
-"name": "sae",
-"country": "Algeria",
-"flag": "🇩🇿",
-"rating": 60
-},
-{
-"name": "MD",
-"country": "Germany",
-"flag": "🇩🇪",
-"rating": 63
 }
 ]
 },
@@ -2081,29 +2081,29 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "oath",
-"name": "Oath",
-"tag": "OAT",
+"id": "lob",
+"name": "LOB",
+"tag": "LOB",
 "region": "NA",
-"color": "#2f8cff",
+"color": "#14b8a6",
 "players": [
 {
 "name": "oath",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 82
+"rating": 80
 },
 {
 "name": "Ahduhm",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 77
+"rating": 78
 },
 {
 "name": "hockE",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 80
+"rating": 74
 }
 ]
 },
@@ -2135,38 +2135,38 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "seek",
-"name": "Seek",
-"tag": "SEE",
+"id": "chiwiwis",
+"name": "Chiwiwis",
+"tag": "CHI",
 "region": "NA",
-"color": "#f97316",
+"color": "#6366f1",
 "players": [
 {
 "name": "Seekxnz",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 80
+"rating": 76
 },
 {
 "name": "Pollo",
 "country": "Mexico",
 "flag": "🇲🇽",
-"rating": 77
+"rating": 83
 },
 {
 "name": "Stealth.",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 75
+"rating": 76
 }
 ]
 },
 {
-"id": "realize-american-player",
-"name": "Realize (American Player)",
-"tag": "RP",
+"id": "true-stacies-we-stacylite",
+"name": "True Stacies (we stacylite)",
+"tag": "TSS",
 "region": "NA",
-"color": "#2f8cff",
+"color": "#f43f5e",
 "players": [
 {
 "name": "Realize",
@@ -2178,13 +2178,13 @@ window.RL_DATA = {
 "name": "xpurt",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 82
+"rating": 75
 },
 {
 "name": "dvo",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 76
+"rating": 81
 }
 ]
 },
@@ -2270,38 +2270,38 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "gman",
-"name": "Gman",
-"tag": "GMA",
+"id": "recessed-maxilla",
+"name": "Recessed maxilla",
+"tag": "RM",
 "region": "NA",
-"color": "#14b8a6",
+"color": "#ef4444",
 "players": [
 {
 "name": "gman",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 70
+"rating": 74
 },
 {
 "name": "kahzii",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 76
+"rating": 78
 },
 {
 "name": "Vesh",
 "country": "Poland",
 "flag": "🇵🇱",
-"rating": 76
+"rating": 73
 }
 ]
 },
 {
-"id": "wellace",
-"name": "Wellace",
-"tag": "WEL",
+"id": "awd",
+"name": "AWD",
+"tag": "AWD",
 "region": "NA",
-"color": "#f97316",
+"color": "#a855f7",
 "players": [
 {
 "name": "wellace",
@@ -2313,13 +2313,13 @@ window.RL_DATA = {
 "name": "AYYJAYY",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 72
+"rating": 74
 },
 {
 "name": "Druee",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 78
+"rating": 79
 }
 ]
 },
@@ -2351,17 +2351,17 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "polar",
-"name": "Polar",
-"tag": "POL",
+"id": "signature-plays-from-jerbearrrrrrrrrrrrrrrrrrrrrrrrrr",
+"name": "Signature Plays from JERBEARRRRRRRRRRRRRRRRRRRRRRRRRR",
+"tag": "SPFJ",
 "region": "NA",
-"color": "#10b981",
+"color": "#6366f1",
 "players": [
 {
 "name": "Polar",
 "country": "England",
 "flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-"rating": 73
+"rating": 76
 },
 {
 "name": "Jerbear",
@@ -2373,16 +2373,16 @@ window.RL_DATA = {
 "name": "ryised",
 "country": "North America",
 "flag": "",
-"rating": 73
+"rating": 76
 }
 ]
 },
 {
-"id": "zath",
-"name": "Zath",
-"tag": "ZAT",
+"id": "tmz",
+"name": "TMZ",
+"tag": "TMZ",
 "region": "NA",
-"color": "#14b8a6",
+"color": "#ff8a1f",
 "players": [
 {
 "name": "ZAŦH",
@@ -2400,7 +2400,7 @@ window.RL_DATA = {
 "name": "Tyber.",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 69
+"rating": 74
 }
 ]
 },
@@ -2540,29 +2540,29 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "eris",
-"name": "Eris",
-"tag": "ERI",
+"id": "chimp",
+"name": "Chimp",
+"tag": "CHI",
 "region": "NA",
-"color": "#eab308",
+"color": "#f43f5e",
 "players": [
 {
 "name": "Eris",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 68
+"rating": 70
 },
 {
 "name": "Impoh",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 72
+"rating": 70
 },
 {
 "name": "Sauceyy",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 74
+"rating": 72
 }
 ]
 },
@@ -2594,17 +2594,17 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "chilli",
-"name": "Chilli",
-"tag": "CHI",
+"id": "krillion",
+"name": "Krillion",
+"tag": "KRI",
 "region": "NA",
-"color": "#64748b",
+"color": "#eab308",
 "players": [
 {
 "name": "chilli",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 67
+"rating": 72
 },
 {
 "name": "krab",
@@ -2616,49 +2616,49 @@ window.RL_DATA = {
 "name": "Got any cheeze",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 70
+"rating": 71
 }
 ]
 },
 {
-"id": "ren",
-"name": "Ren",
-"tag": "REN",
+"id": "not-with-you-esports",
+"name": "NOT WITH YOU ESPORTS",
+"tag": "NWYE",
 "region": "NA",
-"color": "#a855f7",
+"color": "#10b981",
 "players": [
 {
 "name": "LuCa",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 72
+"rating": 68
 },
 {
 "name": "ren",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 70
+"rating": 69
 },
 {
 "name": "Aries",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 67
+"rating": 68
 }
 ]
 },
 {
-"id": "mansrflying",
-"name": "MansRFlying",
-"tag": "MAN",
+"id": "sherbrooke-fc",
+"name": "Sherbrooke FC",
+"tag": "SF",
 "region": "NA",
-"color": "#84cc16",
+"color": "#ec4899",
 "players": [
 {
 "name": "MansRFlying",
 "country": "Canada",
 "flag": "🇨🇦",
-"rating": 69
+"rating": 67
 },
 {
 "name": "Jerry",
@@ -2670,43 +2670,70 @@ window.RL_DATA = {
 "name": "bishop",
 "country": "Canada",
 "flag": "🇨🇦",
-"rating": 67
+"rating": 70
 }
 ]
 },
 {
-"id": "silent",
-"name": "Silent",
-"tag": "SIL",
+"id": "clanka-killas",
+"name": "CLANKA KILLAS",
+"tag": "CK",
 "region": "NA",
-"color": "#0ea5e9",
+"color": "#14b8a6",
+"players": [
+{
+"name": "landen",
+"country": "United States",
+"flag": "🇺🇸",
+"rating": 67
+},
+{
+"name": "maclaine",
+"country": "Canada",
+"flag": "🇨🇦",
+"rating": 65
+},
+{
+"name": "brad",
+"country": "North America",
+"flag": "",
+"rating": 70
+}
+]
+},
+{
+"id": "this-is-to-hard",
+"name": "This is to hard",
+"tag": "TITH",
+"region": "NA",
+"color": "#f97316",
 "players": [
 {
 "name": "Silent",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 71
+"rating": 67
 },
 {
 "name": "Vanish",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 68
+"rating": 67
 },
 {
 "name": "Peaceful.",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 67
+"rating": 70
 }
 ]
 },
 {
-"id": "tnt",
-"name": "Tnt",
-"tag": "TNT",
+"id": "sacred",
+"name": "Sacred",
+"tag": "SAC",
 "region": "NA",
-"color": "#22c55e",
+"color": "#2f8cff",
 "players": [
 {
 "name": "tnt.",
@@ -2718,40 +2745,40 @@ window.RL_DATA = {
 "name": "wovah",
 "country": "Netherlands",
 "flag": "🇳🇱",
-"rating": 66
+"rating": 70
 },
 {
 "name": "syliss",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 67
+"rating": 66
 }
 ]
 },
 {
-"id": "cam",
-"name": "Cam",
-"tag": "CAM",
+"id": "ctrl-alt-elite",
+"name": "Ctrl+Alt+Elite",
+"tag": "CTR",
 "region": "NA",
-"color": "#f43f5e",
+"color": "#ec4899",
 "players": [
 {
 "name": "Jerid",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 69
+"rating": 68
 },
 {
 "name": "Cam",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 66
+"rating": 69
 },
 {
 "name": "Glowing",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 65
+"rating": 63
 }
 ]
 },
@@ -2783,9 +2810,9 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "snaz",
-"name": "Snaz",
-"tag": "SNA",
+"id": "grs",
+"name": "GRS",
+"tag": "GRS",
 "region": "NA",
 "color": "#84cc16",
 "players": [
@@ -2793,19 +2820,19 @@ window.RL_DATA = {
 "name": "snaz",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 64
+"rating": 69
 },
 {
 "name": "giannisae",
 "country": "Mexico",
 "flag": "🇲🇽",
-"rating": 64
+"rating": 63
 },
 {
 "name": "Roxrz",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 68
+"rating": 61
 }
 ]
 },
@@ -2837,9 +2864,9 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "pyyros",
-"name": ".pyyros",
-"tag": ".PY",
+"id": "certified",
+"name": "Certified",
+"tag": "CER",
 "region": "NA",
 "color": "#f97316",
 "players": [
@@ -2847,13 +2874,13 @@ window.RL_DATA = {
 "name": "Rockiers",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 62
+"rating": 66
 },
 {
 "name": ".pyyros",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 70
+"rating": 64
 },
 {
 "name": "/DANK",
@@ -2864,17 +2891,44 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "fabso",
-"name": "Fabso",
-"tag": "FAB",
+"id": "galactic-void",
+"name": "Galactic Void",
+"tag": "GV",
 "region": "NA",
-"color": "#22c55e",
+"color": "#f43f5e",
+"players": [
+{
+"name": "DeaconXT",
+"country": "United States",
+"flag": "🇺🇸",
+"rating": 67
+},
+{
+"name": "Dre",
+"country": "North America",
+"flag": "",
+"rating": 66
+},
+{
+"name": "Vaden .",
+"country": "Canada",
+"flag": "🇨🇦",
+"rating": 60
+}
+]
+},
+{
+"id": "zxch-is-fabsolutely-falss",
+"name": "Zxch is Fabsolutely Falss",
+"tag": "ZIFF",
+"region": "NA",
+"color": "#14b8a6",
 "players": [
 {
 "name": "zxchvii!",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 67
+"rating": 60
 },
 {
 "name": "Fabso",
@@ -2886,7 +2940,7 @@ window.RL_DATA = {
 "name": "Falss",
 "country": "Mexico",
 "flag": "🇲🇽",
-"rating": 64
+"rating": 67
 }
 ]
 },
@@ -2901,53 +2955,53 @@ window.RL_DATA = {
 "name": "DappDapp",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 65
+"rating": 64
 },
 {
 "name": "fade.",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 65
+"rating": 64
 },
 {
 "name": "Jaxx",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 63
+"rating": 62
 }
 ]
 },
 {
-"id": "mrtn",
-"name": "Mrtn",
-"tag": "MRT",
+"id": "invincible",
+"name": "Invincible",
+"tag": "INV",
 "region": "NA",
-"color": "#22c55e",
+"color": "#a855f7",
 "players": [
 {
 "name": "mrtn",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 61
+"rating": 66
 },
 {
 "name": "swazz",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 63
+"rating": 59
 },
 {
 "name": "Hexic.",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 63
+"rating": 66
 }
 ]
 },
 {
-"id": "skillz",
-"name": "Skillz",
-"tag": "SKI",
+"id": "shawnryanshawn",
+"name": "ShawnRyanShawn",
+"tag": "SHA",
 "region": "NA",
 "color": "#ef4444",
 "players": [
@@ -2955,73 +3009,100 @@ window.RL_DATA = {
 "name": "Skillz.",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 63
+"rating": 62
 },
 {
 "name": "madmaxrk",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 63
+"rating": 62
 },
 {
 "name": "Bullzzeye",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 65
+"rating": 63
 }
 ]
 },
 {
-"id": "faded",
-"name": "Faded",
-"tag": "FAD",
+"id": "whatever-tho",
+"name": "Whatever tho",
+"tag": "WT",
 "region": "NA",
-"color": "#22c55e",
+"color": "#84cc16",
+"players": [
+{
+"name": "garcia",
+"country": "United States",
+"flag": "🇺🇸",
+"rating": 56
+},
+{
+"name": "pigb",
+"country": "United States",
+"flag": "🇺🇸",
+"rating": 62
+},
+{
+"name": "2lii",
+"country": "United States",
+"flag": "🇺🇸",
+"rating": 64
+}
+]
+},
+{
+"id": "tokyo-manji",
+"name": "Tokyo Manji",
+"tag": "TM",
+"region": "NA",
+"color": "#eab308",
 "players": [
 {
 "name": "m4.",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 63
+"rating": 62
 },
 {
 "name": "faded",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 63
+"rating": 62
 },
 {
 "name": "Cryptic",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 60
+"rating": 62
 }
 ]
 },
 {
-"id": "samba",
-"name": "Samba",
-"tag": "SAM",
+"id": "chewy",
+"name": "Chewy",
+"tag": "CHE",
 "region": "NA",
-"color": "#f97316",
+"color": "#a855f7",
 "players": [
 {
 "name": "samba",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 61
+"rating": 62
 },
 {
 "name": "Adverse",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 66
+"rating": 62
 },
 {
 "name": "lubey",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 60
+"rating": 63
 }
 ]
 },
@@ -3036,53 +3117,53 @@ window.RL_DATA = {
 "name": "repeat",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 66
+"rating": 64
 },
 {
 "name": "delta",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 66
+"rating": 64
 },
 {
 "name": "alraz",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 58
+"rating": 56
 }
 ]
 },
 {
-"id": "beasty",
-"name": "Beasty",
-"tag": "BEA",
+"id": "freedom-north-american-team",
+"name": "Freedom (North American Team)",
+"tag": "FAT",
 "region": "NA",
-"color": "#6366f1",
+"color": "#84cc16",
 "players": [
 {
 "name": "Beasty",
 "country": "England",
 "flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-"rating": 61
+"rating": 60
 },
 {
 "name": "monk",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 66
+"rating": 62
 },
 {
 "name": "Nitrous",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 60
+"rating": 57
 }
 ]
 },
 {
-"id": "snoaf",
-"name": "SnoaF",
-"tag": "SNO",
+"id": "connaissance-lite-de-la-balle",
+"name": "Connaissance élite de la balle",
+"tag": "CDLB",
 "region": "NA",
 "color": "#f97316",
 "players": [
@@ -3090,99 +3171,18 @@ window.RL_DATA = {
 "name": "pyrix",
 "country": "Canada",
 "flag": "🇨🇦",
-"rating": 59
+"rating": 57
 },
 {
 "name": "SnoaF",
 "country": "Canada",
 "flag": "🇨🇦",
-"rating": 60
+"rating": 59
 },
 {
 "name": "Nibra",
 "country": "Canada",
 "flag": "🇨🇦",
-"rating": 65
-}
-]
-},
-{
-"id": "yawnathon",
-"name": "Yawnathon",
-"tag": "YAW",
-"region": "NA",
-"color": "#84cc16",
-"players": [
-{
-"name": "Yawnathon",
-"country": "United States",
-"flag": "🇺🇸",
-"rating": 59
-},
-{
-"name": "Patty",
-"country": "United States",
-"flag": "🇺🇸",
-"rating": 64
-},
-{
-"name": "Shaykoz",
-"country": "Canada",
-"flag": "🇨🇦",
-"rating": 58
-}
-]
-},
-{
-"id": "woo",
-"name": "WOO",
-"tag": "WOO",
-"region": "NA",
-"color": "#f43f5e",
-"players": [
-{
-"name": "KnightYuh",
-"country": "United States",
-"flag": "🇺🇸",
-"rating": 57
-},
-{
-"name": "Forece",
-"country": "France",
-"flag": "🇫🇷",
-"rating": 65
-},
-{
-"name": "kisai",
-"country": "France",
-"flag": "🇫🇷",
-"rating": 57
-}
-]
-},
-{
-"id": "gske",
-"name": "Gske",
-"tag": "GSK",
-"region": "NA",
-"color": "#2f8cff",
-"players": [
-{
-"name": "gske",
-"country": "United States",
-"flag": "🇺🇸",
-"rating": 58
-},
-{
-"name": "Mutinate",
-"country": "United States",
-"flag": "🇺🇸",
-"rating": 60
-},
-{
-"name": "ian",
-"country": "United States",
-"flag": "🇺🇸",
 "rating": 64
 }
 ]
@@ -3350,50 +3350,50 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "droppz",
-"name": "Droppz",
-"tag": "DRO",
+"id": "0-esfor-o-fc-2",
+"name": "0 esforço fc 2",
+"tag": "0EF2",
 "region": "SAM",
-"color": "#84cc16",
+"color": "#14b8a6",
 "players": [
 {
 "name": "droppz",
 "country": "Brazil",
 "flag": "🇧🇷",
-"rating": 70
+"rating": 73
 },
 {
 "name": "Brad",
 "country": "Brazil",
 "flag": "🇧🇷",
-"rating": 70
+"rating": 76
 },
 {
 "name": "Brenox",
 "country": "Brazil",
 "flag": "🇧🇷",
-"rating": 77
+"rating": 70
 }
 ]
 },
 {
-"id": "daavi",
-"name": "Daavi",
-"tag": "DAA",
+"id": "ssd",
+"name": "SSD",
+"tag": "SSD",
 "region": "SAM",
-"color": "#10b981",
+"color": "#f43f5e",
 "players": [
 {
 "name": "daavi",
 "country": "Brazil",
 "flag": "🇧🇷",
-"rating": 71
+"rating": 72
 },
 {
 "name": "Speedhack",
 "country": "Brazil",
 "flag": "🇧🇷",
-"rating": 75
+"rating": 77
 },
 {
 "name": "Sivicao",
@@ -3458,29 +3458,29 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "laucha",
-"name": "Laucha",
-"tag": "LAU",
+"id": "papu-team",
+"name": "Papu team",
+"tag": "PT",
 "region": "SAM",
-"color": "#22c55e",
+"color": "#84cc16",
 "players": [
 {
 "name": "Laucha",
 "country": "Argentina",
 "flag": "🇦🇷",
-"rating": 68
+"rating": 73
 },
 {
 "name": "Dappluto",
 "country": "Brazil",
 "flag": "🇧🇷",
-"rating": 73
+"rating": 67
 },
 {
 "name": "edu",
 "country": "Brazil",
 "flag": "🇧🇷",
-"rating": 69
+"rating": 70
 }
 ]
 },
@@ -3512,29 +3512,29 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "courtz",
-"name": "Courtz",
-"tag": "COU",
+"id": "os-garimpeiros",
+"name": "Os Garimpeiros",
+"tag": "OG",
 "region": "SAM",
-"color": "#f43f5e",
+"color": "#84cc16",
 "players": [
 {
 "name": "courtz",
 "country": "Brazil",
 "flag": "🇧🇷",
-"rating": 72
+"rating": 66
 },
 {
 "name": "zeeph",
 "country": "Brazil",
 "flag": "🇧🇷",
-"rating": 64
+"rating": 68
 },
 {
 "name": "Iguinn",
 "country": "Brazil",
 "flag": "🇧🇷",
-"rating": 72
+"rating": 71
 }
 ]
 },
@@ -3566,23 +3566,23 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "aguz",
-"name": "Aguz",
-"tag": "AGU",
+"id": "fumes",
+"name": "Fumes",
+"tag": "FUM",
 "region": "SAM",
-"color": "#64748b",
+"color": "#0ea5e9",
 "players": [
 {
 "name": "aguz",
 "country": "Argentina",
 "flag": "🇦🇷",
-"rating": 65
+"rating": 68
 },
 {
 "name": "Lexim",
 "country": "Argentina",
 "flag": "🇦🇷",
-"rating": 71
+"rating": 72
 },
 {
 "name": "Crespt",
@@ -3620,77 +3620,131 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "dreankz",
-"name": "Dreankz",
-"tag": "DRE",
+"id": "m67",
+"name": "M67",
+"tag": "M67",
 "region": "SAM",
-"color": "#eab308",
+"color": "#2f8cff",
+"players": [
+{
+"name": "kris",
+"country": "Brazil",
+"flag": "🇧🇷",
+"rating": 66
+},
+{
+"name": "Ferrarzi",
+"country": "Brazil",
+"flag": "🇧🇷",
+"rating": 64
+},
+{
+"name": "G0ld3en",
+"country": "Brazil",
+"flag": "🇧🇷",
+"rating": 72
+}
+]
+},
+{
+"id": "nova-legion",
+"name": "Nova Legion",
+"tag": "NL",
+"region": "SAM",
+"color": "#22c55e",
 "players": [
 {
 "name": "Dreankz",
 "country": "Brazil",
 "flag": "🇧🇷",
-"rating": 68
+"rating": 66
 },
 {
 "name": "Reisplasma",
 "country": "Brazil",
 "flag": "🇧🇷",
-"rating": 67
+"rating": 66
 },
 {
 "name": "plgabriel",
 "country": "Brazil",
 "flag": "🇧🇷",
-"rating": 67
+"rating": 62
 }
 ]
 },
 {
-"id": "maathzudo",
-"name": "Maathzudo",
-"tag": "MAA",
+"id": "darkline-forsaken",
+"name": "Darkline Forsaken",
+"tag": "DF",
 "region": "SAM",
-"color": "#ff8a1f",
+"color": "#84cc16",
 "players": [
 {
 "name": "maathzudo",
 "country": "Brazil",
 "flag": "🇧🇷",
-"rating": 65
+"rating": 66
 },
 {
 "name": "brittrl",
 "country": "Brazil",
 "flag": "🇧🇷",
-"rating": 67
+"rating": 60
 },
 {
 "name": "nahuz",
 "country": "Argentina",
 "flag": "🇦🇷",
-"rating": 64
+"rating": 66
 }
 ]
 },
 {
-"id": "electro",
-"name": "Electro",
-"tag": "ELE",
+"id": "pneu-malandro-esports",
+"name": "Pneu malandro esports",
+"tag": "PME",
 "region": "SAM",
-"color": "#22c55e",
+"color": "#ec4899",
 "players": [
 {
-"name": "electro",
+"name": "frooknh",
+"country": "Brazil",
+"flag": "🇧🇷",
+"rating": 64
+},
+{
+"name": "Aorus",
 "country": "Brazil",
 "flag": "🇧🇷",
 "rating": 61
 },
 {
+"name": "SFireh",
+"country": "Brazil",
+"flag": "🇧🇷",
+"rating": 69
+}
+]
+},
+{
+"id": "team-neural",
+"name": "Team Neural",
+"tag": "TN",
+"region": "SAM",
+"color": "#6366f1",
+"players": [
+{
+"name": "electro",
+"country": "Brazil",
+"flag": "🇧🇷",
+"rating": 66
+},
+{
 "name": "baait",
 "country": "Brazil",
 "flag": "🇧🇷",
-"rating": 65
+"rating": 64
 },
 {
 "name": "matix",
@@ -3701,29 +3755,29 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "dreevo",
-"name": "Dreevo",
-"tag": "DRE",
+"id": "mockit-apes",
+"name": "Mockit Apes",
+"tag": "MA",
 "region": "SAM",
-"color": "#f97316",
+"color": "#84cc16",
 "players": [
 {
 "name": "dreevo",
 "country": "Brazil",
 "flag": "🇧🇷",
-"rating": 63
+"rating": 64
 },
 {
 "name": "lukezera",
 "country": "Brazil",
 "flag": "🇧🇷",
-"rating": 66
+"rating": 61
 },
 {
 "name": "thiagxw",
 "country": "Brazil",
 "flag": "🇧🇷",
-"rating": 64
+"rating": 60
 }
 ]
 },
@@ -3738,70 +3792,16 @@ window.RL_DATA = {
 "name": "Davitrox",
 "country": "Chile",
 "flag": "🇨🇱",
-"rating": 65
+"rating": 64
 },
 {
 "name": "Flare",
 "country": "Chile",
 "flag": "🇨🇱",
-"rating": 62
+"rating": 61
 },
 {
 "name": "JG",
-"country": "Brazil",
-"flag": "🇧🇷",
-"rating": 64
-}
-]
-},
-{
-"id": "granado",
-"name": "Granado",
-"tag": "GRA",
-"region": "SAM",
-"color": "#22c55e",
-"players": [
-{
-"name": "granado",
-"country": "Brazil",
-"flag": "🇧🇷",
-"rating": 59
-},
-{
-"name": "pancardes",
-"country": "Brazil",
-"flag": "🇧🇷",
-"rating": 65
-},
-{
-"name": "lunnz.",
-"country": "Paraguay",
-"flag": "🇵🇾",
-"rating": 62
-}
-]
-},
-{
-"id": "nikko",
-"name": "Nikko",
-"tag": "NIK",
-"region": "SAM",
-"color": "#22c55e",
-"players": [
-{
-"name": "Netao",
-"country": "Brazil",
-"flag": "🇧🇷",
-"rating": 64
-},
-{
-"name": "nikko",
-"country": "Argentina",
-"flag": "🇦🇷",
-"rating": 56
-},
-{
-"name": "Magorl_",
 "country": "Brazil",
 "flag": "🇧🇷",
 "rating": 63
@@ -3809,65 +3809,119 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "starwindss",
-"name": "Starwindss",
-"tag": "STA",
+"id": "timezin-modificada-o",
+"name": "Timezin modificadaço",
+"tag": "TM",
 "region": "SAM",
-"color": "#ff8a1f",
+"color": "#f43f5e",
+"players": [
+{
+"name": "granado",
+"country": "Brazil",
+"flag": "🇧🇷",
+"rating": 62
+},
+{
+"name": "pancardes",
+"country": "Brazil",
+"flag": "🇧🇷",
+"rating": 62
+},
+{
+"name": "lunnz.",
+"country": "Paraguay",
+"flag": "🇵🇾",
+"rating": 60
+}
+]
+},
+{
+"id": "rataiada",
+"name": "Rataiada",
+"tag": "RAT",
+"region": "SAM",
+"color": "#64748b",
+"players": [
+{
+"name": "Netao",
+"country": "Brazil",
+"flag": "🇧🇷",
+"rating": 60
+},
+{
+"name": "nikko",
+"country": "Argentina",
+"flag": "🇦🇷",
+"rating": 62
+},
+{
+"name": "Magorl_",
+"country": "Brazil",
+"flag": "🇧🇷",
+"rating": 57
+}
+]
+},
+{
+"id": "los-retired",
+"name": "Los retired",
+"tag": "LR",
+"region": "SAM",
+"color": "#2f8cff",
 "players": [
 {
 "name": "Starwindss",
 "country": "Chile",
 "flag": "🇨🇱",
-"rating": 65
+"rating": 63
 },
 {
 "name": "ZhearX",
 "country": "Chile",
 "flag": "🇨🇱",
-"rating": 60
+"rating": 61
 },
 {
 "name": "tgex",
 "country": "Chile",
 "flag": "🇨🇱",
-"rating": 59
+"rating": 60
 }
 ]
 },
 {
-"id": "alphinha",
-"name": "Alphinha",
-"tag": "ALP",
+"id": "auraleague",
+"name": "Auraleague",
+"tag": "AUR",
 "region": "SAM",
-"color": "#ec4899",
+"color": "#84cc16",
 "players": [
 {
 "name": "sneak",
 "country": "Brazil",
 "flag": "🇧🇷",
-"rating": 60
+"rating": 61
 },
 {
 "name": "alphinha.",
 "country": "Brazil",
 "flag": "🇧🇷",
-"rating": 61
+"rating": 60
 },
 {
 "name": "red",
 "country": "South America",
 "flag": "",
-"rating": 62
+"rating": 54
 }
 ]
 },
 {
-"id": "lotus-esports",
-"name": "Lotus eSports",
-"tag": "LE",
+"id": "capixas",
+"name": "Capixas",
+"tag": "CAP",
 "region": "SAM",
-"color": "#6366f1",
+"color": "#2f8cff",
 "players": [
 {
 "name": "ø alekz",
@@ -3879,40 +3933,94 @@ window.RL_DATA = {
 "name": "sjuxy",
 "country": "Brazil",
 "flag": "🇧🇷",
-"rating": 62
+"rating": 61
 },
 {
 "name": "JgXzMode",
 "country": "Brazil",
 "flag": "🇧🇷",
-"rating": 63
+"rating": 61
 }
 ]
 },
 {
-"id": "igaaao",
-"name": "Igaaao",
-"tag": "IGA",
+"id": "lotus-esports",
+"name": "Lotus eSports",
+"tag": "LE",
 "region": "SAM",
 "color": "#6366f1",
+"players": [
+{
+"name": "Haberkamper",
+"country": "Brazil",
+"flag": "🇧🇷",
+"rating": 59
+},
+{
+"name": "FirefoxD",
+"country": "Brazil",
+"flag": "🇧🇷",
+"rating": 57
+},
+{
+"name": "renaN",
+"country": "Brazil",
+"flag": "🇧🇷",
+"rating": 61
+}
+]
+},
+{
+"id": "road-to-top-96",
+"name": "Road to top 96",
+"tag": "RTT9",
+"region": "SAM",
+"color": "#ef4444",
+"players": [
+{
+"name": "yStoik",
+"country": "South America",
+"flag": "",
+"rating": 58
+},
+{
+"name": "Farpey",
+"country": "Brazil",
+"flag": "🇧🇷",
+"rating": 55
+},
+{
+"name": "Restau Rikow.",
+"country": "Brazil",
+"flag": "🇧🇷",
+"rating": 59
+}
+]
+},
+{
+"id": "lang-ice",
+"name": "Lang Ice",
+"tag": "LI",
+"region": "SAM",
+"color": "#2f8cff",
 "players": [
 {
 "name": "igaaao",
 "country": "Brazil",
 "flag": "🇧🇷",
-"rating": 62
+"rating": 58
 },
 {
 "name": "Rush",
 "country": "Brazil",
 "flag": "🇧🇷",
-"rating": 62
+"rating": 53
 },
 {
 "name": "darkZera.",
 "country": "Brazil",
 "flag": "🇧🇷",
-"rating": 57
+"rating": 60
 }
 ]
 },
@@ -3927,127 +4035,19 @@ window.RL_DATA = {
 "name": "Tripode",
 "country": "Uruguay",
 "flag": "🇺🇾",
-"rating": 60
+"rating": 57
 },
 {
 "name": "klawzt",
 "country": "Argentina",
 "flag": "🇦🇷",
-"rating": 60
+"rating": 57
 },
 {
 "name": "kurbus",
 "country": "Uruguay",
 "flag": "🇺🇾",
-"rating": 58
-}
-]
-},
-{
-"id": "firewall154",
-"name": "Firewall154",
-"tag": "FIR",
-"region": "SAM",
-"color": "#f97316",
-"players": [
-{
-"name": "Kauazinxdd",
-"country": "Brazil",
-"flag": "🇧🇷",
-"rating": 56
-},
-{
-"name": "Firewall154",
-"country": "Brazil",
-"flag": "🇧🇷",
-"rating": 63
-},
-{
-"name": "Kryy",
-"country": "Portugal",
-"flag": "🇵🇹",
-"rating": 56
-}
-]
-},
-{
-"id": "roblah",
-"name": "Roblah",
-"tag": "ROB",
-"region": "SAM",
-"color": "#0ea5e9",
-"players": [
-{
-"name": "Roblah",
-"country": "Chile",
-"flag": "🇨🇱",
-"rating": 61
-},
-{
-"name": "Super.",
-"country": "Chile",
-"flag": "🇨🇱",
-"rating": 56
-},
-{
-"name": "Deathxplotion",
-"country": "Chile",
-"flag": "🇨🇱",
-"rating": 57
-}
-]
-},
-{
-"id": "arsego",
-"name": "Arsego",
-"tag": "ARS",
-"region": "SAM",
-"color": "#eab308",
-"players": [
-{
-"name": "Arsego",
-"country": "Brazil",
-"flag": "🇧🇷",
-"rating": 57
-},
-{
-"name": "DobinhoX",
-"country": "Brazil",
-"flag": "🇧🇷",
-"rating": 57
-},
-{
-"name": "Chang3d.",
-"country": "Brazil",
-"flag": "🇧🇷",
-"rating": 57
-}
-]
-},
-{
-"id": "sanfe",
-"name": "Sanfe",
-"tag": "SAN",
-"region": "SAM",
-"color": "#f97316",
-"players": [
-{
-"name": "Ashes.",
-"country": "Bolivia",
-"flag": "🇧🇴",
-"rating": 53
-},
-{
-"name": "Sanfe",
-"country": "Argentina",
-"flag": "🇦🇷",
-"rating": 57
-},
-{
-"name": "TRK GELP",
-"country": "Argentina",
-"flag": "🇦🇷",
-"rating": 59
+"rating": 55
 }
 ]
 },
@@ -4214,80 +4214,26 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "zeeyad",
-"name": "Zeeyad",
-"tag": "ZEE",
+"id": "eternity",
+"name": "Eternity",
+"tag": "ETE",
 "region": "MENA",
-"color": "#ec4899",
+"color": "#ef4444",
 "players": [
 {
 "name": "zeeyad",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 76
+"rating": 72
 },
 {
 "name": "ghost.",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 74
+"rating": 76
 },
 {
 "name": "v3ziz.",
-"country": "Saudi Arabia",
-"flag": "🇸🇦",
-"rating": 74
-}
-]
-},
-{
-"id": "israkan",
-"name": "IsRakan",
-"tag": "ISR",
-"region": "MENA",
-"color": "#f97316",
-"players": [
-{
-"name": "isRakan",
-"country": "Saudi Arabia",
-"flag": "🇸🇦",
-"rating": 73
-},
-{
-"name": "chikage",
-"country": "Saudi Arabia",
-"flag": "🇸🇦",
-"rating": 78
-},
-{
-"name": "nmj",
-"country": "Saudi Arabia",
-"flag": "🇸🇦",
-"rating": 70
-}
-]
-},
-{
-"id": "dvx",
-"name": "DvX",
-"tag": "DVX",
-"region": "MENA",
-"color": "#6366f1",
-"players": [
-{
-"name": "DvX",
-"country": "Saudi Arabia",
-"flag": "🇸🇦",
-"rating": 71
-},
-{
-"name": "waseem",
-"country": "Saudi Arabia",
-"flag": "🇸🇦",
-"rating": 74
-},
-{
-"name": "Pr.abdulaziz",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
 "rating": 76
@@ -4295,56 +4241,110 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "cabdllah",
-"name": "CAbdllah",
-"tag": "CAB",
+"id": "rcn",
+"name": "Rcn",
+"tag": "RCN",
 "region": "MENA",
 "color": "#ef4444",
+"players": [
+{
+"name": "isRakan",
+"country": "Saudi Arabia",
+"flag": "🇸🇦",
+"rating": 70
+},
+{
+"name": "chikage",
+"country": "Saudi Arabia",
+"flag": "🇸🇦",
+"rating": 77
+},
+{
+"name": "nmj",
+"country": "Saudi Arabia",
+"flag": "🇸🇦",
+"rating": 75
+}
+]
+},
+{
+"id": "intercontinental",
+"name": "Intercontinental",
+"tag": "INT",
+"region": "MENA",
+"color": "#f43f5e",
+"players": [
+{
+"name": "DvX",
+"country": "Saudi Arabia",
+"flag": "🇸🇦",
+"rating": 73
+},
+{
+"name": "waseem",
+"country": "Saudi Arabia",
+"flag": "🇸🇦",
+"rating": 73
+},
+{
+"name": "Pr.abdulaziz",
+"country": "Saudi Arabia",
+"flag": "🇸🇦",
+"rating": 73
+}
+]
+},
+{
+"id": "tsdyd-dyon",
+"name": "Tsdyd dyon",
+"tag": "TD",
+"region": "MENA",
+"color": "#f97316",
 "players": [
 {
 "name": "cAbdllah",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 72
+"rating": 75
 },
 {
 "name": "oVaMPiERz",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 71
+"rating": 69
 },
 {
 "name": "Even",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 74
+"rating": 72
 }
 ]
 },
 {
-"id": "ryuzaki",
-"name": "Ryuzaki",
-"tag": "RYU",
+"id": "rst-middle-eastern-team",
+"name": "RST (Middle Eastern Team)",
+"tag": "RET",
 "region": "MENA",
-"color": "#6366f1",
+"color": "#ff8a1f",
 "players": [
 {
 "name": "Sinjara",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 74
+"rating": 69
 },
 {
 "name": "Ryuzaki",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 68
+"rating": 72
 },
 {
 "name": "Tfzu.",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 75
+"rating": 74
 }
 ]
 },
@@ -4403,29 +4403,56 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "kaito",
-"name": "KAito",
-"tag": "KAI",
+"id": "team-venom",
+"name": "Team Venom",
+"tag": "TV",
 "region": "MENA",
-"color": "#ff8a1f",
+"color": "#2f8cff",
 "players": [
 {
-"name": "KAito.",
+"name": "Fahad",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 71
+"rating": 68
 },
 {
-"name": "meesh18",
+"name": "Only_vTALAL",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
 "rating": 70
 },
 {
-"name": "Erv",
+"name": "whm",
+"country": "Saudi Arabia",
+"flag": "🇸🇦",
+"rating": 72
+}
+]
+},
+{
+"id": "alright-middle-eastern-team",
+"name": "Alright (Middle Eastern Team)",
+"tag": "AET",
+"region": "MENA",
+"color": "#ef4444",
+"players": [
+{
+"name": "KAito.",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
 "rating": 66
+},
+{
+"name": "meesh18",
+"country": "Saudi Arabia",
+"flag": "🇸🇦",
+"rating": 72
+},
+{
+"name": "Erv",
+"country": "Saudi Arabia",
+"flag": "🇸🇦",
+"rating": 67
 }
 ]
 },
@@ -4440,19 +4467,19 @@ window.RL_DATA = {
 "name": "zeyad",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 68
+"rating": 67
 },
 {
 "name": "abo mzoon",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 74
+"rating": 73
 },
 {
 "name": "Hs.",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 68
+"rating": 67
 }
 ]
 },
@@ -4484,29 +4511,110 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "doffy",
-"name": "Doffy",
-"tag": "DOF",
+"id": "exciting1",
+"name": "ExciTinG1",
+"tag": "EXC",
 "region": "MENA",
-"color": "#ff8a1f",
+"color": "#f97316",
 "players": [
 {
 "name": "doffy",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 69
+"rating": 68
 },
 {
 "name": "Sythe",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 67
+"rating": 65
 },
 {
 "name": "Abdllhakim",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
+"rating": 67
+}
+]
+},
+{
+"id": "gravesite-plain",
+"name": "Gravesite plain",
+"tag": "GP",
+"region": "MENA",
+"color": "#6366f1",
+"players": [
+{
+"name": "M7md503",
+"country": "Saudi Arabia",
+"flag": "🇸🇦",
+"rating": 65
+},
+{
+"name": "m",
+"country": "MENA",
+"flag": "",
+"rating": 65
+},
+{
+"name": "Reo511",
+"country": "Saudi Arabia",
+"flag": "🇸🇦",
+"rating": 70
+}
+]
+},
+{
+"id": "nbe-alstr",
+"name": "Nbe alstr",
+"tag": "NA",
+"region": "MENA",
+"color": "#ff8a1f",
+"players": [
+{
+"name": "Yuffie",
+"country": "Saudi Arabia",
+"flag": "🇸🇦",
 "rating": 66
+},
+{
+"name": "oneheart",
+"country": "Saudi Arabia",
+"flag": "🇸🇦",
+"rating": 62
+},
+{
+"name": "inav",
+"country": "MENA",
+"flag": "",
+"rating": 65
+}
+]
+},
+{
+"id": "infinity",
+"name": "Infinity",
+"tag": "INF",
+"region": "MENA",
+"color": "#14b8a6",
+"players": [
+{
+"name": "997",
+"country": "Saudi Arabia",
+"flag": "🇸🇦",
+"rating": 66
+},
+{
+"name": "azam",
+"country": "Saudi Arabia",
+"flag": "🇸🇦",
+"rating": 59
+},
+{
+"name": "Sorrwin",
+"country": "Saudi Arabia",
+"flag": "🇸🇦",
+"rating": 64
 }
 ]
 },
@@ -4518,130 +4626,130 @@ window.RL_DATA = {
 "color": "#6366f1",
 "players": [
 {
-"name": "997",
+"name": "z4",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
 "rating": 63
 },
 {
-"name": "azam",
+"name": "Raed",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 68
+"rating": 67
 },
 {
-"name": "Sorrwin",
+"name": "Nawaf.",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 70
+"rating": 63
 }
 ]
 },
 {
-"id": "rwt",
-"name": "RwT",
-"tag": "RWT",
+"id": "haramball",
+"name": "Haramball",
+"tag": "HAR",
 "region": "MENA",
-"color": "#14b8a6",
+"color": "#0ea5e9",
 "players": [
 {
 "name": "RwT",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 62
+"rating": 65
 },
 {
 "name": "Mentor.",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 66
+"rating": 62
 },
 {
 "name": "aystrow",
 "country": "France",
 "flag": "🇫🇷",
-"rating": 65
+"rating": 64
 }
 ]
 },
 {
-"id": "fahad506",
-"name": "Fahad506",
-"tag": "FAH",
+"id": "kbf",
+"name": "KBF",
+"tag": "KBF",
 "region": "MENA",
-"color": "#84cc16",
+"color": "#ff8a1f",
 "players": [
 {
 "name": "iikhalidt",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 62
+"rating": 65
 },
 {
 "name": "Fahad506",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 64
+"rating": 60
 },
 {
 "name": "BxRw",
 "country": "Kuwait",
 "flag": "🇰🇼",
-"rating": 65
+"rating": 61
 }
 ]
 },
 {
-"id": "glowz",
-"name": "Glowz",
-"tag": "GLO",
+"id": "slmloe",
+"name": "Slmloe",
+"tag": "SLM",
 "region": "MENA",
-"color": "#64748b",
+"color": "#0ea5e9",
 "players": [
 {
 "name": "Glowz",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 63
+"rating": 60
 },
 {
 "name": "Rietsz",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 66
+"rating": 62
 },
 {
 "name": "M7md97",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 59
+"rating": 65
 }
 ]
 },
 {
-"id": "ksa28",
-"name": "KSA28",
-"tag": "KSA",
+"id": "rxh",
+"name": "RXH",
+"tag": "RXH",
 "region": "MENA",
-"color": "#0ea5e9",
+"color": "#2f8cff",
 "players": [
 {
 "name": "KSA28",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 63
+"rating": 60
 },
 {
 "name": "HxFF",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 63
+"rating": 61
 },
 {
 "name": "Rxa",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 68
+"rating": 64
 }
 ]
 },
@@ -4656,40 +4764,94 @@ window.RL_DATA = {
 "name": "Fera",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 65
+"rating": 62
 },
 {
 "name": "King",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 61
+"rating": 58
 },
 {
 "name": "AJF",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 64
+"rating": 61
 }
 ]
 },
 {
-"id": "abdulaziz",
-"name": "Abdulaziz",
-"tag": "ABD",
+"id": "chhh",
+"name": "Chhh",
+"tag": "CHH",
 "region": "MENA",
-"color": "#14b8a6",
+"color": "#eab308",
 "players": [
 {
-"name": "Abdulaziz",
+"name": "waf1",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
 "rating": 58
 },
 {
+"name": "Avox",
+"country": "Egypt",
+"flag": "🇪🇬",
+"rating": 61
+},
+{
+"name": "Hassn507",
+"country": "Saudi Arabia",
+"flag": "🇸🇦",
+"rating": 61
+}
+]
+},
+{
+"id": "otw-1",
+"name": "OTW-1",
+"tag": "OTW",
+"region": "MENA",
+"color": "#eab308",
+"players": [
+{
+"name": "OMRz",
+"country": "Saudi Arabia",
+"flag": "🇸🇦",
+"rating": 56
+},
+{
+"name": "Winters",
+"country": "Kuwait",
+"flag": "🇰🇼",
+"rating": 60
+},
+{
+"name": "tigeer",
+"country": "Saudi Arabia",
+"flag": "🇸🇦",
+"rating": 60
+}
+]
+},
+{
+"id": "chatgpt",
+"name": "ChatGPT",
+"tag": "CHA",
+"region": "MENA",
+"color": "#0ea5e9",
+"players": [
+{
+"name": "Abdulaziz",
+"country": "Saudi Arabia",
+"flag": "🇸🇦",
+"rating": 56
+},
+{
 "name": "Vipex",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 63
+"rating": 59
 },
 {
 "name": "abood.",
@@ -4700,218 +4862,56 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "bustanji",
-"name": "Bustanji",
-"tag": "BUS",
+"id": "nashmi",
+"name": "Nashmi",
+"tag": "NAS",
 "region": "MENA",
-"color": "#14b8a6",
+"color": "#84cc16",
 "players": [
 {
 "name": "Bustanji",
 "country": "Jordan",
 "flag": "🇯🇴",
-"rating": 59
+"rating": 58
 },
 {
 "name": "jello",
 "country": "Jordan",
 "flag": "🇯🇴",
-"rating": 58
+"rating": 56
 },
 {
 "name": "Hero",
 "country": "Jordan",
 "flag": "🇯🇴",
-"rating": 63
+"rating": 53
 }
 ]
 },
 {
-"id": "warriors-middle-eastern-team",
-"name": "Warriors (Middle Eastern Team)",
-"tag": "WET",
+"id": "360",
+"name": "360",
+"tag": "360",
 "region": "MENA",
-"color": "#22c55e",
+"color": "#eab308",
 "players": [
 {
 "name": "abu 3tb",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 62
+"rating": 59
 },
 {
 "name": "7mani",
 "country": "Kuwait",
 "flag": "🇰🇼",
-"rating": 59
+"rating": 51
 },
 {
 "name": "rin",
 "country": "Saudi Arabia",
 "flag": "🇸🇦",
-"rating": 56
-}
-]
-},
-{
-"id": "xhzr4",
-"name": "XHzr4",
-"tag": "XHZ",
-"region": "MENA",
-"color": "#6366f1",
-"players": [
-{
-"name": "Kib",
-"country": "MENA",
-"flag": "",
-"rating": 62
-},
-{
-"name": "Twesii",
-"country": "Saudi Arabia",
-"flag": "🇸🇦",
-"rating": 60
-},
-{
-"name": "xHzr4",
-"country": "Saudi Arabia",
-"flag": "🇸🇦",
-"rating": 58
-}
-]
-},
-{
-"id": "ghassan",
-"name": "Ghassan",
-"tag": "GHA",
-"region": "MENA",
-"color": "#64748b",
-"players": [
-{
-"name": "Ghassan.",
-"country": "Tunisia",
-"flag": "🇹🇳",
-"rating": 55
-},
-{
-"name": "arth",
-"country": "Saudi Arabia",
-"flag": "🇸🇦",
-"rating": 60
-},
-{
-"name": "Ahmad",
-"country": "United Arab Emirates",
-"flag": "🇦🇪",
-"rating": 58
-}
-]
-},
-{
-"id": "n0va",
-"name": "N0VA",
-"tag": "N0V",
-"region": "MENA",
-"color": "#eab308",
-"players": [
-{
-"name": "PKF",
-"country": "Saudi Arabia",
-"flag": "🇸🇦",
-"rating": 61
-},
-{
-"name": "RS2F",
-"country": "Saudi Arabia",
-"flag": "🇸🇦",
 "rating": 59
-},
-{
-"name": "N0VA.",
-"country": "Bahrain",
-"flag": "🇧🇭",
-"rating": 58
-}
-]
-},
-{
-"id": "luxyy",
-"name": "LuXyy",
-"tag": "LUX",
-"region": "MENA",
-"color": "#ff8a1f",
-"players": [
-{
-"name": "Mu3",
-"country": "Saudi Arabia",
-"flag": "🇸🇦",
-"rating": 56
-},
-{
-"name": "LuXyy911",
-"country": "Kuwait",
-"flag": "🇰🇼",
-"rating": 57
-},
-{
-"name": "ix",
-"country": "Saudi Arabia",
-"flag": "🇸🇦",
-"rating": 58
-}
-]
-},
-{
-"id": "abo-turki",
-"name": "Abo Turki",
-"tag": "AT",
-"region": "MENA",
-"color": "#14b8a6",
-"players": [
-{
-"name": "Abo Turki",
-"country": "Saudi Arabia",
-"flag": "🇸🇦",
-"rating": 56
-},
-{
-"name": "Prodz.",
-"country": "Palestine",
-"flag": "🇵🇸",
-"rating": 55
-},
-{
-"name": "Ritsune",
-"country": "Bahrain",
-"flag": "🇧🇭",
-"rating": 56
-}
-]
-},
-{
-"id": "rixy",
-"name": "Rixy",
-"tag": "RIX",
-"region": "MENA",
-"color": "#ec4899",
-"players": [
-{
-"name": "Rixy.",
-"country": "Saudi Arabia",
-"flag": "🇸🇦",
-"rating": 57
-},
-{
-"name": "Nine",
-"country": "Egypt",
-"flag": "🇪🇬",
-"rating": 55
-},
-{
-"name": "AbuLba",
-"country": "Egypt",
-"flag": "🇪🇬",
-"rating": 56
 }
 ]
 },
@@ -5051,29 +5051,29 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "bigrooster",
-"name": "Bigrooster",
-"tag": "BIG",
+"id": "gg-gaming-game",
+"name": "GG gaming game",
+"tag": "GGG",
 "region": "OCE",
-"color": "#14b8a6",
+"color": "#10b981",
 "players": [
 {
 "name": "Bigrooster",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 71
+"rating": 70
 },
 {
 "name": "Chub",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 70
+"rating": 69
 },
 {
 "name": "Matthew.",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 67
+"rating": 69
 }
 ]
 },
@@ -5105,137 +5105,137 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "lux",
-"name": "Lux",
-"tag": "LUX",
+"id": "club-sandwich",
+"name": "Club Sandwich",
+"tag": "CS",
 "region": "OCE",
-"color": "#84cc16",
+"color": "#eab308",
 "players": [
 {
 "name": "Lux",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 67
+"rating": 68
 },
 {
 "name": "RemiK",
 "country": "New Zealand",
 "flag": "🇳🇿",
-"rating": 67
+"rating": 69
 },
 {
 "name": "Frenchie",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 66
+"rating": 70
 }
 ]
 },
 {
-"id": "zayd",
-"name": "Zayd",
-"tag": "ZAY",
+"id": "daddies",
+"name": "Daddies",
+"tag": "DAD",
 "region": "OCE",
-"color": "#64748b",
+"color": "#2f8cff",
 "players": [
 {
 "name": "zayd",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 67
+"rating": 69
 },
 {
 "name": "Misty",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 65
+"rating": 68
 },
 {
 "name": "Cobbo",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 67
+"rating": 66
 }
 ]
 },
 {
-"id": "shu",
-"name": "Shu",
-"tag": "SHU",
+"id": "bgns",
+"name": "BGNS",
+"tag": "BGN",
 "region": "OCE",
-"color": "#ef4444",
+"color": "#eab308",
 "players": [
 {
 "name": "Shu",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 66
+"rating": 69
 },
 {
 "name": "Creed",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 67
+"rating": 62
 },
 {
 "name": "Vult",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 65
+"rating": 69
 }
 ]
 },
 {
-"id": "apples-on-anxiety",
-"name": "Apples on Anxiety",
-"tag": "AOA",
+"id": "the-beasts-from-beyond",
+"name": "The Beasts From Beyond",
+"tag": "TBFB",
 "region": "OCE",
-"color": "#ff8a1f",
+"color": "#22c55e",
 "players": [
 {
 "name": "Apples_on_Anxiety",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 65
+"rating": 64
 },
 {
 "name": "Wolftic",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 64
+"rating": 62
 },
 {
 "name": "Exfusionz_2",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 66
+"rating": 67
 }
 ]
 },
 {
-"id": "levcn",
-"name": "Levcn",
-"tag": "LEV",
+"id": "last-dance",
+"name": "Last Dance",
+"tag": "LD",
 "region": "OCE",
-"color": "#a855f7",
+"color": "#6366f1",
 "players": [
 {
 "name": "levcn",
 "country": "New Zealand",
 "flag": "🇳🇿",
-"rating": 64
+"rating": 66
 },
 {
 "name": "Vis",
 "country": "New Zealand",
 "flag": "🇳🇿",
-"rating": 66
+"rating": 69
 },
 {
 "name": "HyperSonic07",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 65
+"rating": 61
 }
 ]
 },
@@ -5267,11 +5267,11 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "kuipier",
-"name": "Kuipier",
-"tag": "KUI",
+"id": "schmelph",
+"name": "Schmelph",
+"tag": "SCH",
 "region": "OCE",
-"color": "#22c55e",
+"color": "#6366f1",
 "players": [
 {
 "name": "Kuipier",
@@ -5283,55 +5283,55 @@ window.RL_DATA = {
 "name": "Morse",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 61
+"rating": 62
 },
 {
 "name": "nachi",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 63
+"rating": 66
 }
 ]
 },
 {
-"id": "euxsy",
-"name": "Euxsy",
-"tag": "EUX",
+"id": "nozzy",
+"name": "Nozzy",
+"tag": "NOZ",
 "region": "OCE",
-"color": "#22c55e",
+"color": "#f43f5e",
 "players": [
 {
 "name": "euxsy",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 60
+"rating": 63
 },
 {
 "name": "Inspire",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 62
+"rating": 60
 },
 {
 "name": "Werthy",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 59
+"rating": 61
 }
 ]
 },
 {
-"id": "ryan-australian-player",
-"name": "Ryan (Australian Player)",
-"tag": "RP",
+"id": "m-n-q",
+"name": "M.N.Q",
+"tag": "MNQ",
 "region": "OCE",
-"color": "#ec4899",
+"color": "#ef4444",
 "players": [
 {
 "name": "quixotic",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 64
+"rating": 61
 },
 {
 "name": "ryan",
@@ -5343,7 +5343,7 @@ window.RL_DATA = {
 "name": "nsaniity",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 60
+"rating": 61
 }
 ]
 },
@@ -5375,98 +5375,98 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "aziz",
-"name": "Aziz",
-"tag": "AZI",
+"id": "fist-bump",
+"name": "Fist Bump",
+"tag": "FB",
 "region": "OCE",
-"color": "#64748b",
+"color": "#22c55e",
 "players": [
 {
 "name": "Aziz",
 "country": "South Africa",
 "flag": "🇿🇦",
-"rating": 55
+"rating": 58
 },
 {
 "name": "GEXRGE",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 55
+"rating": 56
 },
 {
 "name": "Exodus",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 60
+"rating": 56
 }
 ]
 },
 {
-"id": "orang",
-"name": "Orang",
-"tag": "ORA",
+"id": "fiasco-rocket-league",
+"name": "Fiasco rocket league",
+"tag": "FRL",
 "region": "OCE",
-"color": "#ec4899",
+"color": "#10b981",
 "players": [
 {
 "name": "Orang",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 55
+"rating": 58
 },
 {
 "name": "Evample",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 60
+"rating": 55
 },
 {
 "name": "Fiasco",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 57
+"rating": 54
 }
 ]
 },
 {
-"id": "kearnsy",
-"name": "Kearnsy",
-"tag": "KEA",
+"id": "team-raijin",
+"name": "Team Raijin",
+"tag": "TR",
 "region": "OCE",
-"color": "#ec4899",
+"color": "#22c55e",
 "players": [
 {
 "name": "Kearnsy",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 56
+"rating": 52
 },
 {
 "name": "cx9",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 54
+"rating": 59
 },
 {
 "name": "Krepezy",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 59
+"rating": 55
 }
 ]
 },
 {
-"id": "electro-rl",
-"name": "Electro rl",
-"tag": "ER",
+"id": "2-pros-1-electron",
+"name": "2 pros 1 electron",
+"tag": "2P1E",
 "region": "OCE",
-"color": "#2f8cff",
+"color": "#10b981",
 "players": [
 {
 "name": "Zapper",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 56
+"rating": 52
 },
 {
 "name": "Syn",
@@ -5478,22 +5478,22 @@ window.RL_DATA = {
 "name": "Scythe",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 58
+"rating": 57
 }
 ]
 },
 {
-"id": "nab",
-"name": "Nab",
-"tag": "NAB",
+"id": "air-dribble-bump-falcons",
+"name": "Air Dribble Bump Falcons",
+"tag": "ADBF",
 "region": "OCE",
-"color": "#14b8a6",
+"color": "#84cc16",
 "players": [
 {
 "name": "nab",
 "country": "New Zealand",
 "flag": "🇳🇿",
-"rating": 53
+"rating": 48
 },
 {
 "name": "Rellec",
@@ -5505,61 +5505,61 @@ window.RL_DATA = {
 "name": "Cornet",
 "country": "New Zealand",
 "flag": "🇳🇿",
-"rating": 52
+"rating": 56
 }
 ]
 },
 {
-"id": "aquaduk",
-"name": "Aquaduk",
-"tag": "AQU",
+"id": "mr-miners-men",
+"name": "Mr. Miners Men",
+"tag": "MMM",
 "region": "OCE",
-"color": "#84cc16",
+"color": "#f43f5e",
 "players": [
 {
 "name": "aquaduk",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 52
+"rating": 56
 },
 {
 "name": "pank grank tank",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 49
+"rating": 50
 },
 {
 "name": "akew777",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 54
+"rating": 52
 }
 ]
 },
 {
-"id": "khrade",
-"name": "Khrade",
-"tag": "KHR",
+"id": "kap",
+"name": "Kap",
+"tag": "KAP",
 "region": "OCE",
-"color": "#0ea5e9",
+"color": "#10b981",
 "players": [
 {
 "name": "Khrade",
 "country": "New Zealand",
 "flag": "🇳🇿",
-"rating": 52
+"rating": 55
 },
 {
 "name": "pagsi",
 "country": "Australia",
 "flag": "🇦🇺",
-"rating": 54
+"rating": 53
 },
 {
 "name": "Akame",
 "country": "Chile",
 "flag": "🇨🇱",
-"rating": 52
+"rating": 48
 }
 ]
 },
@@ -5942,83 +5942,164 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "tinny-hong-kong-player",
-"name": "Tinny (Hong Kong Player)",
-"tag": "TKP",
+"id": "bigger-dawgs",
+"name": "Bigger Dawgs",
+"tag": "BD",
 "region": "APAC",
-"color": "#eab308",
+"color": "#64748b",
 "players": [
 {
 "name": "Tinny",
 "country": "Hong Kong",
 "flag": "🇭🇰",
-"rating": 64
+"rating": 60
 },
 {
 "name": "Riyal",
 "country": "India",
 "flag": "🇮🇳",
-"rating": 56
+"rating": 57
 },
 {
 "name": "StormM",
 "country": "United States",
 "flag": "🇺🇸",
-"rating": 60
-}
-]
-},
-{
-"id": "ficeo",
-"name": "Ficeo",
-"tag": "FIC",
-"region": "APAC",
-"color": "#2f8cff",
-"players": [
-{
-"name": "nukezz",
-"country": "Germany",
-"flag": "🇩🇪",
-"rating": 60
-},
-{
-"name": "Ficeo",
-"country": "Indonesia",
-"flag": "🇮🇩",
-"rating": 59
-},
-{
-"name": "Aquarius",
-"country": "South Korea",
-"flag": "🇰🇷",
 "rating": 58
 }
 ]
 },
 {
-"id": "tomato",
-"name": "Tomato",
-"tag": "TOM",
+"id": "nalla-esports",
+"name": "Nalla Esports",
+"tag": "NE",
 "region": "APAC",
-"color": "#64748b",
+"color": "#f97316",
+"players": [
+{
+"name": "NEMoon_μ",
+"country": "",
+"flag": "",
+"rating": 58
+},
+{
+"name": "wildfire456",
+"country": "Pakistan",
+"flag": "🇵🇰",
+"rating": 57
+},
+{
+"name": "zwix",
+"country": "Saudi Arabia",
+"flag": "🇸🇦",
+"rating": 58
+}
+]
+},
+{
+"id": "no-brake-boys",
+"name": "No Brake Boys",
+"tag": "NBB",
+"region": "APAC",
+"color": "#eab308",
+"players": [
+{
+"name": "Abdul",
+"country": "Pakistan",
+"flag": "🇵🇰",
+"rating": 56
+},
+{
+"name": "hassan",
+"country": "Pakistan",
+"flag": "🇵🇰",
+"rating": 60
+},
+{
+"name": "Yasir",
+"country": "Pakistan",
+"flag": "🇵🇰",
+"rating": 59
+}
+]
+},
+{
+"id": "oky",
+"name": "OKY",
+"tag": "OKY",
+"region": "APAC",
+"color": "#ef4444",
+"players": [
+{
+"name": "obu_c",
+"country": "Japan",
+"flag": "🇯🇵",
+"rating": 59
+},
+{
+"name": "Y0NXY.",
+"country": "Japan",
+"flag": "🇯🇵",
+"rating": 54
+},
+{
+"name": "katei",
+"country": "Japan",
+"flag": "🇯🇵",
+"rating": 54
+}
+]
+},
+{
+"id": "0511",
+"name": "0511",
+"tag": "051",
+"region": "APAC",
+"color": "#10b981",
+"players": [
+{
+"name": "nukezz",
+"country": "Germany",
+"flag": "🇩🇪",
+"rating": 53
+},
+{
+"name": "Ficeo",
+"country": "Indonesia",
+"flag": "🇮🇩",
+"rating": 55
+},
+{
+"name": "Aquarius",
+"country": "South Korea",
+"flag": "🇰🇷",
+"rating": 54
+}
+]
+},
+{
+"id": "power-shooter",
+"name": "Power shooter",
+"tag": "PS",
+"region": "APAC",
+"color": "#f97316",
 "players": [
 {
 "name": "tomato",
 "country": "Japan",
 "flag": "🇯🇵",
-"rating": 57
+"rating": 58
 },
 {
 "name": "yuuki-0525",
 "country": "Japan",
 "flag": "🇯🇵",
-"rating": 52
+"rating": 54
 },
 {
 "name": "Ten.",
 "country": "Japan",
 "flag": "🇯🇵",
-"rating": 59
+"rating": 51
 }
 ]
 },
@@ -6033,26 +6114,26 @@ window.RL_DATA = {
 "name": "eco",
 "country": "Pakistan",
 "flag": "🇵🇰",
-"rating": 57
+"rating": 54
 },
 {
 "name": "ballerrees",
 "country": "Singapore",
 "flag": "🇸🇬",
-"rating": 57
+"rating": 54
 },
 {
 "name": "Zeyqoh",
 "country": "France",
 "flag": "🇫🇷",
-"rating": 50
+"rating": 47
 }
 ]
 },
 {
-"id": "fnsi",
-"name": "FNSi",
-"tag": "FNS",
+"id": "soh",
+"name": "SoH",
+"tag": "SOH",
 "region": "APAC",
 "color": "#ff8a1f",
 "players": [
@@ -6060,19 +6141,19 @@ window.RL_DATA = {
 "name": "FNSi",
 "country": "Finland",
 "flag": "🇫🇮",
-"rating": 55
+"rating": 54
 },
 {
 "name": "Ekninito",
 "country": "France",
 "flag": "🇫🇷",
-"rating": 53
+"rating": 50
 },
 {
 "name": "Harry",
 "country": "Hong Kong",
 "flag": "🇭🇰",
-"rating": 56
+"rating": 51
 }
 ]
 },
@@ -6087,127 +6168,46 @@ window.RL_DATA = {
 "name": "Hiroki",
 "country": "Japan",
 "flag": "🇯🇵",
-"rating": 51
+"rating": 48
 },
 {
 "name": "Medoūsa",
 "country": "Japan",
 "flag": "🇯🇵",
-"rating": 56
+"rating": 53
 },
 {
 "name": "yuuyu1173",
 "country": "Japan",
 "flag": "🇯🇵",
-"rating": 51
+"rating": 48
 }
 ]
 },
 {
-"id": "akira0902",
-"name": "Akira0902",
-"tag": "AKI",
+"id": "sakura-asian-team",
+"name": "Sakura (Asian Team)",
+"tag": "ST",
 "region": "APAC",
-"color": "#f43f5e",
+"color": "#64748b",
 "players": [
 {
-"name": "Akira0902",
-"country": "Japan",
-"flag": "🇯🇵",
-"rating": 53
-},
-{
-"name": "Arch",
-"country": "Japan",
-"flag": "🇯🇵",
-"rating": 53
-},
-{
-"name": "shaolon",
+"name": "mildpork",
 "country": "Japan",
 "flag": "🇯🇵",
 "rating": 52
-}
-]
 },
 {
-"id": "cms",
-"name": "CMS",
-"tag": "CMS",
-"region": "APAC",
-"color": "#a855f7",
-"players": [
-{
-"name": "CMS",
-"country": "Bangladesh",
-"flag": "🇧🇩",
-"rating": 51
+"name": "paperkamii",
+"country": "",
+"flag": "",
+"rating": 45
 },
 {
-"name": "Tornado_62",
-"country": "Indonesia",
-"flag": "🇮🇩",
-"rating": 55
-},
-{
-"name": "Awkwavey",
-"country": "Indonesia",
-"flag": "🇮🇩",
+"name": "Zekey.rl",
+"country": "Japan",
+"flag": "🇯🇵",
 "rating": 53
-}
-]
-},
-{
-"id": "grayson",
-"name": "Grayson",
-"tag": "GRA",
-"region": "APAC",
-"color": "#f43f5e",
-"players": [
-{
-"name": "Shyiroh",
-"country": "Singapore",
-"flag": "🇸🇬",
-"rating": 50
-},
-{
-"name": "grayson",
-"country": "United States",
-"flag": "🇺🇸",
-"rating": 53
-},
-{
-"name": "Laziira.",
-"country": "Singapore",
-"flag": "🇸🇬",
-"rating": 49
-}
-]
-},
-{
-"id": "lee",
-"name": "Lee",
-"tag": "LEE",
-"region": "APAC",
-"color": "#22c55e",
-"players": [
-{
-"name": "lee",
-"country": "Singapore",
-"flag": "🇸🇬",
-"rating": 50
-},
-{
-"name": "Radyo",
-"country": "Philippines",
-"flag": "🇵🇭",
-"rating": 49
-},
-{
-"name": "OddFlexx",
-"country": "Singapore",
-"flag": "🇸🇬",
-"rating": 51
 }
 ]
 },
@@ -6374,9 +6374,9 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "devour",
-"name": "Devour",
-"tag": "DEV",
+"id": "le-passion",
+"name": "Le passion",
+"tag": "LP",
 "region": "SSA",
 "color": "#a855f7",
 "players": [
@@ -6384,46 +6384,46 @@ window.RL_DATA = {
 "name": "Devour",
 "country": "South Africa",
 "flag": "🇿🇦",
-"rating": 62
+"rating": 68
 },
 {
 "name": "N1tro",
 "country": "South Africa",
 "flag": "🇿🇦",
-"rating": 64
+"rating": 66
 },
 {
 "name": "Stake",
 "country": "Spain",
 "flag": "🇪🇸",
-"rating": 69
+"rating": 62
 }
 ]
 },
 {
-"id": "strutic",
-"name": "Strutic",
-"tag": "STR",
+"id": "7x7",
+"name": "7x7",
+"tag": "7X7",
 "region": "SSA",
-"color": "#f43f5e",
+"color": "#a855f7",
 "players": [
 {
 "name": "Strutic",
 "country": "Hungary",
 "flag": "🇭🇺",
-"rating": 64
+"rating": 62
 },
 {
 "name": "Trstn",
 "country": "South Africa",
 "flag": "🇿🇦",
-"rating": 63
+"rating": 62
 },
 {
 "name": "twnzr",
 "country": "Germany",
 "flag": "🇩🇪",
-"rating": 63
+"rating": 68
 }
 ]
 },
@@ -6509,11 +6509,11 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "sullyxnz",
-"name": "Sullyxnz",
-"tag": "SUL",
+"id": "la-masia-african-team",
+"name": "La Masia (African Team)",
+"tag": "LMT",
 "region": "SSA",
-"color": "#eab308",
+"color": "#2f8cff",
 "players": [
 {
 "name": "Dreazy",
@@ -6525,13 +6525,13 @@ window.RL_DATA = {
 "name": "Mnotho.",
 "country": "South Africa",
 "flag": "🇿🇦",
-"rating": 64
+"rating": 65
 },
 {
 "name": "Sullyxnz",
 "country": "France",
 "flag": "🇫🇷",
-"rating": 58
+"rating": 57
 }
 ]
 },
@@ -6617,55 +6617,82 @@ window.RL_DATA = {
 ]
 },
 {
-"id": "czudo",
-"name": "Czudo",
-"tag": "CZU",
+"id": "project-one",
+"name": "Project one",
+"tag": "PO",
 "region": "SSA",
-"color": "#10b981",
+"color": "#ec4899",
 "players": [
 {
 "name": "Czudo",
 "country": "Poland",
 "flag": "🇵🇱",
-"rating": 53
+"rating": 55
 },
 {
 "name": "kayvee",
 "country": "South Africa",
 "flag": "🇿🇦",
-"rating": 55
+"rating": 52
 },
 {
 "name": "olam",
 "country": "South Africa",
 "flag": "🇿🇦",
-"rating": 56
+"rating": 59
 }
 ]
 },
 {
-"id": "zeph-south-african-player",
-"name": "Zeph (South African Player)",
-"tag": "ZAP",
+"id": "321",
+"name": "321",
+"tag": "321",
 "region": "SSA",
-"color": "#f43f5e",
+"color": "#ef4444",
 "players": [
 {
 "name": "Zeph.",
 "country": "South Africa",
 "flag": "🇿🇦",
-"rating": 56
+"rating": 58
 },
 {
 "name": "Lickse",
 "country": "Portugal",
 "flag": "🇵🇹",
-"rating": 55
+"rating": 54
 },
 {
 "name": "xyro",
 "country": "South Africa",
 "flag": "🇿🇦",
+"rating": 52
+}
+]
+},
+{
+"id": "team-alh",
+"name": "Team ALH",
+"tag": "TA",
+"region": "SSA",
+"color": "#2f8cff",
+"players": [
+{
+"name": "Lorax_21",
+"country": "South Africa",
+"flag": "🇿🇦",
+"rating": 55
+},
+{
+"name": "Happeak.",
+"country": "South Africa",
+"flag": "🇿🇦",
+"rating": 55
+},
+{
+"name": "Awkwax",
+"country": "Luxembourg",
+"flag": "🇱🇺",
 "rating": 53
 }
 ]
@@ -6678,49 +6705,130 @@ window.RL_DATA = {
 "color": "#0ea5e9",
 "players": [
 {
-"name": "Lorax_21",
+"name": "Friction",
 "country": "South Africa",
 "flag": "🇿🇦",
-"rating": 53
+"rating": 54
 },
 {
-"name": "Happeak.",
+"name": "SchalkG",
 "country": "South Africa",
 "flag": "🇿🇦",
-"rating": 57
+"rating": 54
 },
 {
-"name": "Awkwax",
-"country": "Luxembourg",
-"flag": "🇱🇺",
-"rating": 55
+"name": "Lackstar",
+"country": "South Africa",
+"flag": "🇿🇦",
+"rating": 52
 }
 ]
 },
 {
-"id": "greybeard",
-"name": "Greybeard",
-"tag": "GRE",
+"id": "stanislas",
+"name": "Stanislas",
+"tag": "STA",
 "region": "SSA",
-"color": "#10b981",
+"color": "#6366f1",
+"players": [
+{
+"name": "zion_rl",
+"country": "Réunion",
+"flag": "🇷🇪",
+"rating": 51
+},
+{
+"name": "Clays!",
+"country": "Réunion",
+"flag": "🇷🇪",
+"rating": 50
+},
+{
+"name": "smshyy",
+"country": "France",
+"flag": "🇫🇷",
+"rating": 56
+}
+]
+},
+{
+"id": "the-wave",
+"name": "The Wave",
+"tag": "TW",
+"region": "SSA",
+"color": "#0ea5e9",
+"players": [
+{
+"name": "Oji_rl",
+"country": "Réunion",
+"flag": "🇷🇪",
+"rating": 52
+},
+{
+"name": "pandak.",
+"country": "Réunion",
+"flag": "🇷🇪",
+"rating": 48
+},
+{
+"name": "galaxi22",
+"country": "France",
+"flag": "🇫🇷",
+"rating": 54
+}
+]
+},
+{
+"id": "fellow-kids",
+"name": "Fellow Kids",
+"tag": "FK",
+"region": "SSA",
+"color": "#64748b",
 "players": [
 {
 "name": "Greybeard",
 "country": "South Africa",
 "flag": "🇿🇦",
-"rating": 49
+"rating": 46
 },
 {
 "name": "Cyx",
 "country": "England",
 "flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-"rating": 49
+"rating": 50
 },
 {
 "name": "BananaCat",
 "country": "South Africa",
 "flag": "🇿🇦",
-"rating": 56
+"rating": 50
+}
+]
+},
+{
+"id": "szs",
+"name": "SZS",
+"tag": "SZS",
+"region": "SSA",
+"color": "#f97316",
+"players": [
+{
+"name": "Zan",
+"country": "South Africa",
+"flag": "🇿🇦",
+"rating": 46
+},
+{
+"name": "sxm",
+"country": "Spain",
+"flag": "🇪🇸",
+"rating": 50
+},
+{
+"name": "Scrafi",
+"country": "South Africa",
+"flag": "🇿🇦",
+"rating": 51
 }
 ]
 },
@@ -6732,103 +6840,22 @@ window.RL_DATA = {
 "color": "#2f8cff",
 "players": [
 {
-"name": "Zan",
-"country": "South Africa",
-"flag": "🇿🇦",
-"rating": 53
-},
-{
-"name": "sxm",
-"country": "Spain",
-"flag": "🇪🇸",
-"rating": 52
-},
-{
-"name": "Scrafi",
-"country": "South Africa",
-"flag": "🇿🇦",
-"rating": 52
-}
-]
-},
-{
-"id": "marnie",
-"name": "Marnie",
-"tag": "MAR",
-"region": "SSA",
-"color": "#f97316",
-"players": [
-{
-"name": "yan",
-"country": "Spain",
-"flag": "🇪🇸",
-"rating": 50
-},
-{
-"name": "Marnie",
-"country": "South Africa",
-"flag": "🇿🇦",
-"rating": 50
-},
-{
-"name": "MAX",
-"country": "South Africa",
-"flag": "🇿🇦",
-"rating": 53
-}
-]
-},
-{
-"id": "potatowithagun",
-"name": "PotatoWithaGun",
-"tag": "POT",
-"region": "SSA",
-"color": "#22c55e",
-"players": [
-{
-"name": "Cozy.",
-"country": "South Africa",
-"flag": "🇿🇦",
-"rating": 51
-},
-{
-"name": "PotatoWithaGun",
-"country": "South Africa",
-"flag": "🇿🇦",
-"rating": 49
-},
-{
-"name": "Emexie",
-"country": "South Africa",
-"flag": "🇿🇦",
-"rating": 46
-}
-]
-},
-{
-"id": "5bs",
-"name": "5bs",
-"tag": "5BS",
-"region": "SSA",
-"color": "#ec4899",
-"players": [
-{
-"name": "AruaLR",
-"country": "",
-"flag": "",
-"rating": 46
-},
-{
-"name": "SpeedHax",
-"country": "",
-"flag": "",
-"rating": 48
-},
-{
-"name": "Hiruka.",
+"name": "Wiiilooo",
 "country": "Réunion",
 "flag": "🇷🇪",
 "rating": 52
+},
+{
+"name": "halouest",
+"country": "France",
+"flag": "🇫🇷",
+"rating": 47
+},
+{
+"name": "egle",
+"country": "Réunion",
+"flag": "🇷🇪",
+"rating": 47
 }
 ]
 }
