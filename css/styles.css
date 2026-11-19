@@ -1086,10 +1086,9 @@ body.hero-open { overflow: hidden; }
 
 /* ---------- Event branding (colours from each event's official logo) ---------- */
 .comp-tile.themed { border-color: color-mix(in srgb, var(--e1) 60%, var(--line)); background: linear-gradient(135deg, color-mix(in srgb, var(--e1) 34%, var(--tile)), color-mix(in srgb, var(--e2) 14%, var(--tile)) 60%, var(--tile)); }
-.comp-tile.themed .comp-ico { background: radial-gradient(circle at 30% 25%, color-mix(in srgb, var(--e1) 40%, #0b1226), #0b1226 80%); border-color: color-mix(in srgb, var(--e3) 55%, transparent); overflow: hidden; }
-.comp-tile.themed .comp-ico { width: 84px; }
+.comp-tile.themed .comp-ico { background: linear-gradient(140deg, var(--e1), var(--e2)); color: var(--e-on, #fff); border-color: color-mix(in srgb, var(--e3) 55%, transparent); }
 .comp-tile.themed .comp-ico img { width: 100%; height: 100%; object-fit: contain; padding: 5px 6px; }
-@media (max-width: 720px) { .comp-tile.themed .comp-ico { width: 72px; } }
+
 .comp-tile.themed:hover { border-color: var(--e3); }
 .event-banner { margin: -1px -1px 0; height: 120px; display: flex; align-items: center; justify-content: center; position: relative; border-radius: inherit; border-bottom-left-radius: 0; border-bottom-right-radius: 0;
   background: radial-gradient(260px 120px at 20% 0%, color-mix(in srgb, var(--e2) 55%, transparent), transparent 70%), linear-gradient(135deg, color-mix(in srgb, var(--e1) 70%, #0b1226), #0b1226 85%); }
@@ -1113,3 +1112,6 @@ body.hero-open { overflow: hidden; }
 .app.event-theme.has-art .page-head { background: linear-gradient(90deg, rgba(11,18,38,0.94) 0%, rgba(11,18,38,0.82) 45%, rgba(11,18,38,0.35) 100%), var(--e-art) var(--e-pos, center) / cover; }
 .app.event-theme .event-logo { border-radius: 6px; }
 @media (max-width: 720px) { .event-banner.has-art { height: 130px; } .app.event-theme.has-art .page-head { background: linear-gradient(rgba(11,18,38,0.86), rgba(11,18,38,0.86)), var(--e-art) center / cover; } }
+
+/* events branded without key art: a slim colour band instead of a logo */
+.event-banner:not(.has-art) { height: 56px; }

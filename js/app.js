@@ -601,7 +601,7 @@
     app.innerHTML = `
       <div class="page-head">
         ${T.career ? '<button class="btn sm" data-action="nav" data-v="career">← Career</button>' : `<button class="btn sm" data-action="go-setup">← ${T.cfg && T.cfg.custom ? 'Back to modes' : 'Back to settings'}</button>`}
-        <h1>${themeOf(T.theme) && themeOf(T.theme).logo ? `<img class="event-logo" src="${themeOf(T.theme).logo}" alt="">` : ''}${esc(T.title || E.FORMATS[T.format].name)} <span class="muted" style="font-size:.55em;font-family:var(--font)">· ${T.teams.length} teams</span></h1>
+        <h1>${esc(T.title || E.FORMATS[T.format].name)} <span class="muted" style="font-size:.55em;font-family:var(--font)">· ${T.teams.length} teams</span></h1>
         <div class="head-actions">
           <div style="min-width:140px"><div class="progress" title="${pct}% complete"><i style="width:${pct}%"></i></div><div class="muted mono" style="font-size:11px;margin-top:4px">${played} series played · ${esc(cs.name)}</div></div>
           <button class="btn sm" data-action="sim-day" ${ready.length && !isLive ? '' : 'disabled'}>Simulate ${cs.type === 'bracket' ? 'round' : 'matchday'}</button>
@@ -1113,7 +1113,7 @@
   const themeVars = (th) => (th ? `--c:${th.a};--e1:${th.a};--e2:${th.b};--e3:${th.c};--e-on:${th.on || '#fff'}` : '');
   function compTile(c) {
     const th = themeOf(c.theme);
-    return `<button class="comp-tile${th ? ' themed' : ''}" data-action="comp" data-v="${c.id}" style="${th ? themeVars(th) : '--c:' + c.color}"><span class="comp-ico">${th && th.logo ? `<img src="${th.logo}" alt="">` : esc(c.mono)}</span><span class="comp-txt"><b>${esc(c.name)}</b><small>${esc(c.sub)}</small></span></button>`;
+    return `<button class="comp-tile${th ? ' themed' : ''}" data-action="comp" data-v="${c.id}" style="${th ? themeVars(th) : '--c:' + c.color}"><span class="comp-ico">${esc(c.mono)}</span><span class="comp-txt"><b>${esc(c.name)}</b><small>${esc(c.sub)}</small></span></button>`;
   }
   function competitions() {
     const ev = DATA.events;
@@ -1290,7 +1290,7 @@
     const teams = ids.map(getTeam).sort((a, b) => b.ovr - a.ovr);
     const info = c.info, i27 = c.info27;
     const th = themeOf(c.theme);
-    openModal(`${th ? `<div class="event-banner${th.art ? ' has-art' : ''}" style="${themeVars(th)}${th.art ? `;background-image:linear-gradient(180deg, rgba(11,18,38,0.05), rgba(11,18,38,0.55)),url(${th.art});background-position:${th.pos || 'center'}${th.fit === 'h' ? `;background-size:cover,auto 100%;background-repeat:no-repeat;background-color:${th.edge}` : ''}` : ''}" ${th.art ? `role="img" aria-label="${esc(th.name)} key art"` : ''}>${th.logo && !th.art ? `<img src="${th.logo}" alt="${esc(th.name)} logo">` : ''}<span class="event-swatches"><i style="background:${th.a}"></i><i style="background:${th.b}"></i><i style="background:${th.c}"></i></span></div>` : ''}${modalHead(c.name, esc(i27 ? 'RLCS 2027 · ' + i27.where + ' · ' + i27.date : info ? info.where + ' · ' + info.date : E.FORMATS[c.format].name + ' · top-rated ' + REGIONS[c.region] + ' teams (2026)'))}
+    openModal(`${th ? `<div class="event-banner${th.art ? ' has-art' : ''}" style="${themeVars(th)}${th.art ? `;background-image:linear-gradient(180deg, rgba(11,18,38,0.05), rgba(11,18,38,0.55)),url(${th.art});background-position:${th.pos || 'center'}${th.fit === 'h' ? `;background-size:cover,auto 100%;background-repeat:no-repeat;background-color:${th.edge}` : ''}` : ''}" ${th.art ? `role="img" aria-label="${esc(th.name)} key art"` : ''}><span class="event-swatches"><i style="background:${th.a}"></i><i style="background:${th.b}"></i><i style="background:${th.c}"></i></span></div>` : ''}${modalHead(c.name, esc(i27 ? 'RLCS 2027 · ' + i27.where + ' · ' + i27.date : info ? info.where + ' · ' + info.date : E.FORMATS[c.format].name + ' · top-rated ' + REGIONS[c.region] + ' teams (2026)'))}
       <div class="modal-body">
         ${info ? `<div class="kv"><span>Real champion</span><b>${esc(info.winner)}</b></div><div class="kv"><span>Runner-up</span><span>${esc(info.runnerUp)}</span></div>` : ''}
         ${i27 ? `<div class="kv"><span>Status</span><b>${esc(i27.status)}</b></div>${i27.prize ? `<div class="kv"><span>Prize pool</span><span>${esc(i27.prize)}</span></div>` : ''}` : ''}
