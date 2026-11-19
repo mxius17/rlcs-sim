@@ -99,7 +99,7 @@
   let modalOnClose = null;
   function openModal(html, opts) {
     opts = opts || {};
-    modalRoot.innerHTML = `<div class="modal-backdrop" data-backdrop><div class="modal ${opts.size || ''}" role="dialog" aria-modal="true">${html}</div></div>`;
+    modalRoot.innerHTML = `<div class="modal-backdrop" data-backdrop><div class="modal ${opts.size || ''} ${opts.cls || ''}" role="dialog" aria-modal="true" style="${opts.style || ''}">${html}</div></div>`;
     modalOnClose = opts.onClose || null;
     const first = modalRoot.querySelector('input, select, button:not(.close-x)');
     if (first && opts.focus !== false) first.focus({ preventScroll: true });
@@ -601,7 +601,7 @@
     app.innerHTML = `
       <div class="page-head">
         ${T.career ? '<button class="btn sm" data-action="nav" data-v="career">← Career</button>' : `<button class="btn sm" data-action="go-setup">← ${T.cfg && T.cfg.custom ? 'Back to modes' : 'Back to settings'}</button>`}
-        <h1>${esc(T.title || E.FORMATS[T.format].name)} <span class="muted" style="font-size:.55em;font-family:var(--font)">· ${T.teams.length} teams</span></h1>
+        <h1>${themeOf(T.theme) && themeOf(T.theme).logo ? `<img class="event-logo" src="${themeOf(T.theme).logo}" alt="">` : ''}${esc(T.title || E.FORMATS[T.format].name)} <span class="muted" style="font-size:.55em;font-family:var(--font)">· ${T.teams.length} teams</span></h1>
         <div class="head-actions">
           <div style="min-width:140px"><div class="progress" title="${pct}% complete"><i style="width:${pct}%"></i></div><div class="muted mono" style="font-size:11px;margin-top:4px">${played} series played · ${esc(cs.name)}</div></div>
           <button class="btn sm" data-action="sim-day" ${ready.length && !isLive ? '' : 'disabled'}>Simulate ${cs.type === 'bracket' ? 'round' : 'matchday'}</button>
@@ -816,7 +816,7 @@
     if (!live) return;
     const cv = $('#pitch');
     const mm = state.T.matches[live.mid];
-    if (!live.pitch) live.pitch = new window.RLPitch(cv, getTeam(mm.a), getTeam(mm.b));
+    if (!live.pitch) { live.pitch = new window.RLPitch(cv, getTeam(mm.a), getTeam(mm.b)); live.pitch.theme = themeOf(state.T.theme); }
     else live.pitch.attach(cv);
     live.last = performance.now();
     renderFeed();
@@ -1107,19 +1107,28 @@
     (pool || rankedTeams()).forEach((t) => { if (out.length < n && !have.has(t.id)) { out.push(t.id); have.add(t.id); } });
     return out;
   }
+  /* Event branding (from each event's official logo on Liquipedia): primary / secondary / accent + logo */
+  const THEMES = window.RL_EVENT_THEMES || {};
+  const themeOf = (key) => (key && THEMES[key]) || null;
+  const themeVars = (th) => (th ? `--c:${th.a};--e1:${th.a};--e2:${th.b};--e3:${th.c}` : '');
+  function compTile(c) {
+    const th = themeOf(c.theme);
+    return `<button class="comp-tile${th ? ' themed' : ''}" data-action="comp" data-v="${c.id}" style="${th ? themeVars(th) : '--c:' + c.color}"><span class="comp-ico">${th && th.logo ? `<img src="${th.logo}" alt="">` : esc(c.mono)}</span><span class="comp-txt"><b>${esc(c.name)}</b><small>${esc(c.sub)}</small></span></button>`;
+  }
   function competitions() {
     const ev = DATA.events;
     const list = [
-      { id: 'worlds', mono: 'WC', color: '#d4a017', name: 'RLCS World Championship', sub: '2026 · 20 teams', info: ev[0], format: 'groups', groupSize: 5, advance: 2, size: 20, teams: () => allTeams().filter((t) => t.worlds && t.season === '2026').map((t) => t.id), fmtText: '4 groups of 5, top two into an eight-team knockout (Bo7).' },
-      { id: 'paris', mono: 'PM', color: '#3b6cf6', name: 'Paris Major', sub: '2026 · 16 teams', info: ev[1], format: 'major', size: 16, teams: () => idsByNames(EVENT_FIELDS.paris), fmtText: 'Four groups of four (Bo5), then the Final Eight playoffs (Bo7).' },
-      { id: 'boston', mono: 'BM', color: '#b91c1c', name: 'Boston Major', sub: '2026 · 16 teams', info: ev[2], format: 'major', size: 16, teams: () => idsByNames(EVENT_FIELDS.boston), fmtText: 'Four groups of four (Bo5), then the Final Eight playoffs (Bo7).' },
+      { id: 'worlds', theme: 'worlds-2026', mono: 'WC', color: '#d4a017', name: 'RLCS World Championship', sub: '2026 · 20 teams', info: ev[0], format: 'groups', groupSize: 5, advance: 2, size: 20, teams: () => allTeams().filter((t) => t.worlds && t.season === '2026').map((t) => t.id), fmtText: '4 groups of 5, top two into an eight-team knockout (Bo7).' },
+      { id: 'paris', theme: 'paris', mono: 'PM', color: '#3b6cf6', name: 'Paris Major', sub: '2026 · 16 teams', info: ev[1], format: 'major', size: 16, teams: () => idsByNames(EVENT_FIELDS.paris), fmtText: 'Four groups of four (Bo5), then the Final Eight playoffs (Bo7).' },
+      { id: 'boston', theme: 'boston', mono: 'BM', color: '#b91c1c', name: 'Boston Major', sub: '2026 · 16 teams', info: ev[2], format: 'major', size: 16, teams: () => idsByNames(EVENT_FIELDS.boston), fmtText: 'Four groups of four (Bo5), then the Final Eight playoffs (Bo7).' },
     ];
     list.forEach((c) => (c.season = c.season || '2026'));
+    list.forEach((c) => { const th = themeOf(c.theme); if (th) c.color = th.a; });
     if (HAS27) list.unshift(...competitions27());
     HIST.forEach((se) => se.events.forEach((e, i) => {
       const byName = {}; se.teams.forEach((t) => (byName[t.name] = 'h' + se.key + '-' + t.id.replace(/^h[^-]*-/, '')));
       const ids = e.teams.map((n) => { const t = se.teams.find((x) => x.name === n); return t && t.id; }).filter(Boolean);
-      list.push({ id: 'arch-' + se.key + '-' + i, season: se.key, mono: e.worlds ? 'WC' : 'M' + (i + 1), color: e.worlds ? '#F2542D' : '#1F8BFF', name: e.name, sub: se.key + ' · ' + e.size + ' teams · won by ' + (e.winner || 'TBD'),
+      list.push({ id: 'arch-' + se.key + '-' + i, season: se.key, theme: e.worlds ? 'worlds-' + se.key : null, mono: e.worlds ? 'WC' : 'M' + (i + 1), color: e.worlds ? '#F2542D' : '#1F8BFF', name: e.name, sub: se.key + ' · ' + e.size + ' teams · won by ' + (e.winner || 'TBD'),
         info: { where: e.where, date: e.date, winner: e.winner || '—', runnerUp: e.runnerUp || '—' }, format: e.format, groupSize: e.groupSize, advance: e.advance, size: e.size, teams: () => ids, fmtText: e.fmtText });
     }));
     Object.entries(REGIONS).forEach(([k, v]) => list.push({ id: 'open-' + k, mono: k, color: REGION_COLORS[k], name: v + ' Open', sub: '2026 · regional open · 16 teams', season: '2026', region: k, format: 'swiss', size: 16, teams: () => rankedTeams('2026').filter((t) => t.region === k).map((t) => t.id), fmtText: '16-team Swiss stage (3 wins to qualify, 3 losses out), then an eight-team playoff.' }));
@@ -1136,7 +1145,7 @@
     const euQ = r27.find((t) => t.region === 'EU' && !t.partner && !koIds.includes(t.id));
     const koField = euQ ? koIds.concat(euQ.id) : koIds;
     const list = [{
-      id: 'k27', season: '2027', mono: 'KO', color: '#e11d48', name: 'Club Championship Kick-Off', sub: 'London · 9–13 Dec 2026 · 24 teams', format: 'double', size: 24,
+      id: 'k27', theme: 'k27', season: '2027', mono: 'KO', color: '#e11d48', name: 'Club Championship Kick-Off', sub: 'London · 9–13 Dec 2026 · 24 teams', format: 'double', size: 24,
       teams: () => koField, info27: { where: ko.where, date: ko.date, prize: ko.prize, status: 'Upcoming' }, projected: euQ ? [euQ.name + ' fills the Europe Kick-Off Open spot (qualifier ends 22 Nov)'] : [],
       fmtText: '24 teams, double elimination. The top 8 seeds get a bye to Upper Round 2. The winner\'s region earns an extra Club Finale spot.',
     }];
@@ -1173,6 +1182,7 @@
     state.setup = s;
     s.teams = ['swiss', 'swiss8', 'knockout', 'double'].includes(c.format) ? ids.slice().sort((a, b) => getTeam(b).ovr - getTeam(a).ovr) : arrangeForFormat(ids);
     s.title = c.name;
+    s.theme = c.theme || null;
   }
   function go(view) {
     stopLive();
@@ -1221,7 +1231,7 @@
             <button class="feat-card" data-action="comp" data-v="cf27" style="--c:#d4a017"><span class="feat-card-title">Club Finale</span><span class="feat-meta">2027 · 16 teams · $500,500</span><span class="feat-arrow">→</span></button>
           </div>
         </div>
-        <div class="tile-grid">${compList.filter((c) => c.season === '2027').map((c) => `<button class="comp-tile" data-action="comp" data-v="${c.id}" style="--c:${c.color}"><span class="comp-ico">${esc(c.mono)}</span><span class="comp-txt"><b>${esc(c.name)}</b><small>${esc(c.sub)}</small></span></button>`).join('') || '<p class="muted">No competitions match.</p>'}</div>`;
+        <div class="tile-grid">${compList.filter((c) => c.season === '2027').map(compTile).join('') || '<p class="muted">No competitions match.</p>'}</div>`;
       })() : ''}
 
       <h2 class="home-h">RLCS 2026</h2>
@@ -1244,14 +1254,14 @@
         </div>
       </div>
 
-      <div class="tile-grid">${compList.filter((c) => c.season === '2026').map((c) => `<button class="comp-tile" data-action="comp" data-v="${c.id}" style="--c:${c.color}"><span class="comp-ico">${esc(c.mono)}</span><span class="comp-txt"><b>${esc(c.name)}</b><small>${esc(c.sub)}</small></span></button>`).join('') || '<p class="muted">No competitions match.</p>'}</div>
+      <div class="tile-grid">${compList.filter((c) => c.season === '2026').map(compTile).join('') || '<p class="muted">No competitions match.</p>'}</div>
 
       ${HIST.length ? (() => {
         const ak = HIST.some((x) => x.key === state.ui.archive) ? state.ui.archive : HIST[0].key;
         const se = HIST.find((x) => x.key === ak);
         return `<div class="home-h-row"><h2 class="home-h">Season archive</h2><div class="seg" role="tablist" aria-label="Archive season">${HIST.map((x) => `<button class="${x.key === ak ? 'active' : ''}" data-action="archive" data-v="${x.key}">${x.key}</button>`).join('')}</div></div>
         <p class="help" style="margin:-6px 0 0">${esc(se.label)}: real fields and rosters from every Major and the World Championship. Pick one to simulate it again.</p>
-        <div class="tile-grid">${compList.filter((c) => c.season === ak).map((c) => `<button class="comp-tile" data-action="comp" data-v="${c.id}" style="--c:${c.color}"><span class="comp-ico">${esc(c.mono)}</span><span class="comp-txt"><b>${esc(c.name)}</b><small>${esc(c.sub)}</small></span></button>`).join('') || '<p class="muted">No competitions match.</p>'}</div>`;
+        <div class="tile-grid">${compList.filter((c) => c.season === ak).map(compTile).join('') || '<p class="muted">No competitions match.</p>'}</div>`;
       })() : ''}
 
       <div class="home-h-row"><h2 class="home-h">Regional leagues</h2>${seasonSeg()}</div>
@@ -1279,7 +1289,8 @@
     const ids = fillTo(c.teams(), c.size, c.region ? rankedTeams(se).filter((t) => t.region === c.region).concat(rankedTeams(se)) : rankedTeams(se));
     const teams = ids.map(getTeam).sort((a, b) => b.ovr - a.ovr);
     const info = c.info, i27 = c.info27;
-    openModal(`${modalHead(c.name, esc(i27 ? 'RLCS 2027 · ' + i27.where + ' · ' + i27.date : info ? info.where + ' · ' + info.date : E.FORMATS[c.format].name + ' · top-rated ' + REGIONS[c.region] + ' teams (2026)'))}
+    const th = themeOf(c.theme);
+    openModal(`${th ? `<div class="event-banner" style="${themeVars(th)}">${th.logo ? `<img src="${th.logo}" alt="${esc(th.name)} logo">` : ''}<span class="event-swatches"><i style="background:${th.a}"></i><i style="background:${th.b}"></i><i style="background:${th.c}"></i></span></div>` : ''}${modalHead(c.name, esc(i27 ? 'RLCS 2027 · ' + i27.where + ' · ' + i27.date : info ? info.where + ' · ' + info.date : E.FORMATS[c.format].name + ' · top-rated ' + REGIONS[c.region] + ' teams (2026)'))}
       <div class="modal-body">
         ${info ? `<div class="kv"><span>Real champion</span><b>${esc(info.winner)}</b></div><div class="kv"><span>Runner-up</span><span>${esc(info.runnerUp)}</span></div>` : ''}
         ${i27 ? `<div class="kv"><span>Status</span><b>${esc(i27.status)}</b></div>${i27.prize ? `<div class="kv"><span>Prize pool</span><span>${esc(i27.prize)}</span></div>` : ''}` : ''}
@@ -1288,7 +1299,7 @@
         <div class="field-label" style="margin:14px 0 8px">Field · ${teams.length} teams (${se === '2027' ? 'RLCS 2027 rosters as of ' + esc(window.RL_DATA27.asOf) : seasonLabel(se) + ' rosters'})</div>
         <div class="team-grid">${teams.map((t) => `<div class="team-chip">${badge(t)}<div class="meta"><div class="name">${esc(t.name)}</div><div class="sub">OVR ${t.ovr} ${flagsOf(t)}</div></div></div>`).join('')}</div>
       </div>
-      <div class="modal-foot"><button class="btn" data-action="comp-customise" data-v="${c.id}">Customise</button><button class="btn primary" data-action="comp-start" data-v="${c.id}">Start tournament →</button></div>`, { size: 'md' });
+      <div class="modal-foot"><button class="btn" data-action="comp-customise" data-v="${c.id}">Customise</button><button class="btn primary" data-action="comp-start" data-v="${c.id}">Start tournament →</button></div>`, { size: 'md', cls: th ? 'event-themed' : '', style: themeVars(th) });
   }
 
   function openCustomMatch() {
@@ -1347,6 +1358,9 @@
   /* ---------------- Render root ---------------- */
   function render() {
     if (state.view === 'tournament' && !state.T) state.view = 'home';
+    const th = state.view === 'tournament' && state.T ? themeOf(state.T.theme) : null;
+    app.classList.toggle('event-theme', !!th);
+    ['--e1', '--e2', '--e3'].forEach((k, i) => (th ? app.style.setProperty(k, [th.a, th.b, th.c][i]) : app.style.removeProperty(k)));
     document.querySelectorAll('.topnav [data-v]').forEach((b) => b.classList.toggle('active', b.dataset.v === (state.view === 'teams' || state.view === 'career' ? state.view : 'home')));
     if (state.view === 'tournament') renderTournament();
     else if (state.view === 'setup') renderSetup();
@@ -1359,7 +1373,7 @@
   function startTournament() {
     const s = state.setup;
     if (s.teams.length !== s.size) return;
-    launch(s, s.title || null);
+    launch(s, s.title || null, s.theme ? { theme: s.theme } : null);
   }
 
   /* ---------------- Events ---------------- */
@@ -1379,7 +1393,7 @@
       case 'resume': go('tournament'); break;
       case 'comp': openComp(v); break;
       case 'comp-customise': { const c = competitions().find((x) => x.id === v); presetSetup(c); closeModal(); go('setup'); break; }
-      case 'comp-start': { const c = competitions().find((x) => x.id === v); presetSetup(c); launch(state.setup, c.name); break; }
+      case 'comp-start': { const c = competitions().find((x) => x.id === v); presetSetup(c); launch(state.setup, c.name, c.theme ? { theme: c.theme } : null); break; }
       case 'region-league': {
         const ids = rankedTeams().filter((t) => t.region === v).slice(0, 10).map((t) => t.id);
         state.setup = Object.assign(defaultSetup(), { format: 'leaguePlayoffs', size: 10, quickFill: v, teams: ids, title: REGIONS[v] + ' League' });

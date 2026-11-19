@@ -32,6 +32,7 @@
   const norm = (x, y) => { const l = Math.hypot(x, y) || 1; return [x / l, y / l]; };
   const wrap = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
   const sgn = (v) => (v < 0 ? -1 : 1);
+  const rgba = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
   const d3 = (b, p) => Math.hypot(p[0] - b.x, p[1] - b.y, (p[2] == null ? b.z : p[2]) - b.z);
   function curvature(v) {
     for (let i = 1; i < CURV.length; i++) if (v <= CURV[i][0]) { const [a, ca] = CURV[i - 1], [b, cb] = CURV[i]; return ca + ((v - a) / (b - a)) * (cb - ca); }
@@ -949,6 +950,11 @@
     ctx.clearRect(0, 0, VW, VH);
     if (this.shake > 0) { this.shake -= dtReal; const m = this.shake * 10; ctx.translate(rnd(-m, m), rnd(-m, m)); }
     ctx.fillStyle = '#121A2E'; ctx.fillRect(-20, -20, VW + 40, VH + 40); // Midnight Ink
+    const th = this.theme;
+    if (th) { // event branding: the arena glows in the event's colours
+      const gl = ctx.createRadialGradient(VW / 2, CY, 120, VW / 2, CY, VW * 0.62);
+      gl.addColorStop(0, 'rgba(0,0,0,0)'); gl.addColorStop(1, rgba(th.a, 0.22)); ctx.fillStyle = gl; ctx.fillRect(0, 0, VW, VH);
+    }
     // turf with mowing stripes and team-tinted halves
     ctx.save(); fieldPath(ctx); ctx.clip();
     // pitch: Midnight Ink, lifted slightly, with Azure (blue half) and Vermilion (orange half) tints
@@ -964,9 +970,10 @@
     for (let k = -3; k <= 3; k++) [-1, 1].forEach((s) => { ctx.beginPath(); ctx.moveTo(X(s * L), Y((GW * k) / 4)); ctx.lineTo(X(s * (L + GD)), Y((GW * k) / 4)); ctx.stroke(); });
     ctx.restore();
     // markings
-    ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 2;
+    ctx.strokeStyle = th ? rgba(th.b, 0.55) : 'rgba(255,255,255,0.3)'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(X(0), Y(-W)); ctx.lineTo(X(0), Y(W)); ctx.stroke();
     ctx.beginPath(); ctx.arc(X(0), Y(0), 1000 * S, 0, Math.PI * 2); ctx.stroke();
+    if (th) { ctx.strokeStyle = rgba(th.c, 0.5); ctx.beginPath(); ctx.arc(X(0), Y(0), 1000 * S - 5, 0, Math.PI * 2); ctx.stroke(); }
     [-1, 1].forEach((s) => {
       ctx.strokeStyle = s < 0 ? 'rgba(31,139,255,0.45)' : 'rgba(242,84,45,0.45)';
       ctx.beginPath(); ctx.moveTo(X(s * L), Y(-1800)); ctx.lineTo(X(s * (L - 1300)), Y(-1800)); ctx.lineTo(X(s * (L - 1300)), Y(1800)); ctx.lineTo(X(s * L), Y(1800)); ctx.stroke();
@@ -979,7 +986,7 @@
         ctx.beginPath(); ctx.arc(X(p.x), Y(p.y), 6.5, 0, Math.PI * 2); ctx.fillStyle = on ? '#F2542D' : 'rgba(255,255,255,0.12)'; ctx.fill();
       } else { ctx.beginPath(); ctx.arc(X(p.x), Y(p.y), 3.6, 0, Math.PI * 2); ctx.fillStyle = on ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.1)'; ctx.fill(); }
     });
-    fieldPath(ctx); ctx.strokeStyle = 'rgba(210,225,255,0.75)'; ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.stroke();
+    fieldPath(ctx); ctx.strokeStyle = th ? rgba(th.a, 0.95) : 'rgba(210,225,255,0.75)'; ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.stroke();
     ctx.lineWidth = 5;
     ctx.strokeStyle = BLUE; ctx.beginPath(); ctx.moveTo(X(-L), Y(-GW)); ctx.lineTo(X(-L), Y(GW)); ctx.stroke();
     ctx.strokeStyle = ORANGE; ctx.beginPath(); ctx.moveTo(X(L), Y(-GW)); ctx.lineTo(X(L), Y(GW)); ctx.stroke();

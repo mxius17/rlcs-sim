@@ -1083,3 +1083,25 @@ body.hero-open { overflow: hidden; }
 /* Season picker (roster season select) */
 .season-pick { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-3); }
 .season-pick .select { width: auto; min-width: 170px; padding-top: 7px; padding-bottom: 7px; }
+
+/* ---------- Event branding (colours from each event's official logo) ---------- */
+.comp-tile.themed { border-color: color-mix(in srgb, var(--e1) 60%, var(--line)); background: linear-gradient(135deg, color-mix(in srgb, var(--e1) 34%, var(--tile)), color-mix(in srgb, var(--e2) 14%, var(--tile)) 60%, var(--tile)); }
+.comp-tile.themed .comp-ico { background: radial-gradient(circle at 30% 25%, color-mix(in srgb, var(--e1) 40%, #0b1226), #0b1226 80%); border-color: color-mix(in srgb, var(--e3) 55%, transparent); overflow: hidden; }
+.comp-tile.themed .comp-ico img { width: 100%; height: 100%; object-fit: contain; padding: 6px; }
+.comp-tile.themed:hover { border-color: var(--e3); }
+.event-banner { margin: -1px -1px 0; height: 120px; display: flex; align-items: center; justify-content: center; position: relative; border-radius: inherit; border-bottom-left-radius: 0; border-bottom-right-radius: 0;
+  background: radial-gradient(260px 120px at 20% 0%, color-mix(in srgb, var(--e2) 55%, transparent), transparent 70%), linear-gradient(135deg, color-mix(in srgb, var(--e1) 70%, #0b1226), #0b1226 85%); }
+.event-banner img { max-height: 84px; max-width: 70%; object-fit: contain; filter: drop-shadow(0 4px 18px rgba(0,0,0,0.45)); }
+.event-swatches { position: absolute; right: 14px; bottom: 10px; display: flex; gap: 6px; }
+.event-swatches i { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.35); }
+.modal.event-themed { border-color: color-mix(in srgb, var(--e1) 55%, var(--line)); overflow: hidden; }
+.modal.event-themed .btn.primary { background: var(--e1); border-color: var(--e1); color: #fff; }
+.app.event-theme { --accent: var(--e1); }
+.app.event-theme .page-head { position: relative; padding: 18px 20px; border-radius: 18px; border: 1px solid color-mix(in srgb, var(--e1) 45%, var(--line));
+  background: radial-gradient(420px 180px at 0% 0%, color-mix(in srgb, var(--e2) 35%, transparent), transparent 70%), linear-gradient(120deg, color-mix(in srgb, var(--e1) 40%, var(--tile)), var(--tile) 70%); }
+.app.event-theme .page-head h1 { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.app.event-theme .event-logo { height: 46px; width: auto; max-width: 120px; object-fit: contain; }
+.app.event-theme .progress i { background: linear-gradient(90deg, var(--e1), var(--e3)); }
+.app.event-theme .tile { border-color: color-mix(in srgb, var(--e1) 22%, var(--line)); }
+.app.event-theme .btn.orange { background: var(--e1); border-color: var(--e1); }
+@media (max-width: 720px) { .event-banner { height: 96px; } .app.event-theme .event-logo { height: 34px; } }
