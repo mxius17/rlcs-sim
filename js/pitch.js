@@ -934,7 +934,6 @@
   const CY = 40 + W * S; // field centre (leaves room for the boost HUD underneath)
   const X = (x) => VW / 2 + x * S, Y = (y) => CY + y * S;
   const LIFT = 0.32; // screen offset per uu of height (light 3/4 view so aerials read)
-  const LIFT_V = 0.38; // how far the camera leans toward +y (screen down) for the car models
 
   function fieldPath(ctx) {
     const pts = [[-L + C, -W], [L - C, -W], [L, -W + C], [L, -GW], [L + GD, -GW], [L + GD, GW], [L, GW], [L, W - C], [L - C, W], [-L + C, W], [-L, W - C], [-L, GW], [-L - GD, GW], [-L - GD, -GW], [-L, -GW], [-L, -W + C]];
@@ -1098,100 +1097,40 @@
       if (k.slide && k.z < 30) [-1, 1].forEach((o) => this.fx.push({ k: 'skid', x: k.x - c * 110 - s * 70 * o, y: k.y - s * 110 + c * 70 * o, life: 0, max: 0.8, delay: 0 })); // tyre marks
       if (k.boosting && k.z > 40) this.fx.push({ k: 'p', x: k.x - c * 130, y: k.y - s * 130, z: k.z - 17, vx: -c * 260 + rnd(-60, 60), vy: -s * 260 + rnd(-60, 60), color: 'rgba(242,84,45,0.85)', life: 0, max: 0.4, delay: 0 }); // boost trail hangs in the air
     }
-    // orientation as real angles: yaw (heading), pitch (nose up +), roll (right side down +)
-    let ang = k.hd, pitch = 0, roll = 0, sx = 1, sy = 1;
+    // flip rotation seen from above: the body foreshortens (and shows its dark underside) as it rolls
+    let ang = k.hd, fx = 1, fy = 1, under = false;
     if (fl) {
-      const th = 2 * Math.PI * Math.min(1, fp * 1.15);
-      if (fl.kind === 'front') pitch = -th;
-      else if (fl.kind === 'back') { pitch = th; ang += 0.25 * fl.side * Math.sin(Math.PI * fp); } // musty: backflip off the hood
-      else if (fl.kind === 'side') roll = th * fl.side;
-      else if (fl.kind === 'diag' || fl.kind === 'speed') { pitch = -th * 0.55; roll = th * fl.side * 0.85; ang += fl.side * 0.35 * Math.sin(Math.PI * fp); }
-      else if (fl.kind === 'wave') pitch = -0.28 * Math.sin(Math.PI * fp);
-      else if (fl.kind === 'spin') { ang += 4 * Math.PI * fp; roll = 2 * Math.PI * fp * fl.side; }
-      else if (fl.kind === 'r180') { const q = fp < 0.45 ? fp / 0.45 : fp > 0.7 ? 1 - (fp - 0.7) / 0.3 : 1; ang += Math.PI * (q * q * (3 - 2 * q)); if (fp > 0.4 && fp < 0.75) pitch = -2 * Math.PI * (fp - 0.4) / 0.35; }
-      else if (fl.kind === 'half') { const q = Math.min(1, fp / 0.65); ang = fl.hd0 + Math.PI * (q * q * (3 - 2 * q)); pitch = (Math.PI / 2) * Math.sin(Math.PI * q) * 0.9; }
+      const rot = Math.cos(2 * Math.PI * Math.min(1, fp * 1.15));
+      if (fl.kind === 'front') fx = rot;
+      else if (fl.kind === 'side') fy = rot;
+      else if (fl.kind === 'diag' || fl.kind === 'speed') { fx = 0.5 + 0.5 * rot; fy = rot; ang += fl.side * 0.35 * Math.sin(Math.PI * fp); }
+      else if (fl.kind === 'back') { fx = Math.cos(2 * Math.PI * Math.min(1, fp * 1.15)); ang += 0.25 * fl.side * Math.sin(Math.PI * fp); } // musty: backflip off the hood
+      else if (fl.kind === 'wave') { fx = 1.12 - 0.2 * Math.sin(Math.PI * fp); fy = 0.95; }
+      else if (fl.kind === 'spin') { ang += 4 * Math.PI * fp; fy = Math.cos(2 * Math.PI * fp); }
+      else if (fl.kind === 'r180') { const q = fp < 0.45 ? fp / 0.45 : fp > 0.7 ? 1 - (fp - 0.7) / 0.3 : 1; ang += Math.PI * (q * q * (3 - 2 * q)); fx = fp > 0.4 && fp < 0.75 ? Math.cos(2 * Math.PI * (fp - 0.4) / 0.35) : 1; }
+      else if (fl.kind === 'half') { const q = Math.min(1, fp / 0.65); ang = fl.hd0 + Math.PI * (q * q * (3 - 2 * q)); fx = q < 0.5 ? Math.cos(Math.PI * q) : 1; }
     } else if (k.z > 22 && !k.wall) {
-      roll = k.roll || 0; // air roll
-      if (k.tornado) { ang += k.spin; roll = k.spin * 0.5; } // tornado spin
-      if (k.vz > 150 || k.boosting) pitch = 0.6; // nose up while climbing
+      fy = Math.cos(k.roll || 0); // air roll
+      if (k.tornado) { ang += k.spin; fy = Math.cos(k.spin * 0.5); } // tornado spin
+      if (k.vz > 150 || k.boosting) fx = 0.82; // nose up while climbing
     }
-    if (k.jumpT > 0) { sx = 1.08; sy = 0.92; } // stretch on takeoff
-    if (k.landT > 0) { const q = k.landT / 0.18; sx = 1 - 0.08 * q; sy = 1 + 0.1 * q; } // squash on landing
-    this.drawCar3D(ctx, px, py, sc, ang, pitch, roll, sx, sy, col);
+    under = fx < 0 || fy < 0; fx = Math.max(0.28, Math.abs(fx)); fy = Math.max(0.3, Math.abs(fy));
+    if (k.jumpT > 0) { fx *= 1.08; fy *= 0.9; } // stretch on takeoff
+    if (k.landT > 0) { const q = k.landT / 0.18; fx *= 1 - 0.1 * q; fy *= 1 + 0.14 * q; } // squash on landing
+    ctx.save(); ctx.translate(px, py); ctx.rotate(ang); ctx.scale(sc * fx, sc * fy);
+    const WH = [[-11, -10.5], [-11, 7], [6, -10.5], [6, 7]];
+    const wheels = (inset, colr) => { ctx.fillStyle = colr; WH.forEach(([wx, wy]) => { rr(ctx, wx, wy + (wy < 0 ? inset : -inset), 6.5, 3.5, 1.2); ctx.fill(); }); };
+    if (!under) wheels(0, '#0b1020');
+    ctx.fillStyle = col; rr(ctx, -14, -8.5, 29, 17, 5); ctx.fill();
+    if (under) { ctx.fillStyle = 'rgba(18,26,46,0.55)'; rr(ctx, -14, -8.5, 29, 17, 5); ctx.fill(); wheels(3, 'rgba(11,16,32,0.95)'); ctx.restore(); ctx.save(); ctx.translate(px, py); ctx.rotate(ang); ctx.scale(sc * fx, sc * fy); ctx.globalAlpha = 0; }
+    ctx.fillStyle = 'rgba(255,255,255,0.18)'; rr(ctx, -12, -6.5, 10, 13, 3); ctx.fill();
+    ctx.fillStyle = 'rgba(18,26,46,0.9)'; rr(ctx, 1, -6, 8, 12, 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.92)'; ctx.fillRect(12, -6.5, 2.5, 3.5); ctx.fillRect(12, 3, 2.5, 3.5);
+    ctx.restore();
     ctx.font = '600 11px Inter, system-ui, sans-serif'; ctx.textAlign = 'center';
-    const ly = clamp(py - 19 * sc, 12, VH - 60), lx = clamp(px, 40, VW - 40);
+    const ly = clamp(py - 15 * sc, 12, VH - 60), lx = clamp(px, 40, VW - 40);
     ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillText(k.name, lx + 1, ly + 1);
     ctx.fillStyle = 'rgba(255,255,255,0.95)'; ctx.fillText(k.name, lx, ly);
-  };
-
-
-  /* ---------- 3D car: a small Octane-like model (chassis, sloped cabin, spoiler, wheels) projected into the
-     pitch's 3/4 camera, flat-shaded and drawn back to front ---------- */
-  const CAM = (() => { const l = Math.hypot(0, LIFT_V, 1); return [0, LIFT_V / l, 1 / l]; })(); // direction toward the viewer
-  const LIGHT = (() => { const v = [-0.3, -0.25, 0.92], l = Math.hypot(...v); return v.map((c) => c / l); })();
-  function box(x0, x1, y0, y1, z0, z1, part, topShrinkX0, topShrinkX1, topShrinkY) {
-    // 8 corners; the top can be narrower (cabin slope)
-    const tx0 = x0 + (topShrinkX0 || 0), tx1 = x1 - (topShrinkX1 || 0), ty = topShrinkY || 0;
-    const v = [[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0], [tx0, y0 + ty, z1], [tx1, y0 + ty, z1], [tx1, y1 - ty, z1], [tx0, y1 - ty, z1]];
-    const f = [[0, 3, 2, 1, 'bottom'], [4, 5, 6, 7, 'top'], [0, 1, 5, 4, 'side'], [2, 3, 7, 6, 'side'], [1, 2, 6, 5, 'front'], [3, 0, 4, 7, 'back']];
-    return f.map(([a, b, c, d, kind]) => ({ pts: [v[a], v[b], v[c], v[d]], part, kind }));
-  }
-  const CAR_MODEL = [].concat(
-    box(-14, 15, -8.5, 8.5, 1, 5.5, 'body', 0.5, 4.5, 0.6),          // chassis, nose sloped down at the front
-    box(-9, 5, -6.6, 6.6, 5.5, 9.8, 'cabin', 1.5, 5, 1.4),     // cabin with a raked windscreen
-    box(-15, -11.8, -8, 8, 8.2, 9.4, 'spoiler'),                 // rear spoiler
-    box(-14.4, -12.8, -5.5, 5.5, 5.5, 8.2, 'post'),
-    ...[[-11, -9.2], [-11, 9.2], [7.5, -9.2], [7.5, 9.2]].map(([wx, wy]) => box(wx - 3.4, wx + 3.4, wy - 1.8, wy + 1.8, -0.5, 6, 'wheel')),
-    box(14.6, 15.3, -7, -3.5, 2.5, 4.5, 'light'), box(14.6, 15.3, 3.5, 7, 2.5, 4.5, 'light')
-  );
-  function shade(hex, k) {
-    const n = parseInt(hex.slice(1), 16), f = (c) => Math.max(0, Math.min(255, Math.round(c * k)));
-    return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`;
-  }
-  Pitch.prototype.drawCar3D = function (ctx, px, py, sc, yaw, pitch, roll, sx, sy, col) {
-    const ca = Math.cos(yaw), sa = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch), cr = Math.cos(roll), sr = Math.sin(roll);
-    const ZC = 5; // rotate about the car's centre of mass
-    const xf = (p) => {
-      const x = p[0] * sx, y = p[1] * sy, z = p[2] - ZC;
-      const y1 = y * cr - z * sr, z1 = y * sr + z * cr;           // roll about the long axis
-      const x2 = x * cp - z1 * sp, z2 = x * sp + z1 * cp;         // pitch about the lateral axis
-      return [x2 * ca - y1 * sa, x2 * sa + y1 * ca, z2 + ZC];     // yaw
-    };
-    const faces = [];
-    for (const f of CAR_MODEL) {
-      const w = f.pts.map(xf);
-      const u = [w[1][0] - w[0][0], w[1][1] - w[0][1], w[1][2] - w[0][2]], v = [w[3][0] - w[0][0], w[3][1] - w[0][1], w[3][2] - w[0][2]];
-      let n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
-      const nl = Math.hypot(...n) || 1; n = n.map((c) => c / nl);
-      const facing = n[0] * CAM[0] + n[1] * CAM[1] + n[2] * CAM[2];
-      if (facing <= 0.02) continue;
-      const depth = w.reduce((a, q) => a + q[2] * CAM[2] + q[1] * CAM[1], 0) / 4;
-      faces.push({ w, n, part: f.part, kind: f.kind, depth });
-    }
-    faces.sort((a, b) => a.depth - b.depth);
-    const k3 = sc * 1.15, ZF = 0.5;
-    for (const f of faces) {
-      const lam = Math.max(0, f.n[0] * LIGHT[0] + f.n[1] * LIGHT[1] + f.n[2] * LIGHT[2]);
-      const lit = 0.38 + 0.78 * lam;
-      let fill;
-      if (f.part === 'body') fill = f.kind === 'bottom' ? '#1a2238' : f.kind === 'top' ? shade(col, lit * 1.06) : shade(col, lit * 0.8);
-      else if (f.part === 'cabin') fill = f.kind === 'top' ? shade(col, lit * 0.95) : f.kind === 'bottom' ? '#1a2238' : shade('#0e1a33', 0.8 + 0.9 * lam);
-      else if (f.part === 'spoiler' || f.part === 'post') fill = shade(col, lit * 0.62);
-      else if (f.part === 'wheel') fill = shade('#0b1020', 0.8 + 0.8 * lam);
-      else fill = '#ffffff';
-      ctx.beginPath();
-      f.w.forEach((q, i) => { const X0 = px + q[0] * k3, Y0 = py + q[1] * k3 - q[2] * k3 * ZF; i ? ctx.lineTo(X0, Y0) : ctx.moveTo(X0, Y0); });
-      ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
-      if (f.part === 'body' && f.kind === 'top') {
-        ctx.strokeStyle = 'rgba(255,255,255,0.28)'; ctx.lineWidth = 0.8; ctx.stroke();
-        // a soft sheen across the bonnet
-        const a0 = f.w[0], a2 = f.w[2];
-        const g = ctx.createLinearGradient(px + a0[0] * k3, py + a0[1] * k3 - a0[2] * k3 * ZF, px + a2[0] * k3, py + a2[1] * k3 - a2[2] * k3 * ZF);
-        g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.45, 'rgba(255,255,255,0.16)'); g.addColorStop(0.6, 'rgba(255,255,255,0)');
-        ctx.fillStyle = g; ctx.fill();
-      }
-      if (f.part === 'cabin' && f.kind !== 'top' && f.kind !== 'bottom') { ctx.strokeStyle = 'rgba(160,200,255,0.25)'; ctx.lineWidth = 0.7; ctx.stroke(); }
-    }
   };
 
   /** Broadcast-style boost meters along the bottom. */
