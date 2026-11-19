@@ -1110,7 +1110,7 @@
   /* Event branding (from each event's official logo on Liquipedia): primary / secondary / accent + logo */
   const THEMES = window.RL_EVENT_THEMES || {};
   const themeOf = (key) => (key && THEMES[key]) || null;
-  const themeVars = (th) => (th ? `--c:${th.a};--e1:${th.a};--e2:${th.b};--e3:${th.c}` : '');
+  const themeVars = (th) => (th ? `--c:${th.a};--e1:${th.a};--e2:${th.b};--e3:${th.c};--e-on:${th.on || '#fff'}` : '');
   function compTile(c) {
     const th = themeOf(c.theme);
     return `<button class="comp-tile${th ? ' themed' : ''}" data-action="comp" data-v="${c.id}" style="${th ? themeVars(th) : '--c:' + c.color}"><span class="comp-ico">${th && th.logo ? `<img src="${th.logo}" alt="">` : esc(c.mono)}</span><span class="comp-txt"><b>${esc(c.name)}</b><small>${esc(c.sub)}</small></span></button>`;
@@ -1360,7 +1360,7 @@
     if (state.view === 'tournament' && !state.T) state.view = 'home';
     const th = state.view === 'tournament' && state.T ? themeOf(state.T.theme) : null;
     app.classList.toggle('event-theme', !!th);
-    ['--e1', '--e2', '--e3'].forEach((k, i) => (th ? app.style.setProperty(k, [th.a, th.b, th.c][i]) : app.style.removeProperty(k)));
+    ['--e1', '--e2', '--e3', '--e-on'].forEach((k, i) => (th ? app.style.setProperty(k, [th.a, th.b, th.c, th.on || '#fff'][i]) : app.style.removeProperty(k)));
     document.querySelectorAll('.topnav [data-v]').forEach((b) => b.classList.toggle('active', b.dataset.v === (state.view === 'teams' || state.view === 'career' ? state.view : 'home')));
     if (state.view === 'tournament') renderTournament();
     else if (state.view === 'setup') renderSetup();
