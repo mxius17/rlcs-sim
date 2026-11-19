@@ -1128,7 +1128,7 @@
     HIST.forEach((se) => se.events.forEach((e, i) => {
       const byName = {}; se.teams.forEach((t) => (byName[t.name] = 'h' + se.key + '-' + t.id.replace(/^h[^-]*-/, '')));
       const ids = e.teams.map((n) => { const t = se.teams.find((x) => x.name === n); return t && t.id; }).filter(Boolean);
-      list.push({ id: 'arch-' + se.key + '-' + i, season: se.key, theme: e.worlds ? 'worlds-' + se.key : null, mono: e.worlds ? 'WC' : 'M' + (i + 1), color: e.worlds ? '#F2542D' : '#1F8BFF', name: e.name, sub: se.key + ' · ' + e.size + ' teams · won by ' + (e.winner || 'TBD'),
+      list.push({ id: 'arch-' + se.key + '-' + i, season: se.key, theme: e.worlds ? 'worlds-' + se.key : 'major-' + se.key + '-' + i, mono: e.worlds ? 'WC' : 'M' + (i + 1), color: e.worlds ? '#F2542D' : '#1F8BFF', name: e.name, sub: se.key + ' · ' + e.size + ' teams · won by ' + (e.winner || 'TBD'),
         info: { where: e.where, date: e.date, winner: e.winner || '—', runnerUp: e.runnerUp || '—' }, format: e.format, groupSize: e.groupSize, advance: e.advance, size: e.size, teams: () => ids, fmtText: e.fmtText });
     }));
     Object.entries(REGIONS).forEach(([k, v]) => list.push({ id: 'open-' + k, mono: k, color: REGION_COLORS[k], name: v + ' Open', sub: '2026 · regional open · 16 teams', season: '2026', region: k, format: 'swiss', size: 16, teams: () => rankedTeams('2026').filter((t) => t.region === k).map((t) => t.id), fmtText: '16-team Swiss stage (3 wins to qualify, 3 losses out), then an eight-team playoff.' }));
@@ -1290,7 +1290,7 @@
     const teams = ids.map(getTeam).sort((a, b) => b.ovr - a.ovr);
     const info = c.info, i27 = c.info27;
     const th = themeOf(c.theme);
-    openModal(`${th ? `<div class="event-banner" style="${themeVars(th)}">${th.logo ? `<img src="${th.logo}" alt="${esc(th.name)} logo">` : ''}<span class="event-swatches"><i style="background:${th.a}"></i><i style="background:${th.b}"></i><i style="background:${th.c}"></i></span></div>` : ''}${modalHead(c.name, esc(i27 ? 'RLCS 2027 · ' + i27.where + ' · ' + i27.date : info ? info.where + ' · ' + info.date : E.FORMATS[c.format].name + ' · top-rated ' + REGIONS[c.region] + ' teams (2026)'))}
+    openModal(`${th ? `<div class="event-banner${th.art ? ' has-art' : ''}" style="${themeVars(th)}${th.art ? `;background-image:linear-gradient(180deg, rgba(11,18,38,0.05), rgba(11,18,38,0.55)),url(${th.art});background-position:${th.pos || 'center'}` : ''}" ${th.art ? `role="img" aria-label="${esc(th.name)} key art"` : ''}>${th.logo && !th.art ? `<img src="${th.logo}" alt="${esc(th.name)} logo">` : ''}<span class="event-swatches"><i style="background:${th.a}"></i><i style="background:${th.b}"></i><i style="background:${th.c}"></i></span></div>` : ''}${modalHead(c.name, esc(i27 ? 'RLCS 2027 · ' + i27.where + ' · ' + i27.date : info ? info.where + ' · ' + info.date : E.FORMATS[c.format].name + ' · top-rated ' + REGIONS[c.region] + ' teams (2026)'))}
       <div class="modal-body">
         ${info ? `<div class="kv"><span>Real champion</span><b>${esc(info.winner)}</b></div><div class="kv"><span>Runner-up</span><span>${esc(info.runnerUp)}</span></div>` : ''}
         ${i27 ? `<div class="kv"><span>Status</span><b>${esc(i27.status)}</b></div>${i27.prize ? `<div class="kv"><span>Prize pool</span><span>${esc(i27.prize)}</span></div>` : ''}` : ''}
@@ -1360,6 +1360,8 @@
     if (state.view === 'tournament' && !state.T) state.view = 'home';
     const th = state.view === 'tournament' && state.T ? themeOf(state.T.theme) : null;
     app.classList.toggle('event-theme', !!th);
+    app.classList.toggle('has-art', !!(th && th.art));
+    if (th && th.art) { app.style.setProperty('--e-art', `url(${th.art})`); app.style.setProperty('--e-pos', th.pos || 'center'); } else { app.style.removeProperty('--e-art'); app.style.removeProperty('--e-pos'); }
     ['--e1', '--e2', '--e3', '--e-on'].forEach((k, i) => (th ? app.style.setProperty(k, [th.a, th.b, th.c, th.on || '#fff'][i]) : app.style.removeProperty(k)));
     document.querySelectorAll('.topnav [data-v]').forEach((b) => b.classList.toggle('active', b.dataset.v === (state.view === 'teams' || state.view === 'career' ? state.view : 'home')));
     if (state.view === 'tournament') renderTournament();

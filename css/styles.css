@@ -1107,3 +1107,9 @@ body.hero-open { overflow: hidden; }
 .app.event-theme .tile { border-color: color-mix(in srgb, var(--e1) 22%, var(--line)); }
 .app.event-theme .btn.orange { background: var(--e1); border-color: var(--e1); color: var(--e-on, #fff); }
 @media (max-width: 720px) { .event-banner { height: 96px; } .app.event-theme .event-logo { height: 34px; } }
+
+/* Majors branded with key art: the art fills the banner / tournament header */
+.event-banner.has-art { height: 170px; background-size: cover; }
+.app.event-theme.has-art .page-head { background: linear-gradient(90deg, rgba(11,18,38,0.94) 0%, rgba(11,18,38,0.82) 45%, rgba(11,18,38,0.35) 100%), var(--e-art) var(--e-pos, center) / cover; }
+.app.event-theme .event-logo { border-radius: 6px; }
+@media (max-width: 720px) { .event-banner.has-art { height: 130px; } .app.event-theme.has-art .page-head { background: linear-gradient(rgba(11,18,38,0.86), rgba(11,18,38,0.86)), var(--e-art) center / cover; } }
