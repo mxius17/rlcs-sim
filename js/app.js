@@ -878,6 +878,7 @@
         if (!next || next.t - live.t > 3) rate *= 6;
       }
       live.t = Math.min(endT, live.t + dt * rate);
+      if (g.ot && !live.otAnnounced && t0 < 300) live.t = Math.min(live.t, 300); // the clock stops at 0:00 for overtime
       // consume events
       while (live.ei < g.events.length && g.events[live.ei].t <= live.t) {
         const e = g.events[live.ei++];
@@ -896,9 +897,14 @@
         refreshLiveStats();
       }
       if (live.t >= 300 && g.ot && !live.otAnnounced) {
+        // tied at 0:00: play stops, then overtime starts with a fresh kickoff (as in Rocket League)
         live.otAnnounced = true;
         const c = $('#commentary'); if (c) c.textContent = 'Tied at zeroes on the clock — OVERTIME! Next goal wins.';
         live.feed.unshift({ t: 300, txt: 'OVERTIME! Next goal wins.' });
+        const ov = $('#pitchOverlay'); if (ov) ov.innerHTML = '<div class="goal-flash ot">OVERTIME</div>';
+        live.pauseUntil = now + 4200 / Math.sqrt(live.speed);
+        live.kickAt = now + 2000 / Math.sqrt(live.speed);
+        live.needKick = true;
         renderFeed();
       }
       if (live.t >= endT && now > live.pauseUntil) { endLiveGame(); return; }

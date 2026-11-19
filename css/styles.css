@@ -909,6 +909,7 @@ table.st th, .scorecard th { color: var(--text-3); }
 .progress i { background: var(--azure); }
 .goal-flash.blue { color: var(--azure); text-shadow: 0 0 30px rgba(31, 139, 255, 0.8); }
 .goal-flash.orange { color: var(--vermilion); text-shadow: 0 0 30px rgba(242, 84, 45, 0.8); }
+.goal-flash.ot { color: #fff; letter-spacing: 4px; text-shadow: 0 0 24px rgba(31, 139, 255, 0.7), 0 0 48px rgba(242, 84, 45, 0.45); }
 .pitch-wrap { background: var(--ink); }
 
 /* Overlays */
