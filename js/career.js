@@ -91,6 +91,33 @@
     major: [150000, 80000, 50000, 50000, 30000, 30000, 20000, 20000, 10000, 10000, 10000, 10000, 5000, 5000, 5000, 5000],
     worlds: [300000, 153000, 99000, 99000, 84000, 84000, 66000, 66000, 37500, 37500, 37500, 37500, 17250, 17250, 17250, 17250, 9000, 9000, 6000, 6000],
   };
+  /* ---------------- club economy ----------------
+     Every organisation has a size tier. It sets the starting budget and the sponsorship paid each season,
+     so a grassroots team cannot buy the world's best after one good year. Orgs keep only part of the prize
+     money (most goes to the players), stars are priced steeply and only want to join bigger organisations.
+     A club moves up a tier only after sustained success (and drops after poor seasons). */
+  const TIERS = [null,
+    { name: 'Grassroots', start: 35000, sponsor: 58000 },
+    { name: 'Challenger', start: 90000, sponsor: 105000 },
+    { name: 'Established', start: 220000, sponsor: 175000 },
+    { name: 'Major', start: 550000, sponsor: 330000 },
+    { name: 'Elite', start: 1000000, sponsor: 520000 },
+  ];
+  const PRIZE_SHARE = 0.2; // the organisation's cut of prize money
+  const ELITE_ORGS = ['Team Vitality', 'Team Falcons', 'Karmine Corp', 'NRG', 'FaZe Clan', 'FURIA', 'Gen.G Mobil1 Racing', 'Manchester City Esports', 'Team Heretics', 'Ninjas in Pyjamas', 'MIBR', 'Virtus.pro', 'Twisted Minds', 'Shopify Rebellion', 'Spacestation Gaming', 'Gentle Mates', 'G2 Esports', 'G2 Stride', 'Team BDS', 'Team Liquid', 'OG', 'TSM', 'Complexity Gaming', '100 Thieves', 'Dignitas', 'Moist Esports', 'Guild Esports'];
+  const ESTABLISHED_ORGS = ['Geekay Esports', 'Ikkaku', 'BIG', 'Five Fears', 'R8 Esports', 'M80', 'Elevate', 'Kaydop Corp', 'Team Secret', 'Luminosity Gaming', 'Version1', 'Oxygen Esports', 'Rule One', 'Team Singularity', 'Endpoint', 'Sandrock Gaming', 'Team Bliss', 'KRÜ Esports', 'Dplus', 'Detonator', 'PCS Stride', 'NOT', 'DNZ', 'WLT Gaming', 'Ninjas Bros', 'Team Evo'];
+  function orgTier(name, partner, strength) {
+    if (ELITE_ORGS.includes(name)) return 5;
+    if (partner) return 4;
+    if (ESTABLISHED_ORGS.includes(name)) return 3;
+    return strength >= 83 ? 3 : strength >= 74 ? 2 : 1;
+  }
+  const tierOf = (cid) => (C.teams[cid] && C.teams[cid].tier) || 2;
+  const tierName = (n) => TIERS[n].name;
+  const aTier = (n) => (/^[AEIOU]/.test(TIERS[n].name) ? 'an ' : 'a ') + TIERS[n].name; // 'an Elite', 'a Major'
+  const startBudget = (tier, strength) => Math.round((TIERS[tier].start * (0.9 + Math.max(0, Math.min(1, (strength - 70) / 25)) * 0.2)) / 1000) * 1000;
+  /** Lowest tier a player will join without a big overpay. */
+  const minTierFor = (p) => (p.rating >= 92 ? 4 : p.rating >= 88 ? 3 : p.rating >= 82 ? 2 : 1);
   const ROOKIE_COUNTRIES = { EU: ['France', 'Spain', 'England', 'Germany', 'Netherlands', 'Belgium', 'Denmark', 'Poland', 'Portugal', 'Italy'], NA: ['United States', 'Canada', 'Mexico'], SAM: ['Brazil', 'Argentina', 'Chile', 'Uruguay'], MENA: ['Saudi Arabia', 'Morocco', 'Kuwait', 'Egypt', 'United Arab Emirates'], OCE: ['Australia', 'New Zealand'], APAC: ['Japan', 'South Korea', 'Thailand', 'Singapore', 'Malaysia'], SSA: ['South Africa', 'Namibia'] };
   const SYL1 = ['Ze', 'Ka', 'Vo', 'Ry', 'Ni', 'Lu', 'Ax', 'Bre', 'Ce', 'Da', 'Fi', 'Jo', 'Ky', 'Mi', 'No', 'Py', 'Sa', 'Ty', 'Va', 'Xe', 'Ko', 'Ar', 'El', 'Gu', 'Ha', 'Ji', 'Re', 'Sk', 'Tr', 'Wy'];
   const SYL2 = ['r', 'n', 'l', 'x', 'z', 'k', 'v', 'th', 'sh', '', 'dr', 'mm', 'ss'];
@@ -115,12 +142,27 @@
   const money = (n) => (n < 0 ? '-' : '') + '$' + (Math.abs(n) >= 1e6 ? (Math.abs(n) / 1e6).toFixed(2) + 'M' : Math.abs(n) >= 1000 ? Math.round(Math.abs(n) / 1000) + 'k' : Math.round(Math.abs(n)));
   const salaryFor = (r) => Math.max(5000, Math.round((Math.pow(Math.max(0, r - 55), 2) * 60) / 1000) * 1000);
   function valueFor(p) {
-    const ageF = p.age <= 20 ? 1.5 : p.age <= 23 ? 1.25 : p.age <= 26 ? 1 : p.age <= 28 ? 0.75 : 0.5;
-    return Math.max(2000, Math.round((salaryFor(p.rating) * 2.2 * ageF + Math.max(0, p.pot - p.rating) * 3000) / 1000) * 1000);
+    const ageF = p.age <= 20 ? 1.35 : p.age <= 23 ? 1.15 : p.age <= 26 ? 1 : p.age <= 28 ? 0.8 : 0.55;
+    const base = 9000 * Math.exp(0.14 * (p.rating - 60)); // ~$75k at 75, ~$300k at 85, ~$1M+ at 94
+    return Math.max(2000, Math.round((base * ageF + Math.max(0, p.pot - p.rating) * 6000) / 1000) * 1000);
   }
 
   /* ---------------- persistence ---------------- */
-  function load() { try { const raw = localStorage.getItem(KEY); C = raw ? JSON.parse(raw) : null; } catch (e) { C = null; } fixAges(); bump(); }
+  function load() { try { const raw = localStorage.getItem(KEY); C = raw ? JSON.parse(raw) : null; } catch (e) { C = null; } fixAges(); fixEconomy(); bump(); }
+  /** Saves from before club tiers: give every club its tier and rebalance budgets (the user keeps at most 1.5x their tier's start). */
+  function fixEconomy() {
+    if (!C || C.econV2) return;
+    const lib = {}; (api.libraryTeams() || []).forEach((t) => (lib['c:' + t.id] = t));
+    Object.values(C.teams).forEach((t) => {
+      const L = lib[t.id]; const str = L ? E.teamStrength(L) : 75;
+      t.tier = orgTier(t.name, !!(L && L.partner), str);
+      const sb = startBudget(t.tier, str);
+      t.budget = t.id === C.user ? Math.min(t.budget, Math.round(sb * 1.5 / 1000) * 1000) : sb;
+    });
+    C.econV2 = true; C.rep = 0;
+    news('career', `Club finances were rebalanced: <b>${esc(userTeam().name)}</b> is ${aTier(tierOf(C.user))} organisation. Sponsorship now depends on club size, and the org keeps ${PRIZE_SHARE * 100}% of prize money.`);
+    save();
+  }
   /** Older saves used generated ages: replace them with real ones, rolled forward by the seasons already played. */
   function fixAges() {
     if (!C || C.agesV2) return;
@@ -179,7 +221,7 @@
   /* ---------------- new career ---------------- */
   function newCareer(teamId) {
     const lib = api.libraryTeams();
-    C = { v: 1, agesV2: true, season: 2027, step: 0, user: 'c:' + teamId, teams: {}, players: {}, nextPid: 1, points: {}, results: {}, news: [], history: [], trophies: [], fa: [], seasonFin: { prize: 0, sponsor: 0, salaries: 0, transfers: 0 }, objectives: [], board: 60, stepNews: [] };
+    C = { v: 1, agesV2: true, econV2: true, rep: 0, season: 2027, step: 0, user: 'c:' + teamId, teams: {}, players: {}, nextPid: 1, points: {}, results: {}, news: [], history: [], trophies: [], fa: [], seasonFin: { prize: 0, sponsor: 0, salaries: 0, transfers: 0 }, objectives: [], board: 60, stepNews: [] };
     lib.forEach((t) => {
       const cid = 'c:' + t.id;
       const roster = t.players.slice(0, 4).map((p, i) => {
@@ -190,7 +232,8 @@
         return addPlayer({ name: p.name, country: p.country, flag: p.flag, region: t.region, age, born: born || undefined, ageKnown: known != null, rating: p.rating, pot: Math.round(pot), team: cid, contract: 1 + Math.floor(hash(p.name + 'c') * 3), sub: i >= 3 });
       });
       const base = E.teamStrength(t);
-      C.teams[cid] = { id: cid, name: t.name, tag: t.tag, region: t.region, color: t.color, roster, budget: Math.round((120000 + Math.max(0, base - 60) * 14000) / 1000) * 1000 };
+      const tier = orgTier(t.name, !!t.partner, base);
+      C.teams[cid] = { id: cid, name: t.name, tag: t.tag, region: t.region, color: t.color, roster, tier, budget: startBudget(tier, base) };
     });
     REGIONS.forEach((r) => { for (let i = 0; i < 6; i++) C.fa.push(makeRookie(r)); });
     resetPoints();
@@ -345,7 +388,7 @@
     list.forEach(({ id, place }) => {
       const t = C.teams[id];
       if (!t) return;
-      const prize = (PRIZE[kind] || [])[place - 1] || 0;
+      const prize = Math.round(((PRIZE[kind] || [])[place - 1] || 0) * PRIZE_SHARE);
       t.budget += prize;
       if (id === C.user) C.seasonFin.prize += prize;
       if (kind !== 'worlds') {
@@ -480,10 +523,20 @@
     }
     // finances: salaries out, sponsorship in
     const salaries = me.roster.reduce((s, id) => s + C.players[id].salary, 0);
-    const sponsor = Math.round((60000 + Math.max(0, ovr(C.user) - 60) * 7000 + C.trophies.filter((t) => t.season === C.season).length * 60000 + (worlds ? 80000 : 0)) / 1000) * 1000;
+    const myTier = tierOf(C.user);
+    const seasonTrophies = C.trophies.filter((t) => t.season === C.season).length;
+    const bonus = Math.min(0.24, seasonTrophies * 0.08) + (worlds ? 0.05 : 0) + (okN === 2 ? 0.03 : 0);
+    const sponsor = Math.round((TIERS[myTier].sponsor * (1 + bonus)) / 1000) * 1000;
     me.budget += sponsor - salaries;
     C.seasonFin.salaries = salaries; C.seasonFin.sponsor = sponsor;
-    Object.values(C.teams).forEach((t) => { if (t.id !== C.user) t.budget = Math.max(60000, t.budget + 80000 + Math.max(0, ovr(t.id) - 60) * 6000 - t.roster.reduce((s, id) => s + C.players[id].salary, 0) * 0.6); });
+    // club growth: two strong seasons in a row move you up a tier, two poor ones down
+    const strong = (worlds && worlds.place <= 8) || seasonTrophies >= 2;
+    const poor = !worlds && majors === 0 && regRank > 10;
+    C.rep = strong ? Math.max(0, C.rep || 0) + 1 : poor ? Math.min(0, C.rep || 0) - 1 : 0;
+    if (C.rep >= 2 && myTier < 5) { me.tier = myTier + 1; C.rep = 0; news('career', `Sponsors take notice: <b>${esc(me.name)}</b> grows into ${aTier(me.tier).replace(/(\w+)$/, '<b>$1</b>')} organisation. Sponsorship rises from next season.`); }
+    else if (C.rep <= -2 && myTier > 1) { me.tier = myTier - 1; C.rep = 0; news('career', `After two poor seasons, sponsors pull back: <b>${esc(me.name)}</b> drops to ${aTier(me.tier).replace(/(\w+)$/, '<b>$1</b>')} organisation.`); }
+    C.seasonFin.tierAfter = tierOf(C.user);
+    Object.values(C.teams).forEach((t) => { if (t.id !== C.user) { const tr = t.tier || 2; t.budget = Math.max(Math.round(TIERS[tr].start * 0.3), Math.round(t.budget + TIERS[tr].sponsor * 0.95 - t.roster.reduce((s, id) => s + C.players[id].salary, 0))); } });
     // awards
     const all = Object.values(C.players).filter((p) => p.team && p.stats.gp > 20);
     const mvp = all.slice().sort((a, b) => b.stats.score / b.stats.gp - a.stats.score / a.stats.gp)[0];
@@ -593,7 +646,8 @@
     const rank = regTeams.findIndex((x) => x.id === t.id) + 1;
     const big = t.region === 'EU' || t.region === 'NA';
     const tier = rank <= (big ? 2 : 1) ? 1 : rank <= (big ? 5 : 2) ? 2 : rank <= (big ? 10 : 5) ? 3 : 4; // same tiers as the board's objectives
-    const budget = Math.round((120000 + Math.max(0, E.teamStrength(t) - 60) * 14000) / 1000) * 1000; // same formula as a new career
+    const tierN = orgTier(t.name, !!t.partner, E.teamStrength(t));
+    const budget = startBudget(tierN, E.teamStrength(t)); // same formula as a new career
     const stars = t.ovr >= 90 ? 5 : t.ovr >= 86 ? 4.5 : t.ovr >= 82 ? 4 : t.ovr >= 78 ? 3.5 : t.ovr >= 74 ? 3 : t.ovr >= 70 ? 2.5 : 2;
     const starHtml = [1, 2, 3, 4, 5].map((n) => `<i class="${stars >= n ? 'f' : stars >= n - 0.5 ? 'h' : ''}">★</i>`).join('');
     const ages = t.players.slice(0, 4).map((p) => { const b = bornOf(p.name, p.country); return b ? ageFromBorn(b) : null; }).filter((a) => a != null);
@@ -602,7 +656,7 @@
       ['Regional success', tier === 1 ? 1 : tier === 2 ? 2 : tier === 3 ? 3 : 4],
       ['International success', tier === 1 ? 1 : tier === 2 ? 2 : tier === 3 ? 4 : 6],
       ['Brand exposure', t.ovr >= 88 ? 2 : t.ovr >= 82 ? 3 : t.ovr >= 76 ? 4 : 5],
-      ['Financial', budget >= 400000 ? 5 : budget >= 250000 ? 4 : 3],
+      ['Financial', tierN],
       ['Youth development', avgAge < 20 ? 2 : avgAge < 22 ? 4 : 5],
     ];
     const lineup = t.players.slice(0, 4);
@@ -627,7 +681,7 @@
           </div>
           <div class="cs-right">
             <div class="cs-about"><small>${esc(t.name)}</small><b>RLCS ${esc(t.region)} · ${E.ordinal(rank)} seed</b><p>${desc}</p></div>
-            <div class="cs-money"><div><small>Transfer budget</small><b data-count="${budget}" data-fmt="money">${money(budget)}</b></div><span class="cs-coin" aria-hidden="true">$</span><div><small>Team rating</small><b data-count="${t.ovr}" data-suf=" OVR">${t.ovr} OVR</b></div></div>
+            <div class="cs-money"><div><small>Transfer budget</small><span class="cs-tier">${esc(tierName(tierN))} org</span><b data-count="${budget}" data-fmt="money">${money(budget)}</b></div><span class="cs-coin" aria-hidden="true">$</span><div><small>Team rating</small><b data-count="${t.ovr}" data-suf=" OVR">${t.ovr} OVR</b></div></div>
             <div class="cs-bottom">
               <div class="cs-lineup">${lineup.map((p, k) => `<div class="cs-player"><span class="cs-shirt" style="--tc:${t.color || 'var(--azure)'}">${p.rating}</span><b>${p.flag || ''} ${esc(p.name)}</b><small>${k < 3 ? 'Starter' : 'Sub'}</small></div>`).join('')}</div>
               <div class="cs-home"><span class="cs-arena" aria-hidden="true"></span><small>Home region</small><b>${esc(api.regions[t.region])}</b></div>
@@ -771,7 +825,8 @@
       body = `<div class="fc-grid2"><section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Finances</h3>
           <div class="fc-stats"><div><small>Budget</small><b data-count="${me.budget}" data-fmt="money">${money(me.budget)}</b></div><div><small>Salaries / season</small><b data-count="${salaries}" data-fmt="money">${money(salaries)}</b></div>
           <div><small>Prize money this season</small><b>${money(fin.prize || 0)}</b></div><div><small>Spent on transfers</small><b>${money(fin.transfers || 0)}</b></div>
-          <div><small>Circuit points</small><b data-count="${C.points[C.user].season}">${C.points[C.user].season}</b><small>Split 1: ${C.points[C.user].s1} · Split 2: ${C.points[C.user].s2}</small></div><div><small>Region rank</small><b>${regionRankLabel()}</b><small>${esc(api.regions[reg])}</small></div></div></div></section>
+          <div><small>Circuit points</small><b data-count="${C.points[C.user].season}">${C.points[C.user].season}</b><small>Split 1: ${C.points[C.user].s1} · Split 2: ${C.points[C.user].s2}</small></div><div><small>Region rank</small><b>${regionRankLabel()}</b><small>${esc(api.regions[reg])}</small></div>
+          <div class="of-org"><small>Organisation size</small><b>${esc(tierName(tierOf(C.user)))}</b><small>Sponsorship ~${money(TIERS[tierOf(C.user)].sponsor)} a season · the org keeps ${PRIZE_SHARE * 100}% of prize money · ${(C.rep || 0) > 0 ? 'one more strong season to grow' : (C.rep || 0) < 0 ? 'another poor season and sponsors pull back' : 'two strong seasons in a row grow the club'}</small><span class="of-tiers" aria-hidden="true">${[1, 2, 3, 4, 5].map((n) => `<i class="${n <= tierOf(C.user) ? 'f' : ''}"></i>`).join('')}</span></div></div></div></section>
         <section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Board</h3>
           <div class="of-board"><div class="of-meter"><b>${C.board}%</b><small>Confidence</small><div class="progress"><i style="width:${C.board}%"></i></div></div><p>${mood}</p></div>
           <div class="tile-kicker" style="margin-top:14px">Season objectives</div>${objHtml}</div></section></div>
@@ -819,7 +874,7 @@
     if (p.team === C.user) {
       return `${esc(p.name)} is valued at <b>${money(valueFor(p))}</b>. ${p.contract <= 1 ? 'The contract ends this season, so extend it or the player can leave for free.' : `A club in your region would pay around ${money(Math.round(valueFor(p) * 0.95 / 1000) * 1000)}.`}`;
     }
-    if (!p.team) return `Free agent, so there is no transfer fee. ${esc(p.name)} wants about <b>${money(ask)}</b> per season${p.pot - p.rating >= 5 ? ` and still has room to grow (potential ~${p.pot})` : ''}.`;
+    if (!p.team) return `Free agent, so there is no transfer fee. ${esc(p.name)} wants about <b>${money(ask)}</b> per season${p.pot - p.rating >= 5 ? ` and still has room to grow (potential ~${p.pot})` : ''}${minTierFor(p) > tierOf(C.user) ? `, but expects at least ${aTier(minTierFor(p)).replace(/(\w+)$/, '<b>$1</b>')} org` : ''}.`;
     const club = C.teams[p.team];
     const best = club.roster.every((x) => !C.players[x] || C.players[x].rating <= p.rating);
     const parts = [`${esc(club.name)} value ${esc(p.name)} at about <b>${money(valueFor(p))}</b>`];
@@ -827,6 +882,8 @@
     else if (p.contract <= 1) parts.push('the contract ends this season, so they may accept less');
     if (p.age <= 20 && p.pot - p.rating >= 4) parts.push(`scouts rate the potential at ~${p.pot}`);
     if (ask > salaryFor(p.rating)) parts.push('a move to a weaker team would need a pay rise');
+    const gap = minTierFor(p) - tierOf(C.user);
+    if (gap > 0) parts.push(`a player this good expects at least ${aTier(minTierFor(p)).replace(/(\w+)$/, '<b>$1</b>')} org, so it would take a much bigger salary to convince them`);
     return parts.join('; ') + '.';
   }
   function transferHub(st, me, roster, salaries) {
@@ -854,7 +911,7 @@
     const moves = C.news.filter((n) => n.kind === 'transfer');
     const stats = `<div class="th-stats">
         <div class="th-stat ${open ? 'live' : ''}"><small>Transfer window</small><b>${open ? 'Open' : 'Closed'}</b><span>${open ? 'Closes when you continue to ' + esc(SCHEDULE[C.step + 1] ? SCHEDULE[C.step + 1].name : 'the next event') : 'Reopens at the ' + esc(nextWindowLabel())}</span></div>
-        <div class="th-stat"><small>Transfer budget</small><b>${money(me.budget)}</b><span>${money(spent)} spent this season</span></div>
+        <div class="th-stat"><small>Transfer budget</small><b>${money(me.budget)}</b><span>${esc(tierName(tierOf(C.user)))} org · ${money(spent)} spent</span></div>
         <div class="th-stat"><small>Wage bill</small><b>${money(salaries)}</b><span>per season · ${roster.length} player${roster.length === 1 ? '' : 's'}</span></div>
         <div class="th-stat"><small>Roster</small><b>${roster.length}/4</b><span class="th-slots" aria-hidden="true">${[0, 1, 2, 3].map((i) => `<i class="${i < roster.length ? 'f' : ''}${i === 3 ? ' sub' : ''}"></i>`).join('')}</span></div>
         <div class="th-stat"><small>Shortlist</small><b>${C.shortlist.length}</b><span>players tracked</span></div>
@@ -953,8 +1010,9 @@
       const need = valueFor(p) * (best && best.id === p.id ? 1.25 : 1) * rnd(0.92, 1.12);
       if (fee < need) { api.toast(`${seller.name} rejected ${money(fee)}.`); return; }
     }
-    const reluctance = p.rating >= 85 && ovr(C.user) < (p.team ? ovr(p.team) : 80) - 8 ? 1.5 : 1;
-    if (sal < ask * 0.92 * reluctance) { api.toast(`${p.name} turned down ${money(sal)} a season.`); return; }
+    const gap = minTierFor(p) - tierOf(C.user);
+    const reluctance = (p.rating >= 85 && ovr(C.user) < (p.team ? ovr(p.team) : 80) - 8 ? 1.5 : 1) * (gap > 0 ? 1 + gap * 0.9 : 1);
+    if (sal < ask * 0.92 * reluctance) { api.toast(gap > 0 ? `${p.name} wants a bigger club than ${aTier(tierOf(C.user))} org. It would take about ${money(Math.round(ask * reluctance / 1000) * 1000)} a season.` : `${p.name} turned down ${money(sal)} a season.`); return; }
     const from = p.team;
     me.budget -= fee; C.seasonFin.transfers += fee;
     if (from) { C.teams[from].budget += fee; }

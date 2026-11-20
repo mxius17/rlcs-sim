@@ -1837,3 +1837,9 @@ html.ev .new-tag { background: var(--e1); }
 }
 .th-list.th-list-feed { min-height: 0; }
 @media (max-width: 600px) { .th-stats .th-stat:last-child { grid-column: span 2; } }
+.cs-tier { display: inline-block; margin: 2px 0 4px; padding: 1px 8px; border-radius: 4px; border: 1px solid var(--line-strong); font: 600 11px var(--font); text-transform: uppercase; letter-spacing: .06em; color: var(--text-2); }
+.of-org { grid-column: 1 / -1; }
+.of-org small:last-of-type { line-height: 1.4; }
+.of-tiers { display: flex; gap: 4px; margin-top: 6px; }
+.of-tiers i { width: 34px; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.12); }
+.of-tiers i.f { background: var(--azure); } html.ev .of-tiers i.f { background: var(--e3); }
