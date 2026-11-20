@@ -244,9 +244,9 @@
   }
   function resetPoints() { C.points = {}; Object.keys(C.teams).forEach((id) => (C.points[id] = { s1: 0, s2: 0, season: 0 })); C.results = {}; C.seasonFin = { prize: 0, sponsor: 0, salaries: 0, transfers: 0 }; Object.values(C.players).forEach((p) => (p.stats = { gp: 0, g: 0, a: 0, sv: 0, score: 0 })); }
   const esc = (s) => api.esc(s);
-  function news(kind, html) {
+  function news(kind, html, meta) {
     if (C.newsN == null) { C.newsN = C.news.length; C.newsRead = C.news.length; }
-    C.news.unshift({ kind, html, when: C.season + ' · ' + step().short }); C.news = C.news.slice(0, 80); C.newsN++;
+    C.news.unshift(Object.assign({ kind, html, when: C.season + ' · ' + step().short }, meta ? { meta } : {})); C.news = C.news.slice(0, 80); C.newsN++;
   }
   /** Stories added since the inbox was last opened (older saves start fully read). */
   function unreadCount() {
@@ -409,8 +409,8 @@
     const entry = { title, champion: champ, runnerUp: T.runnerUp, top: list.slice(0, 8), me: me ? { place: me.place, label: placeLabel(me.place, list) } : null };
     if (kind === 'open') { C.results[st.key] = C.results[st.key] || {}; C.results[st.key][region] = entry; }
     else C.results[st.key] = entry;
-    if (champ === C.user) { C.trophies.push({ season: C.season, title }); news('trophy', `🏆 <b>${esc(userTeam().name)}</b> win the ${esc(title)}!`); }
-    else if (kind !== 'open' || region === userTeam().region) news('result', `<b>${esc(C.teams[champ].name)}</b> win the ${esc(title)}${me ? ` · you finished <b>${placeLabel(me.place, list)}</b>` : ''}.`);
+    if (champ === C.user) { C.trophies.push({ season: C.season, title }); news('trophy', `🏆 <b>${esc(userTeam().name)}</b> win the ${esc(title)}!`, { ev: st.key, region, champ, place: 1 }); }
+    else if (kind !== 'open' || region === userTeam().region) news('result', `<b>${esc(C.teams[champ].name)}</b> win the ${esc(title)}${me ? ` · you finished <b>${placeLabel(me.place, list)}</b>` : ''}.`, { ev: st.key, region, champ, mine: me ? placeLabel(me.place, list) : null });
   }
 
   function runStep(userT) {
@@ -526,7 +526,7 @@
         signed[buyer] = true; sold[from] = true; moves++;
         recordDeal(p, from, buyer, fee);
         const blockbuster = fee >= 400000 || p.rating >= 90;
-        headlines.push(`${blockbuster ? '<span class="tag-hot">Blockbuster</span> ' : ''}<b>${esc(p.name)}</b> (${p.rating}) joins <b>${esc(bt.name)}</b> from ${esc(ft.name)} for ${money(fee)}${ft.region !== bt.region ? ` and moves to ${esc(api.regions[bt.region])}` : ''}; ${esc(weakest.name)} leaves.`);
+        headlines.push([{ pid: p.id, from, to: buyer, fee }, `${blockbuster ? '<span class="tag-hot">Blockbuster</span> ' : ''}<b>${esc(p.name)}</b> (${p.rating}) joins <b>${esc(bt.name)}</b> from ${esc(ft.name)} for ${money(fee)}${ft.region !== bt.region ? ` and moves to ${esc(api.regions[bt.region])}` : ''}; ${esc(weakest.name)} leaves.`]);
       }
     }
     // ---- phase B: smaller clubs upgrade from free agents and weaker teams nearby ----
@@ -553,10 +553,10 @@
       signed[buyer] = true; moves++;
       if (from && fee >= 50000) recordDeal(p, from, buyer, fee);
       const line = `<b>${esc(p.name)}</b> joins ${esc(bt.name)}${from ? ` from ${esc(C.teams[from].name)} (${money(fee)})` : ' as a free agent'}; ${esc(weakest.name)} released.`;
-      if (from && fee >= 150000) news('transfer', line); else minorMove(line);
+      if (from && fee >= 150000) news('transfer', line, { pid: p.id, from, to: buyer, fee }); else minorMove(line);
     }
     ai.forEach(aiFill);
-    headlines.reverse().forEach((h) => news('transfer', h)); // biggest clubs' deals end up on top
+    headlines.reverse().forEach(([m, h]) => news('transfer', h, m)); // biggest clubs' deals end up on top
     bump();
   }
 
@@ -832,13 +832,16 @@
       ${C.history.map((h) => `<tr><td class="l">${h.season}</td><td>${h.points}</td><td>${E.ordinal(h.regRank)}</td><td>${h.bestOpen}</td><td>${h.majors}/2</td><td>${esc(h.worlds)}</td><td class="l">${esc(h.champion)}</td><td class="l">${h.objectives.map((o) => (o.ok ? '✓ ' : '✗ ') + esc(o.t)).join(' · ')}</td></tr>`).join('')}
       </tbody></table></div>` : '<p class="muted" style="font-size:13px">Your finished seasons will appear here.</p>';
     // ---- feature panel (news carousel) ----
-    const ni = Math.min(newsList.length - 1, Math.max(0, ui.cnews || 0));
-    const story = newsList[ni];
-    const feature = `<div class="fc-feature" style="--tc:${t.color || 'var(--azure)'}">
-        <div class="fc-feature-art">${api.badge(t, 'xl')}<span class="fc-feature-season">RLCS ${C.season}</span></div>
-        ${story ? `<div class="fc-headline"><span class="fc-tag">${story.kind === 'trophy' ? 'Trophy' : story.kind === 'transfer' ? 'Transfer' : 'News'}</span><p>${story.html}</p></div>` : ''}
+    const slides = buildSlides(st, me, t, reg, newsList);
+    const ni = Math.min(slides.length - 1, Math.max(0, ui.cnews || 0));
+    const story = slides[ni];
+    const art = story ? slideArt(story, t) : { tc: t.color, cls: '', html: api.badge(t, 'xl') };
+    const nS = slides.length;
+    const feature = `<div class="fc-feature ${art.cls}" style="--tc:${art.tc || t.color || 'var(--azure)'};${art.vars || ''}">
+        <div class="fc-feature-art" ${story ? `key="${ni}"` : ''}>${art.html}<span class="fc-feature-season">RLCS ${C.season}</span></div>
+        ${story ? `<div class="fc-headline"><span class="fc-tag">${esc(story.tag)}</span><p>${story.html}</p></div>` : ''}
         <div class="fc-feature-foot"><button class="fc-link" data-action="career-view" data-v="news">Go to News</button>
-          <span class="fc-dots">${newsList.length > 1 ? `<button class="fc-arrow" data-action="career-news" data-v="${(ni - 1 + Math.min(5, newsList.length)) % Math.min(5, newsList.length)}" aria-label="Previous story">‹</button>` : ''}${newsList.slice(0, 5).map((_, k) => `<button class="fc-dot ${k === ni ? 'on' : ''}" data-action="career-news" data-v="${k}" aria-label="Story ${k + 1}"></button>`).join('')}${newsList.length > 1 ? `<button class="fc-arrow" data-action="career-news" data-v="${(ni + 1) % Math.min(5, newsList.length)}" aria-label="Next story">›</button>` : ''}</span></div>
+          <span class="fc-dots">${nS > 1 ? `<button class="fc-arrow" data-action="career-news" data-v="${(ni - 1 + nS) % nS}" aria-label="Previous slide">‹</button>` : ''}${slides.map((_, k) => `<button class="fc-dot ${k === ni ? 'on' : ''}" data-action="career-news" data-v="${k}" aria-label="Slide ${k + 1}"></button>`).join('')}${nS > 1 ? `<button class="fc-arrow" data-action="career-news" data-v="${(ni + 1) % nS}" aria-label="Next slide">›</button>` : ''}</span></div>
       </div>`;
     const VIEWS = [['next', 'Next up', st.name], ['standings', 'Standings', api.regions[reg]], ['schedule', 'Season schedule', 'RLCS ' + C.season], ['objectives', 'Objectives', C.objectives.length + (C.objectives.length === 1 ? ' goal' : ' goals')], ['news', 'News', newsList.length + (newsList.length === 1 ? ' story' : ' stories')]];
     const mainView = view === 'standings' ? `<div class="fc-panel-body"><h3 class="fc-h">${esc(api.regions[reg])} standings</h3><p class="help">${st.type === 'worlds' || st.type === 'review' ? 'Season points · top ' + slots + ' reach Worlds' : 'Split ' + (splitKey === 's1' ? 1 : 2) + ' points · top ' + slots + ' reach the Major'}</p>${tableHtml}</div>`
@@ -916,6 +919,81 @@
     if (tq) tq.addEventListener('input', () => { ui.thQ = tq.value; ui.thSel = null; const pos = tq.selectionStart; api.render(); const n = document.getElementById('thQ'); if (n) { n.focus(); n.setSelectionRange(pos, pos); } });
     const ts = app.querySelector('#thSort');
     if (ts) ts.addEventListener('change', () => { ui.thSort = ts.value; ui.thSel = null; api.render(); });
+  }
+  /** Carousel slides: recent stories with artwork matched to the story, mixed with spotlights from the career. */
+  function buildSlides(st, me, t, reg, newsList) {
+    const slides = [];
+    const pushStory = (n) => n && slides.push(Object.assign({ tag: n.kind === 'trophy' ? 'Trophy' : n.kind === 'transfer' ? 'Transfer' : n.kind === 'result' ? 'Result' : 'News' }, n));
+    // spotlight: next event in its colours
+    let nextUp = null;
+    if (st.type === 'open' || st.type === 'major' || st.type === 'worlds') {
+      const where = st.type === 'open' ? api.regions[reg] : hostCity(st);
+      nextUp = { kind: 'next', tag: 'Next up', html: `Next: <b>${esc(eventTitle(st, reg))}</b> · ${st.type === 'open' ? '16 teams, Swiss stage then an eight-team playoff' : st.type === 'major' ? '16 teams, groups then the Final Eight' : '20 teams, four groups then an eight-team knockout'}.`, meta: { stepKey: st.key, where, label: st.name } };
+    } else if (st.type === 'window') {
+      nextUp = { kind: 'next', tag: 'Transfer window', html: `The <b>${esc(st.name.toLowerCase())}</b> is open. Clubs make their moves when you close it.`, meta: { window: true, where: 'Transfer window', label: SCHEDULE[C.step + 1] ? 'Then ' + SCHEDULE[C.step + 1].name : '' } };
+    }
+    // spotlight: your star player
+    const roster = me.roster.map((id) => C.players[id]).filter(Boolean);
+    const star = roster.slice().sort((a, b) => (b.stats.g + b.stats.a + b.stats.sv) - (a.stats.g + a.stats.a + a.stats.sv) || b.rating - a.rating)[0];
+    const spot = star && { kind: 'star', tag: 'Spotlight', html: star.stats.gp ? `<b>${esc(star.name)}</b> leads ${esc(me.name)} this season: ${star.stats.g} goals, ${star.stats.a} assists and ${star.stats.sv} saves in ${star.stats.gp} games.` : `<b>${esc(star.name)}</b> (${star.rating}) is the player to watch at ${esc(me.name)} this season.`, meta: { pid: star.id } };
+    // spotlight: region race (once points are on the board)
+    const table = standings(reg, 'season');
+    const race = C.points[table[0]] && C.points[table[0]].season > 0 ? { kind: 'race', tag: 'Standings', html: `<b>${esc(C.teams[table[0]].name)}</b> lead ${esc(api.regions[reg])} on ${C.points[table[0]].season} points. ${table[0] === C.user ? 'You are top of the region.' : `You are ${E.ordinal(table.indexOf(C.user) + 1)} with ${C.points[C.user].season}.`}`, meta: { top: table.slice(0, 3) } } : null;
+    // up to four recent stories, at most two of the same kind, so the carousel stays varied
+    const picked = [], kinds = {};
+    for (const n of C.news.slice(0, 14)) { const k = n.kind === 'info' || n.kind === 'career' ? 'club' : n.kind; if ((kinds[k] || 0) >= 2) continue; kinds[k] = (kinds[k] || 0) + 1; picked.push(n); if (picked.length === 4) break; }
+    pushStory(picked[0]); if (nextUp) slides.push(nextUp);
+    pushStory(picked[1]); if (spot) slides.push(spot);
+    pushStory(picked[2]); if (race) slides.push(race);
+    pushStory(picked[3]);
+    return slides.slice(0, 7);
+  }
+  /** Player and teams a story is about: from its meta, or (older saves) from the names in its text. */
+  function storySubjects(n) {
+    const m = n.meta || {};
+    let p = m.pid && C.players[m.pid];
+    const bold = [...String(n.html).matchAll(/<b>([^<]+)<\/b>/g)].map((x) => x[1]);
+    if (!p && n.kind === 'transfer' && bold[0]) { const nm = bold[0].replace(/&amp;/g, '&'); p = Object.values(C.players).find((x) => x.name === nm) || null; }
+    let teams = [m.from, m.to].filter(Boolean);
+    if (!teams.length) teams = Object.values(C.teams).map((x) => [String(n.html).indexOf(esc(x.name)), x.id]).filter(([i]) => i >= 0).sort((a, b) => a[0] - b[0]).map((x) => x[1]).slice(0, 2);
+    return { p, teams };
+  }
+  function slideArt(sl, t) {
+    const m = sl.meta || {};
+    const photoBox = (p, cls) => { const ph = p && photoOf(p); return `<span class="fs-photo ${cls || ''}">${ph ? `<img src="${esc(ph)}" alt="" onerror="this.remove()">` : ''}<span>${esc(p ? initialsOf(p.name) : '?')}</span></span>`; };
+    if (sl.kind === 'transfer') {
+      const { p, teams } = storySubjects(sl);
+      const toT = teams.length > 1 ? teams[1] : teams[0];
+      const fromT = teams.length > 1 ? teams[0] : m.from;
+      const tc = toT && teamObj(toT) ? teamObj(toT).color : t.color;
+      return { tc, cls: 'fs-transfer', html: `${p ? photoBox(p, 'big') : ''}<div class="fs-move">${fromT && teamObj(fromT) ? api.badge(teamObj(fromT), 'lg') : '<span class="fs-fa">Free<br>agent</span>'}<span class="fs-arrow" aria-hidden="true">→</span>${toT && teamObj(toT) ? api.badge(teamObj(toT), 'lg') : ''}</div>${m.fee ? `<span class="fs-fee">${money(m.fee)}</span>` : ''}${p ? `<span class="fs-ovr"><small>OVR</small>${p.rating}</span>` : ''}` };
+    }
+    if (sl.kind === 'trophy' || sl.kind === 'result') {
+      const stp = SCHEDULE.find((x) => x.key === m.ev);
+      const th = stp ? (stp.type === 'open' ? window.RL_EVENT_THEMES[regionKey(m.region || userTeam().region)] : hostTheme(stp)) : null;
+      const champ = m.champ || storySubjects(sl).teams[0];
+      const ct = champ && teamObj(champ);
+      const vars = th ? `--s1:${th.a};--s2:${th.b};--s3:${th.c}` : '';
+      if (sl.kind === 'trophy') { const crew = champ && C.teams[champ] ? C.teams[champ].roster.slice(0, 3).map((id) => C.players[id]).filter(Boolean) : []; return { tc: th ? th.a : t.color, vars, cls: 'fs-trophy', html: `<span class="fs-word">Champions</span>${crew[0] ? photoBox(crew[0], 'flank l') : ''}${crew[1] ? photoBox(crew[1], 'flank r') : ''}<span class="fs-cup" aria-hidden="true">🏆</span>${ct ? api.badge(ct, 'lg') : ''}` }; }
+      return { tc: th ? th.a : (ct && ct.color) || t.color, vars, cls: 'fs-result', html: `${ct ? api.badge(ct, 'xl') : ''}<span class="fs-stamp">Champions</span>${m.mine ? `<span class="fs-you"><small>You</small>${esc(m.mine)}</span>` : ''}` };
+    }
+    if (sl.kind === 'next') {
+      const stp = m.stepKey && SCHEDULE.find((x) => x.key === m.stepKey);
+      const th = stp ? hostTheme(stp) : null;
+      return { tc: th ? th.a : t.color, vars: th ? `--s1:${th.a};--s2:${th.b};--s3:${th.c}` : '', cls: 'fs-next' + (m.window ? ' fs-window' : ''), html: `<span class="fs-label">${esc(m.label || '')}</span><span class="fs-city">${esc(m.where || '')}</span>${m.window ? '<span class="fs-swap" aria-hidden="true">⇄</span>' : ''}` };
+    }
+    if (sl.kind === 'star') {
+      const p = C.players[m.pid];
+      return { tc: t.color, cls: 'fs-star', html: `${photoBox(p, 'big')}<div class="fs-stats"><span><small>OVR</small><b>${p.rating}</b></span><span><small>Goals</small><b>${p.stats.g}</b></span><span><small>Assists</small><b>${p.stats.a}</b></span><span><small>Saves</small><b>${p.stats.sv}</b></span></div>` };
+    }
+    if (sl.kind === 'race') {
+      const [a, b, c] = m.top.map((id) => teamObj(id));
+      const step = (tt, n, cls) => (tt ? `<span class="fs-pod ${cls}">${api.badge(tt, n === 1 ? 'lg' : 'md')}<i>${n}</i><small>${C.points[tt.id] ? C.points[tt.id].season : 0} pts</small></span>` : '');
+      return { tc: t.color, cls: 'fs-race', html: `<div class="fs-podium">${step(b, 2, 'p2')}${step(a, 1, 'p1')}${step(c, 3, 'p3')}</div>` };
+    }
+    // club news: your starting line-up
+    const line = userTeam().roster.slice(0, 3).map((id) => C.players[id]).filter(Boolean);
+    return { tc: t.color, cls: 'fs-squad', html: `<div class="fs-line">${line.map((p) => photoBox(p, 'tall')).join('')}</div>${api.badge(t, 'md')}` };
   }
   function regionRankLabel() { return E.ordinal(regionRankOfUser()); }
 
@@ -1080,7 +1158,7 @@
     if (from) recordDeal(p, from, C.user, fee);
     joinTeam(pid, C.user, sal, years);
     if (from) aiFill(from);
-    news('transfer', `<b>${esc(p.name)}</b> signs for ${esc(me.name)}${from ? ` from ${esc(C.teams[from].name)} for ${money(fee)}` : ' as a free agent'}.`);
+    news('transfer', `<b>${esc(p.name)}</b> signs for ${esc(me.name)}${from ? ` from ${esc(C.teams[from].name)} for ${money(fee)}` : ' as a free agent'}.`, { pid, from: from || null, to: C.user, fee });
     bump(); save();
     api.toast(`${p.name} signed!`);
     api.state.ui.thTab = 'squad'; api.state.ui.thSel = pid;

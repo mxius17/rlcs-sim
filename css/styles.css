@@ -1855,3 +1855,78 @@ html.ev .tag-hot { background: var(--e1); }
 .th-feed-h { margin: 6px 8px 2px; }
 .th-feed-row.minor { font-size: 13px; color: var(--text-2); padding-block: 7px; }
 html.ev .fc-chip i { background: var(--e3); color: color-mix(in srgb, var(--e2) 75%, #000); font-weight: 800; }
+
+/* =========================================================================
+   Career news carousel — artwork per slide type
+   ========================================================================= */
+.fc-feature[class*="fs-"] .fc-feature-art { display: block; position: relative; padding: 0; min-height: 250px; overflow: hidden; }
+.fc-feature-art > :not(.fc-feature-season) { animation: fsIn .5s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes fsIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .fc-feature-art > * { animation: none !important; } }
+.fs-photo { position: relative; display: grid; place-items: center; overflow: hidden; background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)); }
+.fs-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 15%; z-index: 1; }
+.fs-photo > span { font: 800 64px var(--display); color: rgba(255,255,255,0.18); }
+/* transfer: player on the left, from → to on the right */
+.fs-photo.big { position: absolute; left: 0; top: 0; bottom: 0; width: 42%; background: transparent; }
+.fs-photo.big img { -webkit-mask-image: linear-gradient(90deg, #000 60%, transparent), linear-gradient(0deg, transparent, #000 25%); mask-image: linear-gradient(90deg, #000 60%, transparent); }
+.fs-move { position: absolute; right: 7%; top: 30%; display: flex; align-items: center; gap: 18px; }
+.fs-move .badge.lg { width: 92px; height: 92px; border-radius: 24px; font-size: 24px; box-shadow: 0 14px 40px rgba(0,0,0,0.45); }
+.fs-arrow { font: 300 54px/1 var(--display); color: rgba(255,255,255,0.8); }
+.fs-fa { display: grid; place-items: center; width: 92px; height: 92px; border-radius: 24px; border: 2px dashed rgba(255,255,255,0.35); font: 700 13px/1.2 var(--display); text-transform: uppercase; text-align: center; color: rgba(255,255,255,0.7); }
+.fs-fee { position: absolute; right: 7%; top: calc(30% + 112px); font: 800 34px var(--display); letter-spacing: -0.02em; text-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+.fs-ovr { position: absolute; left: 18px; top: 16px; z-index: 2; display: flex; flex-direction: column; align-items: center; padding: 6px 12px; border-radius: 10px; background: rgba(5,8,18,0.7); font: 800 30px/1 var(--display); }
+.fs-ovr small { font: 600 10px var(--font); letter-spacing: .1em; color: var(--text-2); margin-bottom: 2px; }
+/* trophy + results: event colours */
+.fc-feature.fs-trophy, .fc-feature.fs-result, .fc-feature.fs-next {
+  background: radial-gradient(520px 320px at 50% 45%, color-mix(in srgb, var(--s3, var(--tc)) 30%, transparent), transparent 70%), linear-gradient(140deg, color-mix(in srgb, var(--s1, var(--tc)) 60%, #05070e), color-mix(in srgb, var(--s2, var(--tc)) 45%, #05070e) 75%); }
+.fs-cup { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -54%); font-size: 150px; line-height: 1; filter: drop-shadow(0 0 40px rgba(255, 210, 80, 0.55)); }
+.fs-trophy .badge.lg { position: absolute; left: calc(50% + 60px); top: calc(50% + 10px); width: 72px; height: 72px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+.fs-word { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); text-align: center; font: 900 110px/1 var(--display); text-transform: uppercase; letter-spacing: -0.03em; color: transparent; -webkit-text-stroke: 1.5px rgba(255,255,255,0.14); z-index: 0; white-space: nowrap; }
+.fs-trophy .fs-cup, .fs-trophy .badge { z-index: 1; }
+.fs-result .badge.xl { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 140px; height: 140px; border-radius: 36px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+.fs-stamp { position: absolute; left: 50%; top: 50%; transform: translate(-50%, 58px) rotate(-6deg); z-index: 2; padding: 4px 14px; border: 3px solid var(--s3, #fff); color: var(--s3, #fff); font: 900 22px var(--display); text-transform: uppercase; letter-spacing: .12em; background: rgba(5,8,18,0.55); border-radius: 6px; }
+.fs-you { position: absolute; right: 8%; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; justify-content: center; width: 110px; height: 110px; border-radius: 50%; background: rgba(5,8,18,0.55); border: 2px solid rgba(255,255,255,0.25); font: 800 26px var(--display); }
+.fs-you small { font: 600 11px var(--font); text-transform: uppercase; letter-spacing: .1em; color: var(--text-2); }
+/* next up: the host city in big type */
+.fs-next .fc-feature-art::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(115deg, transparent 0 60px, color-mix(in srgb, var(--s3, #fff) 9%, transparent) 60px 64px); }
+.fs-label { position: absolute; left: 28px; top: 38%; font: 700 14px var(--display); text-transform: uppercase; letter-spacing: .18em; color: rgba(255,255,255,0.75); }
+.fs-city { position: absolute; left: 24px; right: 24px; top: calc(38% + 20px); font: 900 clamp(44px, 7vw, 96px)/0.95 var(--display); text-transform: uppercase; letter-spacing: -0.03em; overflow-wrap: anywhere;
+  background: linear-gradient(90deg, #fff, var(--s3, #fff)); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 6px 24px rgba(0,0,0,0.4)); }
+.fs-swap { position: absolute; right: 8%; top: 50%; transform: translateY(-50%); font-size: 120px; color: rgba(255,255,255,0.12); }
+/* spotlight: player photo on the right, stats on the left */
+.fs-star .fs-photo.big { left: auto; right: 0; width: 50%; }
+.fs-star .fs-photo.big img { -webkit-mask-image: linear-gradient(270deg, #000 60%, transparent); mask-image: linear-gradient(270deg, #000 60%, transparent); }
+.fs-stats { position: absolute; left: 24px; top: 26%; display: grid; grid-template-columns: repeat(2, 104px); gap: 8px; z-index: 2; }
+.fs-stats span { display: flex; flex-direction: column; padding: 10px 12px; border-radius: 10px; background: rgba(5,8,18,0.55); border: 1px solid rgba(255,255,255,0.12); }
+.fs-stats small { font: 600 10.5px var(--font); text-transform: uppercase; letter-spacing: .08em; color: var(--text-2); }
+.fs-stats b { font: 800 28px var(--display); }
+/* region race: podium */
+.fs-podium { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); display: flex; align-items: flex-end; gap: 10px; }
+.fs-pod { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 6px; width: 130px; padding-top: 14px; border-radius: 12px 12px 0 0; background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.03)); border: 1px solid rgba(255,255,255,0.14); border-bottom: 0; }
+.fs-pod.p1 { height: 210px; } .fs-pod.p2 { height: 165px; } .fs-pod.p3 { height: 130px; }
+.fs-pod i { font: 900 30px var(--display); font-style: normal; color: rgba(255,255,255,0.85); }
+.fs-pod small { font-size: 12px; color: var(--text-2); }
+.fs-pod .badge { width: 52px; height: 52px; } .fs-pod.p1 .badge { width: 72px; height: 72px; }
+/* club news: the starting three */
+.fs-line { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); display: flex; gap: 10px; }
+.fs-photo.tall { width: 150px; height: 210px; border-radius: 14px 14px 0 0; border: 1px solid rgba(255,255,255,0.14); border-bottom: 0; }
+.fs-squad .badge { position: absolute; right: 24px; top: 18px; width: 56px; height: 56px; }
+@media (max-width: 760px) {
+  .fs-move { right: 4%; gap: 8px; top: 22%; } .fs-move .badge.lg, .fs-fa { width: 60px; height: 60px; border-radius: 16px; } .fs-arrow { font-size: 34px; }
+  .fs-fee { top: calc(22% + 72px); right: 4%; font-size: 24px; }
+  .fs-cup { font-size: 100px; } .fs-word { font-size: 64px; }
+  .fs-result .badge.xl { width: 100px; height: 100px; } .fs-you { width: 80px; height: 80px; font-size: 18px; right: 4%; }
+  .fs-stats { grid-template-columns: repeat(2, 84px); left: 14px; } .fs-stats b { font-size: 22px; }
+  .fs-pod { width: 92px; } .fs-pod.p1 { height: 170px; } .fs-pod.p2 { height: 135px; } .fs-pod.p3 { height: 110px; }
+  .fs-photo.tall { width: 96px; height: 150px; }
+}
+/* entrance uses the independent translate property, so centring transforms stay intact */
+@keyframes fsIn { from { opacity: 0; translate: 0 14px; } to { opacity: 1; translate: 0 0; } }
+.fs-result .badge.xl { animation: fsIn .5s both; transform: none; left: calc(50% - 70px); top: calc(50% - 92px); }
+.fs-stamp { transform: translate(-50%, 58px) rotate(-6deg); top: 50%; }
+.fs-photo.flank { position: absolute; bottom: 0; width: 26%; height: 92%; background: transparent; z-index: 0; opacity: .9; }
+.fs-photo.flank.l { left: 4%; } .fs-photo.flank.r { right: 4%; }
+.fs-photo.flank img { -webkit-mask-image: linear-gradient(0deg, transparent, #000 30%); mask-image: linear-gradient(0deg, transparent, #000 30%); }
+.fs-photo.flank > span { font-size: 48px; }
+@media (max-width: 760px) { .fs-photo.flank { width: 30%; } .fs-result .badge.xl { left: calc(50% - 50px); top: calc(50% - 70px); } }
+.fs-squad .badge { top: 46px; }
