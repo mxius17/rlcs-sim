@@ -1188,7 +1188,7 @@
   function go(view) {
     stopLive();
     state.view = view;
-    const h = view === 'home' ? '' : view === 'setup' ? '#custom-tournament' : '#' + view;
+    const h = view === 'home' ? '' : view === 'setup' ? '#custom-tournament' : view === 'team' ? '#team/' + encodeURIComponent(state.ui.teamId || '') : '#' + view;
     try { if (location.hash !== h) history.replaceState(null, '', h || location.pathname + location.search); } catch (e) { /* sandboxed history */ }
     persistRender();
     window.scrollTo({ top: 0 });
@@ -1336,6 +1336,112 @@
     } else { closeModal(); goNow(); }
   }
 
+  /* ---------------- team page ---------------- */
+  const orgKey = (t) => (t.logoKey || t.name || '').toLowerCase().replace(/\b(team|esports?|e-sports|gaming|club|esport)\b/g, '').replace(/[^a-z0-9]/g, '') || (t.name || '').toLowerCase();
+  let photosState = 0; // 0 not loaded, 1 loading, 2 ready
+  function ensurePhotos() {
+    if (photosState) return;
+    if (window.RL_PHOTOS) { photosState = 2; return; }
+    photosState = 1;
+    const sc = document.createElement('script'); sc.src = 'js/photos.js'; sc.async = true;
+    sc.onload = () => { photosState = 2; if (state.view === 'team') render(); };
+    sc.onerror = () => { photosState = 2; window.RL_PHOTOS = window.RL_PHOTOS || {}; if (state.view === 'team') render(); };
+    document.head.appendChild(sc);
+  }
+  function seasonRefDate(se) {
+    if (se === '2027') return '2026-11-20';
+    if (se === '2026') return '2026-09-01';
+    const h = HIST.find((x) => x.key === se);
+    const d = h && h.events.map((e) => (e.date || '').slice(0, 10)).filter(Boolean).sort()[0];
+    return d || null;
+  }
+  function ageAt(born, ref) {
+    if (!born || !ref) return null;
+    const [by, bm, bd] = born.split('-').map(Number), [ry, rm, rd] = ref.split('-').map(Number);
+    let a = ry - by; if (bm && (rm < bm || (rm === bm && bd && rd < bd))) a--;
+    return { age: a, approx: !bm };
+  }
+  function teamResults(group) {
+    const ids = new Set(group.map((t) => t.id));
+    const out = [];
+    competitions().forEach((c) => {
+      if (!c.info && !c.info27) return; // only real events (regional opens/leagues are generated fields)
+      let field; try { field = c.teams(); } catch (e) { return; }
+      const mine = group.find((t) => field.includes(t.id));
+      if (!mine) return;
+      const w = c.info && c.info.winner, r = c.info && c.info.runnerUp;
+      const nk = (n) => (n || '').toLowerCase();
+      let res = c.info27 ? 'Upcoming' : nk(w) === nk(mine.name) ? 'Champion' : nk(r) === nk(mine.name) ? 'Runner-up' : 'Participant';
+      if (c.id === 'worlds' && mine.worlds) res = mine.worlds === '1st' ? 'Champion' : mine.worlds === '2nd' ? 'Runner-up' : mine.worlds + ' place';
+      out.push({ c, team: mine, res, date: (c.info && c.info.date) || (c.info27 && c.info27.date) || '' });
+    });
+    return out.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  }
+  function renderTeamPage() {
+    const t = allTeams().find((x) => x.id === state.ui.teamId);
+    if (!t) { state.view = 'teams'; renderTeamsPage(); return; }
+    ensurePhotos();
+    const P = window.RL_PHOTOS || {}, PAGES = window.RL_PLAYER_PAGES || {}, B = window.RL_BIRTHS || {};
+    const se = t.season || curSeason();
+    const seasonTeams = rankedTeams(se).filter((x) => !x.custom);
+    const rank = seasonTeams.findIndex((x) => x.id === t.id) + 1;
+    const regRank = seasonTeams.filter((x) => x.region === t.region).findIndex((x) => x.id === t.id) + 1;
+    const group = allTeams().filter((x) => !x.custom && orgKey(x) === orgKey(t));
+    const results = teamResults(group);
+    const titles = results.filter((r) => r.res === 'Champion').length;
+    const ref = seasonRefDate(se);
+    const players = t.players.map((p, i) => {
+      const key = p.name + '|' + (p.country || '');
+      const ag = ageAt(B[key], ref);
+      return { p, i, key, photo: P[key], page: PAGES[key], age: ag };
+    });
+    const ages = players.map((x) => x.age && x.age.age).filter((a) => a != null);
+    const best = players.slice().sort((a, b) => b.p.rating - a.p.rating)[0];
+    const otherSeasons = group.filter((x) => x.id !== t.id).sort((a, b) => SEASON_KEYS.indexOf(a.season) - SEASON_KEYS.indexOf(b.season));
+    const initials = (n) => esc(n.replace(/[^A-Za-z0-9]/g, '').slice(0, 2).toUpperCase() || '?');
+    const resPill = (r) => `<span class="pill ${r === 'Champion' ? 'gold' : r === 'Runner-up' ? 'good' : ''}">${r === 'Champion' ? '🏆 ' : ''}${esc(r)}</span>`;
+    app.innerHTML = `
+      <div class="tp" style="--tc:${esc(t.color || '#1F8BFF')}">
+        <div class="tp-hero">
+          <button class="btn sm" data-action="nav" data-v="teams">← Team rankings</button>
+          <div class="tp-id">
+            ${badge(t, 'xl')}
+            <div class="tp-name">
+              <span class="tp-eyebrow">${esc(seasonLabel(se))} · ${esc(REGIONS[t.region] || t.region)}</span>
+              <h1>${esc(t.name)}</h1>
+              <div class="tp-tags"><span class="region-tag">${esc(t.region)}</span><span class="pill">${esc(t.tag || '')}</span>${titles ? `<span class="pill gold" title="Real titles at the events in the simulator">🏆 ${titles} title${titles === 1 ? '' : 's'}</span>` : ''}</div>
+            </div>
+            <div class="tp-ovr"><b>${t.ovr}</b><small>Team rating</small></div>
+          </div>
+          <div class="tp-stats">
+            <div><small>Rank</small><b>#${rank || '—'}</b><span>of ${seasonTeams.length} in ${esc(seasonLabel(se))}</span></div>
+            <div><small>${esc(t.region)} rank</small><b>#${regRank || '—'}</b><span>${esc(REGIONS[t.region] || '')}</span></div>
+            <div><small>Best player</small><b>${best ? esc(best.p.name) : '—'}</b><span>${best ? best.p.rating + ' rating' : ''}</span></div>
+            <div><small>Average age</small><b>${ages.length ? (ages.reduce((a, b) => a + b, 0) / ages.length).toFixed(1) : '—'}</b><span>${ages.length ? 'in ' + esc(seasonLabel(se)) : 'birth dates unknown'}</span></div>
+          </div>
+        </div>
+        <section class="tp-sec"><div class="tp-sec-head"><h2>Roster</h2><button class="btn sm" data-action="edit-team" data-id="${esc(t.id)}">Edit team</button></div>
+          <div class="tp-roster">${players.map(({ p, i, photo, page, age }) => `
+            <article class="tp-player ${i >= 3 ? 'sub' : ''}">
+              <div class="tp-photo">${photo ? `<img src="${photo}" alt="${esc(p.name)}" loading="lazy" decoding="async">` : `<span class="tp-initials" aria-hidden="true">${initials(p.name)}</span>`}<span class="tp-rating">${p.rating}</span></div>
+              <div class="tp-pinfo"><b>${esc(p.name)}</b><small>${p.flag || ''} ${esc(p.country || 'Unknown')}</small>
+                <small>${i >= 3 ? 'Substitute' : 'Starter'}${age ? ' · ' + (age.approx ? '~' : '') + age.age + ' years old' : ''}</small>
+                ${page ? `<a class="tp-lp" href="https://liquipedia.net/rocketleague/${encodeURIComponent(page.replace(/ /g, '_'))}" target="_blank" rel="noopener">Liquipedia ↗</a>` : ''}</div>
+              <div class="tp-bar"><i style="width:${Math.max(4, Math.min(100, (p.rating - 50) * 2))}%"></i></div>
+            </article>`).join('')}</div>
+          ${photosState === 1 ? '<p class="help">Loading player photos…</p>' : players.some((x) => !x.photo) ? '<p class="help">Photos are from Liquipedia where a player page has one.</p>' : ''}
+        </section>
+        <div class="tp-grid">
+          <section class="tp-sec"><div class="tp-sec-head"><h2>Results</h2><span class="count-pill">${results.length} event${results.length === 1 ? '' : 's'}</span></div>
+            ${results.length ? `<div class="tp-results">${results.map((r) => `<button class="tp-result" data-action="comp" data-v="${esc(r.c.id)}"><span class="tp-rdate">${/^\d{4}-\d{2}/.test(r.date || '') ? esc(r.date.slice(0, 7)) : 'TBA'}</span><span class="tp-rname"><b>${esc(r.c.name)}</b><small>${esc(seasonLabel(r.c.season || '2026'))}${r.team.name !== t.name ? ' · as ' + esc(r.team.name) : ''}</small></span>${resPill(r.res)}</button>`).join('')}</div>` : '<p class="muted">No real events for this team in the simulator.</p>'}
+          </section>
+          <section class="tp-sec"><div class="tp-sec-head"><h2>Other seasons</h2><span class="count-pill">${otherSeasons.length}</span></div>
+            ${otherSeasons.length ? `<div class="tp-seasons">${otherSeasons.map((x) => `<button class="tp-season" data-action="team-page" data-id="${esc(x.id)}">${badge(x, 'sm')}<span><b>${esc(seasonLabel(x.season))}</b><small>${esc(x.players.slice(0, 3).map((q) => q.name).join(' · '))}</small></span><span class="tp-sovr">${x.ovr}</span></button>`).join('')}</div>` : '<p class="muted">This roster only appears in one season in the simulator.</p>'}
+          </section>
+        </div>
+      </div>`;
+  }
+
   function renderTeamsPage() {
     const q = (state.ui.rankQuery || '').toLowerCase();
     const reg = state.ui.rankRegion || 'all';
@@ -1348,7 +1454,7 @@
             <div class="toolbar"><div class="search"><input class="input" id="rankQ" placeholder="Search teams or players" value="${esc(state.ui.rankQuery || '')}" aria-label="Search teams or players" /></div></div></div>
           <div class="seg" style="margin-bottom:12px">${[['all', 'All'], ...Object.keys(REGIONS).map((k) => [k, k])].map(([k, v]) => `<button class="${k === reg ? 'active' : ''}" data-action="rank-region" data-v="${k}" title="${esc(REGIONS[k] || 'All regions')}">${v}</button>`).join('')}</div>
           <div class="table-wrap"><table class="st rank-table"><thead><tr><th>#</th><th class="l">Team</th><th class="l">Region</th><th class="l hide-sm">Roster</th>${curSeason() === '2026' ? '<th class="l hide-sm">Worlds 2026</th>' : ''}<th>OVR</th></tr></thead><tbody>
-          ${list.slice(0, 300).map((t) => `<tr data-action="edit-team" data-id="${esc(t.id)}" role="button" tabindex="0" style="cursor:pointer"><td class="pos">${t.rank}</td><td class="l"><div class="tcell">${badge(t, 'sm')}<span>${esc(t.name)}</span></div></td><td class="l"><span class="region-tag">${t.region}</span></td><td class="l hide-sm muted">${esc(t.players.slice(0, 3).map((p) => (p.flag || '') + ' ' + p.name).join('  '))}</td>${curSeason() === '2026' ? `<td class="l hide-sm">${t.worlds ? `<span class="pill ${t.worlds === '1st' ? 'gold' : ''}">${esc(t.worlds)}</span>` : '<span class="muted">—</span>'}</td>` : ''}<td><b>${t.ovr}</b></td></tr>`).join('') || '<tr><td colspan="6" class="l muted">No teams match.</td></tr>'}
+          ${list.slice(0, 300).map((t) => `<tr data-action="edit-team" data-id="${esc(t.id)}" role="button" tabindex="0" style="cursor:pointer"><td class="pos">${t.rank}</td><td class="l"><div class="tcell"><button class="team-link" data-action="team-page" data-id="${esc(t.id)}" title="Open the ${esc(t.name)} team page" aria-label="Open the ${esc(t.name)} team page">${badge(t, 'sm')}</button><span>${esc(t.name)}</span></div></td><td class="l"><span class="region-tag">${t.region}</span></td><td class="l hide-sm muted">${esc(t.players.slice(0, 3).map((p) => (p.flag || '') + ' ' + p.name).join('  '))}</td>${curSeason() === '2026' ? `<td class="l hide-sm">${t.worlds ? `<span class="pill ${t.worlds === '1st' ? 'gold' : ''}">${esc(t.worlds)}</span>` : '<span class="muted">—</span>'}</td>` : ''}<td><b>${t.ovr}</b></td></tr>`).join('') || '<tr><td colspan="6" class="l muted">No teams match.</td></tr>'}
           </tbody></table></div>
         </section>
       </div>`;
@@ -1365,16 +1471,17 @@
     app.classList.toggle('has-art', !!(th && th.art));
     if (th && th.art) { app.style.setProperty('--e-art', `url(${th.art})`); app.style.setProperty('--e-pos', th.pos || 'center'); } else { app.style.removeProperty('--e-art'); app.style.removeProperty('--e-pos'); }
     ['--e1', '--e2', '--e3', '--e-on'].forEach((k, i) => (th ? app.style.setProperty(k, [th.a, th.b, th.c, th.on || '#fff'][i]) : app.style.removeProperty(k)));
-    document.querySelectorAll('.topnav [data-v]').forEach((b) => b.classList.toggle('active', b.dataset.v === (state.view === 'teams' || state.view === 'career' ? state.view : 'home')));
+    document.querySelectorAll('.topnav [data-v]').forEach((b) => b.classList.toggle('active', b.dataset.v === (state.view === 'teams' || state.view === 'team' ? 'teams' : state.view === 'career' ? 'career' : 'home')));
     if (state.view === 'tournament') renderTournament();
     else if (state.view === 'setup') renderSetup();
     else if (state.view === 'teams') renderTeamsPage();
+    else if (state.view === 'team') renderTeamPage();
     else if (state.view === 'career') window.RLCareer.render(app);
     else { state.view = 'home'; renderHome(); }
     // page entrance animation: only when the page (or tournament / stage tab / archive season) changes.
     // Worked out after rendering (views pick defaults such as the stage tab while they render); the class is
     // applied before the browser paints, so the new content still animates in.
-    const pageKey = [state.view, state.view === 'tournament' && state.T ? (state.T.title || '') + (state.T.teams || []).length : '', state.ui.stageTab || '', state.ui.archive || '', state.ui.browseSeason || ''].join('|');
+    const pageKey = [state.view, state.view === 'team' ? state.ui.teamId : '', state.view === 'tournament' && state.T ? (state.T.title || '') + (state.T.teams || []).length : '', state.ui.stageTab || '', state.ui.archive || '', state.ui.browseSeason || ''].join('|');
     app.classList.toggle('pg-enter', pageKey !== lastPageKey);
     lastPageKey = pageKey;
   }
@@ -1435,6 +1542,7 @@
       case 'clear-teams': { const prev = { teams: s.teams.slice(), managed: s.managed, overrides: s.overrides }; s.teams = []; s.managed = ''; s.overrides = {}; persistRender(); toast('Teams cleared.', { label: 'Undo', fn: () => { Object.assign(s, prev); persistRender(); } }); break; }
       case 'create-team': openTeamEditor(null); break;
       case 'edit-team': openTeamEditor(id); break;
+      case 'team-page': state.ui.teamId = id; go('team'); break;
       case 'save-team': saveTeamForm(id || null); break;
       case 'delete-custom': state.customTeams = state.customTeams.filter((t) => t.id !== id); s.teams = s.teams.filter((x) => x !== id); invalidateTeams(); closeModal(); persistRender(); break;
       case 'reset-team': delete state.teamEdits[id]; invalidateTeams(); closeModal(); persistRender(); break;
@@ -1560,7 +1668,7 @@
     autoFill(false);
   }
   $('#dataStamp').textContent = 'Rosters: ' + (HAS27 ? 'RLCS 2027 (as of ' + window.RL_DATA27.asOf + ') · ' : '') + 'RLCS 2026: ' + DATA.updated + (HIST.length ? ' · archive: RLCS ' + HIST.map((x) => x.key).reverse().join(', ') : '');
-  const fromHash = () => { const h = (location.hash || '').replace('#', ''); return h === 'custom-tournament' ? 'setup' : h === 'tournament' && state.T ? 'tournament' : h === 'teams' ? 'teams' : h === 'career' ? 'career' : 'home'; };
+  const fromHash = () => { const h = (location.hash || '').replace('#', ''); if (h.startsWith('team/')) { state.ui.teamId = decodeURIComponent(h.slice(5)); return 'team'; } return h === 'custom-tournament' ? 'setup' : h === 'tournament' && state.T ? 'tournament' : h === 'teams' ? 'teams' : h === 'career' ? 'career' : 'home'; };
   state.view = fromHash();
   window.addEventListener('hashchange', () => { const v = fromHash(); if (v !== state.view) { stopLive(); state.view = v; render(); } });
   render();
