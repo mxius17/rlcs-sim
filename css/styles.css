@@ -1624,3 +1624,23 @@ tbody tr { transition: background .12s; }
 .fc-host .fc-next .action-row .btn.primary { background: var(--e1); border-color: var(--e1); color: var(--e-on); }
 .fc-host .fc-tabs button.on { border-bottom-color: var(--e1); }
 .fc-host .fc-tile.on, .fc-host .fc-tile.on:hover { background: color-mix(in srgb, var(--e1) 22%, var(--ink)); border-color: color-mix(in srgb, var(--e1) 55%, transparent); border-bottom-color: var(--e3); }
+
+/* =========================================================================
+   Event tiles as closed cards — every event sits in its own box with a gap,
+   so neighbouring event colours never touch. Colour stays inside the card:
+   a soft wash from the top-left corner, a coloured icon and a thin frame.
+   ========================================================================= */
+.tile-grid { gap: 10px; }
+.comp-tile { position: relative; overflow: hidden; min-height: 76px; padding: 14px 16px; gap: 14px;
+  background: rgba(255, 255, 255, 0.03); border: 1px solid var(--line); border-radius: 12px; }
+.comp-tile:hover { background: rgba(255, 255, 255, 0.055); border-color: var(--line-strong); }
+.comp-tile .comp-ico { width: 38px; height: 38px; border-radius: 10px; font-size: 11.5px; }
+.comp-tile.themed { border-color: color-mix(in srgb, var(--e1) 38%, var(--line));
+  background: radial-gradient(130% 160% at 0% 0%, color-mix(in srgb, var(--e1) 22%, transparent), transparent 62%), rgba(255, 255, 255, 0.025); }
+.comp-tile.themed::after { content: ''; position: absolute; left: 14px; right: 14px; bottom: 0; height: 2px; border-radius: 2px 2px 0 0;
+  background: linear-gradient(90deg, var(--e1), var(--e3)); opacity: .55; transition: opacity .18s; }
+.comp-tile.themed:hover { border-color: color-mix(in srgb, var(--e1) 65%, var(--line)); background: radial-gradient(130% 160% at 0% 0%, color-mix(in srgb, var(--e1) 30%, transparent), transparent 66%), rgba(255, 255, 255, 0.04); }
+.comp-tile.themed:hover::after { opacity: 1; }
+.comp-tile.themed .comp-ico { border: 0; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18); }
+.comp-txt b { line-height: 1.25; }
+@media (max-width: 600px) { .tile-grid { gap: 8px; } .comp-tile { min-height: 64px; padding: 12px 14px; } }
