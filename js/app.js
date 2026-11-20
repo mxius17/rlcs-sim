@@ -230,12 +230,51 @@
       ${s.format === 'league' || s.format === 'leaguePlayoffs' ? `<div class="field" style="margin-top:12px"><label for="selLegs">Fixtures</label><select class="select" id="selLegs" data-bind="legs"><option value="1" ${s.legs === 1 ? 'selected' : ''}>Play each team once</option><option value="2" ${s.legs === 2 ? 'selected' : ''}>Home and away (twice)</option></select></div>` : ''}
       <p class="format-desc">${esc(F.desc)}</p>
       <hr class="divider" />
+      ${brandField()}
+      <hr class="divider" />
       <div class="field"><label for="selManaged">Manage a team <span class="muted">(optional)</span></label>
         <select class="select" id="selManaged" data-bind="managed" ${teamsSel.length ? '' : 'disabled'}><option value="">Neutral · watch any match</option>${teamsSel.map((t) => `<option value="${esc(t.id)}" ${t.id === s.managed ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select>
         <p class="help">${teamsSel.length ? (s.managed ? 'You pick the playstyle for every series your team plays.' : 'Leave this neutral to watch any match.') : 'Add teams to choose one to manage.'}</p></div>
     </section>`;
   }
 
+  /** Event branding for a custom tournament: any real RLCS event, career host city, Worlds or region palette. */
+  function brandGroups() {
+    const keys = Object.keys(THEMES);
+    const by = (re) => keys.filter((k) => re.test(k));
+    const seasonOrd = (k) => { const m = k.match(/(S?X|S\d+|\d{4}(?:-\d{2})?)/); if (!m) return 0; const v = m[1]; return v === 'SX' ? 10 : v[0] === 'S' ? +v.slice(1) : +v.slice(0, 4); };
+    const real = by(/^(major-|worlds-|paris$|boston$|k27$)/).sort((a, b) => seasonOrd(b) - seasonOrd(a) || THEMES[a].name.localeCompare(THEMES[b].name));
+    return [
+      ['Official RLCS events', real.filter((k) => !/^worlds-/.test(k))],
+      ['World Championships', ['career-worlds'].concat(real.filter((k) => /^worlds-/.test(k))).filter((k) => THEMES[k])],
+      ['Host cities', by(/^host-/).sort((a, b) => THEMES[a].name.localeCompare(THEMES[b].name))],
+      ['Regions', by(/^region-/)],
+    ].filter((g) => g[1].length);
+  }
+  const brandSw = (th) => `<span class="brand-sw" aria-hidden="true"><i style="background:${th.a}"></i><i style="background:${th.b}"></i><i style="background:${th.c}"></i></span>`;
+  /** Display name; numbers events that share a name (Season X had eight regional events). */
+  function brandName(k) {
+    const th = THEMES[k]; if (!th) return '';
+    const same = Object.keys(THEMES).filter((x) => THEMES[x].name === th.name);
+    return same.length > 1 ? th.name + ' ' + (same.indexOf(k) + 1) : th.name;
+  }
+  function brandField() {
+    const th = themeOf(state.setup.theme);
+    return `<div class="field"><span class="field-label">Event branding</span>
+      <button class="brand-btn" data-action="brand-open">${th ? brandSw(th) : '<span class="brand-sw none" aria-hidden="true"></span>'}<span><b>${esc(th ? brandName(state.setup.theme) : 'No branding')}</b><small>${th ? 'Change branding →' : 'Pick a Major, Worlds or host city look →'}</small></span></button>
+      <p class="help">Colours the whole screen while the tournament runs${th && th.art ? ', with the event\'s key art' : ''}.</p></div>`;
+  }
+  function openBrand() {
+    const cur = state.setup.theme || '';
+    const opt = (k) => { const th = THEMES[k], nm = brandName(k); return `<button class="brand-opt${k === cur ? ' on' : ''}" data-action="brand-pick" data-v="${esc(k)}" data-name="${esc(nm.toLowerCase())}" title="${esc(nm)}" style="--e1:${th.a};--e2:${th.b};--e3:${th.c}">${brandSw(th)}<span><b>${esc(nm.replace(/^RLCS /, ''))}</b>${th.art ? '<small>Key art</small>' : ''}</span></button>`; };
+    openModal(`${modalHead('Event branding', 'Pick the look of your tournament')}
+      <div class="modal-body brand-body"><div class="search"><input class="input" id="brandQ" placeholder="Search events and cities" aria-label="Search brandings" /></div>
+        <button class="brand-opt none${cur ? '' : ' on'}" data-action="brand-pick" data-v="" data-name="no branding default">${'<span class="brand-sw none" aria-hidden="true"></span>'}<span><b>No branding</b><small>Site colours</small></span></button>
+        ${brandGroups().map(([g, ks]) => `<section class="brand-group"><h3>${esc(g)} <span class="muted">${ks.length}</span></h3><div class="brand-grid">${ks.map(opt).join('')}</div></section>`).join('')}
+      </div>`, { size: 'lg' });
+    const q = document.getElementById('brandQ');
+    if (q) { q.focus(); q.addEventListener('input', () => { const v = q.value.trim().toLowerCase(); document.querySelectorAll('.brand-body .brand-opt').forEach((b) => { b.hidden = !!v && !b.dataset.name.includes(v); }); document.querySelectorAll('.brand-group').forEach((g) => { g.hidden = !g.querySelector('.brand-opt:not([hidden])'); }); }); }
+  }
   function renderBracketTile(T) {
     const s = state.setup;
     const title = usesGroups() || s.format === 'swiss' || s.format.startsWith('league') ? 'Groups & bracket' : 'Tournament bracket';
@@ -1470,7 +1509,7 @@
     if (state.view === 'tournament' && !state.T) state.view = 'home';
     const th = state.view === 'tournament' && state.T ? themeOf(state.T.theme) : null;
     // whole-screen event palette: tournament theme, or the career hub's upcoming event
-    const pth = th || (state.view === 'career' && window.RLCareer && window.RLCareer.theme ? window.RLCareer.theme() : null);
+    const pth = th || (state.view === 'setup' ? themeOf(state.setup.theme) : null) || (state.view === 'career' && window.RLCareer && window.RLCareer.theme ? window.RLCareer.theme() : null);
     const root = document.documentElement;
     root.classList.toggle('ev', !!pth);
     root.classList.toggle('ev-art', !!(pth && pth.art));
@@ -1542,6 +1581,8 @@
       case 'browse-season': state.settings.season = v; save(); openBrowse(); break;
       case 'discard-t': stopLive(); state.T = null; persistRender(); toast('Saved tournament deleted.'); break;
       case 'format': s.title = null; s.format = v; if (v === 'major') s.size = 16; snapSize(); s.overrides = {}; if (s.teams.length) s.teams = s.quickFill === 'random' ? s.teams : arrangeForFormat(s.teams); persistRender(); break;
+      case 'brand-open': openBrand(); break;
+      case 'brand-pick': s.theme = v || null; closeModal(); persistRender(); break;
       case 'format-info': { const f = E.FORMATS[v]; openModal(`${modalHead(f.name, f.short)}<div class="modal-body"><p>${esc(f.desc)}</p><p class="help">Field sizes: ${E.validSizes(v, s).join(', ')} teams.</p></div><div class="modal-foot"><button class="btn primary" data-action="format" data-v="${v}" onclick="">Use this format</button></div>`, { size: 'sm' }); break; }
       case 'browse': openBrowse(); break;
       case 'browse-region': state.ui.browseRegion = v; openBrowse(); break;
