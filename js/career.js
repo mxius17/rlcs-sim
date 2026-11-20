@@ -622,7 +622,7 @@
     // ---- building blocks ----
     const ring = (val, max, label, txt, icon) => {
       const f = Math.max(0, Math.min(1, val / max)), r = 30, cir = 2 * Math.PI * r;
-      const colr = f >= 0.66 ? '#2fbf71' : f >= 0.4 ? '#f5b81c' : '#F2542D';
+      const colr = f >= 0.66 ? '#1F8BFF' : f >= 0.4 ? 'rgba(255,255,255,0.85)' : '#F2542D';
       return `<div class="fc-ring"><svg viewBox="0 0 76 76" aria-hidden="true"><circle cx="38" cy="38" r="${r}" class="trk"/><circle cx="38" cy="38" r="${r}" class="val" style="stroke:${colr};--dash:${(cir * f).toFixed(1)}px;--cir:${cir.toFixed(1)}px;stroke-dasharray:${(cir * f).toFixed(1)} ${cir.toFixed(1)}"/></svg><span class="fc-ring-in" style="color:${colr}">${icon}</span><b>${txt}</b><small>${label}</small></div>`;
     };
     const tableHtml = `<div class="table-wrap"><table class="st"><thead><tr><th>#</th><th class="l">Team</th><th>OVR</th><th>Split 1</th><th>Split 2</th><th>Season</th></tr></thead><tbody>

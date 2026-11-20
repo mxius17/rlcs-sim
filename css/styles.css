@@ -1522,3 +1522,89 @@ tbody tr { transition: background .12s; }
 .pg-enter .tp-grid > * { animation: pgUp .5s .2s both; }
 @media (max-width: 900px) { .tp-grid { grid-template-columns: 1fr; } .tp-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .tp-id .badge.xl { width: 84px; height: 84px; border-radius: 20px; } .tp-roster { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } .tp-hero { padding: 14px; } .tp-initials { font-size: 32px; } }
+
+/* =========================================================================
+   Career — site palette. Midnight Ink surfaces with white hairlines,
+   Azure Blue for state/progress, Vermilion for the one thing that matters.
+   Replaces the slate / cream / gold / green career colours; layout unchanged.
+   ========================================================================= */
+.fc, .cs {
+  --fc-slate: color-mix(in srgb, #fff 5%, var(--ink)); --fc-slate2: color-mix(in srgb, #fff 3.5%, var(--ink));
+  --cs-slate: var(--fc-slate); --cs-slate2: var(--fc-slate2);
+  --fc-line: var(--line); --cs-line: var(--line);
+  --fc-raise: color-mix(in srgb, #fff 8%, var(--ink));
+  --fc-sel: color-mix(in srgb, var(--azure) 16%, var(--ink));
+}
+.fc::before { background: radial-gradient(640px 280px at 12% 80%, rgba(31,139,255,0.10), transparent 70%), radial-gradient(420px 220px at 92% 0%, rgba(242,84,45,0.06), transparent 70%); }
+/* surfaces: one family of ink panels with hairline borders and soft corners */
+.fc-club, .fc-top-r, .fc-panel, .fc-side, .cs-box, .cs-club, .cs-mid, .cs-right, .cs-browse { background: var(--fc-slate); border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.fc-panel, .fc-side, .cs-right { overflow: hidden; }
+.fc-club { color: #fff; }
+.fc-club:hover { border-color: var(--line-strong); }
+.fc-club-bar { background: var(--line); }
+.fc-club-bar::after { background: var(--azure); }
+.fc-thumb { background: rgba(31,139,255,0.18); }
+.fc-thumb.mid { background: rgba(255,255,255,0.10); } .fc-thumb.bad { background: rgba(242,84,45,0.2); }
+.fc-chip:hover { background: rgba(255,255,255,0.06); }
+/* tabs: flat, underline marks the active one */
+.fc-tabs { border-bottom: 1px solid var(--line); }
+.fc-tabs button { background: transparent; color: var(--text-3); margin-bottom: -1px; }
+.fc-tabs button:hover { color: var(--text); }
+.fc-tabs button.on { background: transparent; color: #fff; border-bottom-color: var(--vermilion); }
+.fc-key { background: rgba(255,255,255,0.12); color: var(--text-2); }
+/* feature panel: team colour glow over ink */
+.fc-feature { background: radial-gradient(520px 320px at 30% 40%, color-mix(in srgb, var(--tc) 32%, transparent), transparent 70%), linear-gradient(160deg, color-mix(in srgb, var(--azure) 12%, var(--ink)), var(--ink) 75%); }
+.fc-feature::before { background: repeating-linear-gradient(90deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 38px), linear-gradient(180deg, rgba(255,255,255,0.04), transparent 40%); }
+.fc-feature-season { color: var(--text-3); }
+.fc-headline p { background: rgba(18,26,46,0.88); color: #fff; border-left: 3px solid var(--vermilion); backdrop-filter: blur(6px); }
+.fc-headline p b, .fc-headline p a { color: #fff; }
+.fc-feature-foot { background: rgba(0,0,0,0.25); border-top: 1px solid var(--line); }
+.fc-dot { background: rgba(255,255,255,0.25); }
+/* side card */
+.fc-side-head small, .fc-side-row small, .fc-ring small { color: var(--text-3); }
+.fc-side-row { background: rgba(255,255,255,0.03); border-color: var(--line); }
+.fc-day { color: var(--text-2); }
+.fc-side-mid > small { color: var(--text-2); }
+.fc-ring .trk { stroke: rgba(255,255,255,0.08); }
+.fc-next .help { color: var(--text-2); }
+.fc-next .action-row .btn:not(.primary) { background: transparent; border-color: var(--line); color: var(--text); }
+.fc-next .action-row .btn:not(.primary):hover { background: rgba(255,255,255,0.05); }
+/* hub tiles: ink cards; the selected one turns azure-tinted with a vermilion base line */
+.fc-tiles { gap: 6px; }
+.fc-tile { background: var(--fc-slate); border: 1px solid var(--line); border-bottom: 3px solid transparent; border-radius: var(--radius-sm); }
+.fc-tile small { color: var(--text-3); }
+.fc-tile:hover { background: var(--fc-raise); border-color: var(--line-strong); border-bottom-color: transparent; }
+.fc-tile.on, .fc-tile.on:hover { background: var(--fc-sel); color: #fff; border-color: rgba(31,139,255,0.45); border-bottom-color: var(--vermilion); }
+.fc-tile.on small { color: var(--text-2); }
+.fc-tile-ico { opacity: .07; } .fc-tile.on .fc-tile-ico { opacity: .12; }
+.fc-stats > div { background: rgba(255,255,255,0.03); border-color: var(--line); border-radius: var(--radius-sm); }
+.fc-stats small { color: var(--text-3); }
+.fc-legend { color: var(--text-2); }
+.fc-legend kbd, .cs-key kbd { background: rgba(255,255,255,0.12); color: #fff; }
+.fc-legend-r { color: var(--text-3); }
+/* club selection */
+.cs-region { background: var(--fc-sel); border: 1px solid rgba(31,139,255,0.55); color: #fff; border-radius: 6px; }
+.cs-league, .cs-obj small { color: var(--text-3); }
+.cs-club { background: radial-gradient(260px 200px at 50% 45%, rgba(31,139,255,0.14), transparent 70%), var(--fc-slate); }
+.cs-crest .badge.xl { box-shadow: 0 0 0 1px var(--line-strong), 0 14px 34px rgba(0,0,0,0.4); }
+.cs-nav { color: var(--text-2); }
+.cs-stars i { color: rgba(255,255,255,0.14); }
+.cs-stars i.f { color: var(--vermilion); }
+.cs-stars i.h { background: linear-gradient(90deg, var(--vermilion) 50%, rgba(255,255,255,0.14) 50%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.cs-mid h3 { color: #fff; }
+/* expectation levels: vermilion for pressure, white for neutral, azure for relaxed */
+.lv.crit { color: var(--vermilion); } .lv.crit i { background: var(--vermilion); }
+.lv.vhigh { color: color-mix(in srgb, var(--vermilion) 80%, #fff); } .lv.vhigh i { background: color-mix(in srgb, var(--vermilion) 75%, var(--ink)); }
+.lv.high { color: color-mix(in srgb, var(--vermilion) 55%, #fff); } .lv.high i { background: color-mix(in srgb, var(--vermilion) 45%, var(--ink)); }
+.lv.med { color: var(--text); } .lv.med i { background: rgba(255,255,255,0.25); }
+.lv.low { color: var(--azure); } .lv.low i { background: var(--azure); }
+.lv.vlow { color: var(--text-3); } .lv.vlow i { background: rgba(255,255,255,0.18); }
+.cs-about small, .cs-money small, .cs-home small, .cs-player small { color: var(--text-3); }
+.cs-about p { color: var(--text-2); }
+.cs-coin { border: 2px solid var(--azure); color: var(--azure); background: rgba(31,139,255,0.08); }
+.cs-arena, .cs-arena::before, .cs-arena::after { border-color: rgba(255,255,255,0.7); }
+.cs-arena { border-width: 3px; } .cs-arena::before { border-left-width: 3px; } .cs-arena::after { border-width: 3px; }
+.cs-item { background: var(--fc-slate2); border: 1px solid transparent; border-radius: 6px; }
+.cs-item small { color: var(--text-3); }
+.cs-item:hover { border-color: var(--line-strong); }
+.cs-item.on { background: var(--fc-sel); border-color: var(--azure); box-shadow: inset 3px 0 0 var(--vermilion); }
