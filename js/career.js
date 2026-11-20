@@ -15,8 +15,10 @@
   const CITIES = ['Copenhagen', 'Sydney', 'Riyadh', 'Los Angeles', 'London', 'Rio de Janeiro', 'Berlin', 'Tokyo', 'Dallas', 'Madrid', 'Toronto', 'Stockholm', 'Seoul', 'Mexico City',
     'Paris', 'São Paulo', 'Singapore', 'Amsterdam', 'Dubai', 'New York', 'Buenos Aires', 'Melbourne', 'Barcelona', 'Johannesburg', 'Chicago', 'Lisbon', 'Doha', 'Bangkok',
     'Milan', 'Montréal', 'Istanbul', 'Auckland', 'Warsaw', 'Santiago', 'Atlanta', 'Rotterdam', 'Cairo', 'Hong Kong', 'Vienna', 'Seattle', 'Abu Dhabi', 'Bogotá',
-    'Birmingham', 'Prague', 'Manila', 'Casablanca', 'Orlando', 'Lima', 'Vancouver', 'Cape Town', 'Raleigh', 'Jakarta', 'Munich', 'Lyon'];
-  const WORLDS_CITIES = ['Fort Worth', 'Paris', 'Lyon', 'Boston', 'Riyadh', 'London', 'Sydney', 'Las Vegas', 'Copenhagen', 'Tokyo', 'São Paulo', 'Dubai', 'New York', 'Berlin', 'Singapore', 'Toronto'];
+    'Birmingham', 'Prague', 'Manila', 'Casablanca', 'Orlando', 'Lima', 'Vancouver', 'Cape Town', 'Raleigh', 'Jakarta', 'Munich', 'Lyon',
+    'Oslo', 'Helsinki', 'Dublin', 'Edinburgh', 'Brussels', 'Zurich', 'Budapest', 'Athens', 'Rome', 'Marseille', 'Hamburg', 'Cologne', 'Kraków', 'Bucharest', 'Valencia', 'Porto', 'Katowice', 'Miami', 'Austin', 'Denver', 'Phoenix', 'San Francisco', 'Nashville', 'Philadelphia', 'Houston', 'Calgary', 'Guadalajara', 'Monterrey', 'Medellín', 'Montevideo', 'Belo Horizonte', 'Quito', 'Jeddah', 'Kuwait City', 'Muscat', 'Amman', 'Marrakech', 'Tunis', 'Osaka', 'Busan', 'Shanghai', 'Taipei', 'Kuala Lumpur', 'Ho Chi Minh City', 'Mumbai', 'Brisbane', 'Perth', 'Wellington', 'Lagos', 'Nairobi', 'Accra', 'Durban'];
+  const OLD_MAJOR_N = 54, OLD_WORLDS_N = 16; // pool sizes before random hosts (older saves keep their current season)
+  const WORLDS_CITIES = ['Fort Worth', 'Paris', 'Lyon', 'Boston', 'Riyadh', 'London', 'Sydney', 'Las Vegas', 'Copenhagen', 'Tokyo', 'São Paulo', 'Dubai', 'New York', 'Berlin', 'Singapore', 'Toronto', 'Rome', 'Shanghai', 'Miami', 'Osaka', 'Jeddah', 'Melbourne'];
   /* Host-city palettes for career Majors and Worlds: flag / city colours of the host.
      a = main colour, b = deep second colour, c = highlight; on = text on a. */
   const HOST_PAL = {
@@ -30,6 +32,58 @@
     'Fort Worth': ['United States', '#1747A6', '#BF0A30', '#C0C5CE'], 'Paris': ['France', '#2B3A8C', '#6B1E3A', '#E5C07B'],
     'Lyon': ['France', '#1F2A6B', '#D6001C', '#F5F5F5'], 'Boston': ['United States', '#1A4E9C', '#C8102E', '#D4B483'],
     'Las Vegas': ['United States', '#E10098', '#1C0F45', '#FFD100'],
+    'Oslo': ['Norway', '#8ECAE6', '#023047', '#FB8500'], // fjord ice, Scream sunset
+    'Helsinki': ['Finland', '#2F5D50', '#0B2440', '#9FC9E8'], // Nordic pine, Baltic night, frost
+    'Dublin': ['Ireland', '#5BBA6F', '#2B2118', '#E8C547'], // shamrock, stout, harp gold
+    'Edinburgh': ['United Kingdom', '#5B4A8B', '#1C1F33', '#B7A4D6'], // heather purple, castle stone night
+    'Brussels': ['Belgium', '#FDDA24', '#5C3A21', '#EF3340'], // Belgian yellow, chocolate, red
+    'Zurich': ['Switzerland', '#E4E8EE', '#0E3A5B', '#DA291C'], // alpine snow, lake blue, Swiss red
+    'Budapest': ['Hungary', '#477050', '#7B1E1E', '#E5C07B'], // Hungarian green, paprika, Danube gold
+    'Athens': ['Greece', '#0D5EAF', '#3F4A2F', '#F2F2F2'], // Aegean blue, marble, olive gold
+    'Rome': ['Italy', '#8B1E2D', '#C49A2C', '#F4E3C3'], // imperial red, gold, travertine
+    'Marseille': ['France', '#2FAEE0', '#0B2A4A', '#FFFFFF'], // Calanques sky blue, deep sea
+    'Hamburg': ['Germany', '#3A3F44', '#7A0A0A', '#E30613'], // harbour grey, brick red
+    'Cologne': ['Germany', '#B6A68C', '#2B2B2B', '#E30613'], // cathedral sandstone, carnival red
+    'Kraków': ['Poland', '#3F7D20', '#4B2E83', '#C9A227'], // Wawel dragon green, royal purple, gold
+    'Bucharest': ['Romania', '#002B7F', '#FCD116', '#CE1126'], // Romanian blue, yellow, red
+    'Valencia': ['Spain', '#FF7F11', '#0B5563', '#FFE66D'], // orange groves, Mediterranean teal
+    'Porto': ['Portugal', '#6D1A36', '#0F4C5C', '#F2C14E'], // port wine, Douro teal
+    'Katowice': ['Poland', '#1B1B1B', '#4A4A4A', '#F7B500'], // coal black, esports gold
+    'Miami': ['United States', '#FF6EC7', '#00B2CA', '#FDF5BF'], // Art Deco pink, ocean teal
+    'Austin': ['United States', '#BF5700', '#4D2600', '#F2E1C1'], // burnt orange, live-music brown
+    'Denver': ['United States', '#FB4F14', '#0B3D2E', '#A5ACAF'], // Rocky sunset, pine
+    'Phoenix': ['United States', '#8C2D19', '#5F259F', '#F9AD1B'], // red rock, purple dusk
+    'San Francisco': ['United States', '#C0362C', '#6C8EAD', '#F2A900'], // Golden Gate red, fog
+    'Nashville': ['United States', '#4B92DB', '#C8102E', '#FFB81C'], // guitar blue, red, gold
+    'Philadelphia': ['United States', '#004C54', '#A5ACAF', '#FFFFFF'], // midnight green, silver
+    'Houston': ['United States', '#03202F', '#A71930', '#B4C2CC'], // space navy, red
+    'Calgary': ['Canada', '#C8102E', '#F1BE48', '#111111'], // Stampede red, gold
+    'Guadalajara': ['Mexico', '#4A8C7A', '#C8102E', '#FFD100'], // agave, mariachi red
+    'Monterrey': ['Mexico', '#5C677D', '#1D2B4F', '#FF6B35'], // steel city, dusk, forge orange
+    'Medellín': ['Colombia', '#43B02A', '#00205B', '#FFCD00'], // eternal spring green
+    'Montevideo': ['Uruguay', '#74C69D', '#0B1C3D', '#FCD116'], // Rambla green, Río de la Plata night, sun of May
+    'Belo Horizonte': ['Brazil', '#7C4DFF', '#1A1A2E', '#FFD54F'], // Pampulha modernist purple
+    'Quito': ['Ecuador', '#FFD100', '#034EA2', '#ED1C24'], // Ecuador yellow, Andes blue
+    'Jeddah': ['Saudi Arabia', '#0B4F6C', '#C9B37E', '#00C2D1'], // deep Red Sea, coral sand, reef
+    'Kuwait City': ['Kuwait', '#2E86AB', '#0B0B0B', '#CE1126'], // Kuwait Towers blue
+    'Muscat': ['Oman', '#A51931', '#3B2A1A', '#00843D'], // Omani red, white forts
+    'Amman': ['Jordan', '#B5523B', '#3D405B', '#F2CC8F'], // Petra rose-red, dusk
+    'Marrakech': ['Morocco', '#C1440E', '#2E5E4E', '#F2C14E'], // red city ochre, garden green
+    'Tunis': ['Tunisia', '#0077B6', '#7A1F2B', '#F5F5F5'], // Sidi Bou Said blue and white
+    'Osaka': ['Japan', '#F08300', '#3A0CA3', '#FFD60A'], // Dotonbori neon orange and violet
+    'Busan': ['South Korea', '#E63946', '#0096C7', '#F1FAEE'], // lantern red, Haeundae sea
+    'Shanghai': ['China', '#7209B7', '#F72585', '#4CC9F0'], // Pudong neon purple and pink
+    'Taipei': ['Taiwan', '#F25F5C', '#0B1E3F', '#00A6A6'], // night-market coral, jade
+    'Kuala Lumpur': ['Malaysia', '#5E60CE', '#0B0B2B', '#C0C0C0'], // Petronas steel, night
+    'Ho Chi Minh City': ['Vietnam', '#FFD700', '#DA251D', '#2B2B2B'], // gold star on red
+    'Mumbai': ['India', '#FF9933', '#138808', '#000080'], // saffron, green, chakra blue
+    'Brisbane': ['Australia', '#8E7CC3', '#3C1642', '#FFC72C'], // jacaranda purple
+    'Perth': ['Australia', '#FF9F1C', '#0B3954', '#2EC4B6'], // sunset orange, Indian Ocean
+    'Wellington': ['New Zealand', '#2B2B2B', '#00A9CE', '#FFFFFF'], // All Black, harbour blue
+    'Lagos': ['Nigeria', '#D81E5B', '#008751', '#FFFFFF'], // Lekki sunset magenta, Naija green
+    'Nairobi': ['Kenya', '#BB0000', '#006600', '#000000'], // Kenyan red, green, black
+    'Accra': ['Ghana', '#FCD116', '#006B3F', '#CE1126'], // Black Star gold, green, red
+    'Durban': ['South Africa', '#00A19A', '#F7B538', '#1A1A1A'], // Indian Ocean teal, sun
     'São Paulo': ['Brazil', '#2D3047', '#9E1B32', '#FFDF00'], 'Singapore': ['Singapore', '#B5179E', '#3A0CA3', '#FFFFFF'],
     'Amsterdam': ['Netherlands', '#FF8200', '#1A1A1A', '#E4002B'], 'Dubai': ['United Arab Emirates', '#D4AF37', '#3A1C5D', '#FFFFFF'],
     'New York': ['United States', '#F7B500', '#1B1B1B', '#E4002B'], 'Buenos Aires': ['Argentina', '#74ACDF', '#5A1A2B', '#F6B40E'],
@@ -61,12 +115,15 @@
     SSA: ['Sub-Saharan Africa', '#E87722', '#006B3F', '#FCD116'], // sunset orange, green, Pan-African gold
   };
   const regionKey = (r) => 'region-' + r.toLowerCase();
+  const CITY_REGION = { 'Copenhagen': 'EU', 'London': 'EU', 'Berlin': 'EU', 'Madrid': 'EU', 'Stockholm': 'EU', 'Paris': 'EU', 'Amsterdam': 'EU', 'Barcelona': 'EU', 'Lisbon': 'EU', 'Milan': 'EU', 'Istanbul': 'EU', 'Warsaw': 'EU', 'Rotterdam': 'EU', 'Vienna': 'EU', 'Birmingham': 'EU', 'Prague': 'EU', 'Munich': 'EU', 'Lyon': 'EU', 'Oslo': 'EU', 'Helsinki': 'EU', 'Dublin': 'EU', 'Edinburgh': 'EU', 'Brussels': 'EU', 'Zurich': 'EU', 'Budapest': 'EU', 'Athens': 'EU', 'Rome': 'EU', 'Marseille': 'EU', 'Hamburg': 'EU', 'Cologne': 'EU', 'Kraków': 'EU', 'Bucharest': 'EU', 'Valencia': 'EU', 'Porto': 'EU', 'Katowice': 'EU', 'Los Angeles': 'NA', 'Dallas': 'NA', 'Toronto': 'NA', 'Mexico City': 'NA', 'New York': 'NA', 'Chicago': 'NA', 'Montréal': 'NA', 'Atlanta': 'NA', 'Seattle': 'NA', 'Orlando': 'NA', 'Vancouver': 'NA', 'Raleigh': 'NA', 'Fort Worth': 'NA', 'Boston': 'NA', 'Las Vegas': 'NA', 'Miami': 'NA', 'Austin': 'NA', 'Denver': 'NA', 'Phoenix': 'NA', 'San Francisco': 'NA', 'Nashville': 'NA', 'Philadelphia': 'NA', 'Houston': 'NA', 'Calgary': 'NA', 'Guadalajara': 'NA', 'Monterrey': 'NA', 'Rio de Janeiro': 'SAM', 'São Paulo': 'SAM', 'Buenos Aires': 'SAM', 'Santiago': 'SAM', 'Bogotá': 'SAM', 'Lima': 'SAM', 'Medellín': 'SAM', 'Montevideo': 'SAM', 'Belo Horizonte': 'SAM', 'Quito': 'SAM', 'Riyadh': 'MENA', 'Dubai': 'MENA', 'Doha': 'MENA', 'Cairo': 'MENA', 'Abu Dhabi': 'MENA', 'Casablanca': 'MENA', 'Jeddah': 'MENA', 'Kuwait City': 'MENA', 'Muscat': 'MENA', 'Amman': 'MENA', 'Marrakech': 'MENA', 'Tunis': 'MENA', 'Tokyo': 'APAC', 'Seoul': 'APAC', 'Singapore': 'APAC', 'Bangkok': 'APAC', 'Hong Kong': 'APAC', 'Manila': 'APAC', 'Jakarta': 'APAC', 'Osaka': 'APAC', 'Busan': 'APAC', 'Shanghai': 'APAC', 'Taipei': 'APAC', 'Kuala Lumpur': 'APAC', 'Ho Chi Minh City': 'APAC', 'Mumbai': 'APAC', 'Sydney': 'OCE', 'Melbourne': 'OCE', 'Auckland': 'OCE', 'Brisbane': 'OCE', 'Perth': 'OCE', 'Wellington': 'OCE', 'Johannesburg': 'SSA', 'Cape Town': 'SSA', 'Lagos': 'SSA', 'Nairobi': 'SSA', 'Accra': 'SSA', 'Durban': 'SSA' };
+  /** Text colour for buttons filled with an event colour: dark on light colours (snow, yellows), white otherwise. */
+  const onColor = (hex) => { const v = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4))); return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2] > 0.45 ? '#0b1022' : '#fff'; };
   const hostKey = (city) => 'host-' + city.toLowerCase().replace(/[^a-z]+/g, '-');
   (function registerHostThemes() {
     const T = (window.RL_EVENT_THEMES = window.RL_EVENT_THEMES || {});
-    Object.keys(HOST_PAL).forEach((city) => { const [country, a, b, c] = HOST_PAL[city]; T[hostKey(city)] = { name: city + ', ' + country, a, b, c, on: '#fff' }; });
+    Object.keys(HOST_PAL).forEach((city) => { const [country, a, b, c] = HOST_PAL[city]; T[hostKey(city)] = { name: city + ', ' + country, a, b, c, on: onColor(a) }; });
     T['career-worlds'] = { name: 'RLCS World Championship', a: '#1F5BFF', b: '#050505', c: '#D4A017', on: '#fff' }; // Worlds branding: blue, gold, black
-    Object.keys(REGION_PAL).forEach((r) => { const [name, a, b, c] = REGION_PAL[r]; T[regionKey(r)] = { name, a, b, c, on: '#fff' }; });
+    Object.keys(REGION_PAL).forEach((r) => { const [name, a, b, c] = REGION_PAL[r]; T[regionKey(r)] = { name, a, b, c, on: onColor(a) }; });
   })();
   const SCHEDULE = [
     { key: 'pre', type: 'window', name: 'Pre-season transfer window', short: 'Window' },
@@ -148,7 +205,14 @@
   }
 
   /* ---------------- persistence ---------------- */
-  function load() { try { const raw = localStorage.getItem(KEY); C = raw ? JSON.parse(raw) : null; } catch (e) { C = null; } fixAges(); fixEconomy(); bump(); }
+  function load() { try { const raw = localStorage.getItem(KEY); C = raw ? JSON.parse(raw) : null; } catch (e) { C = null; } fixAges(); fixEconomy(); fixHosts(); bump(); }
+  function fixHosts() {
+    if (!C || C.hostsV2) return;
+    C.hosts = C.hosts || {};
+    C.hosts[C.season] = { m1: CITIES[(C.season * 2) % OLD_MAJOR_N], m2: CITIES[(C.season * 2 + 1) % OLD_MAJOR_N], w: WORLDS_CITIES[C.season % OLD_WORLDS_N] };
+    C.usedHosts = [C.hosts[C.season].m1, C.hosts[C.season].m2];
+    C.hostsV2 = true; save();
+  }
   /** Saves from before club tiers: give every club its tier and rebalance budgets (the user keeps at most 1.5x their tier's start). */
   function fixEconomy() {
     if (!C || C.econV2) return;
@@ -221,7 +285,7 @@
   /* ---------------- new career ---------------- */
   function newCareer(teamId) {
     const lib = api.libraryTeams();
-    C = { v: 1, agesV2: true, econV2: true, rep: 0, season: 2027, step: 0, user: 'c:' + teamId, teams: {}, players: {}, nextPid: 1, points: {}, results: {}, news: [], history: [], trophies: [], fa: [], seasonFin: { prize: 0, sponsor: 0, salaries: 0, transfers: 0 }, objectives: [], board: 60, stepNews: [] };
+    C = { v: 1, agesV2: true, econV2: true, hostsV2: true, rep: 0, season: 2027, step: 0, user: 'c:' + teamId, teams: {}, players: {}, nextPid: 1, points: {}, results: {}, news: [], history: [], trophies: [], fa: [], seasonFin: { prize: 0, sponsor: 0, salaries: 0, transfers: 0 }, objectives: [], board: 60, stepNews: [] };
     lib.forEach((t) => {
       const cid = 'c:' + t.id;
       const roster = t.players.slice(0, 4).map((p, i) => {
@@ -236,6 +300,7 @@
       C.teams[cid] = { id: cid, name: t.name, tag: t.tag, region: t.region, color: t.color, roster, tier, budget: startBudget(tier, base) };
     });
     REGIONS.forEach((r) => { for (let i = 0; i < 6; i++) C.fa.push(makeRookie(r)); });
+    seasonHosts(C.season);
     resetPoints();
     bump();
     setObjectives();
@@ -335,8 +400,24 @@
     if (st.type === 'major') return 'RLCS ' + C.season + ' · ' + majorCity(st) + ' Major';
     return 'RLCS ' + C.season + ' World Championship · ' + worldsCity();
   }
-  const majorCity = (st) => CITIES[(C.season * 2 + (st.split - 1)) % CITIES.length];
-  const worldsCity = () => WORLDS_CITIES[C.season % WORLDS_CITIES.length];
+  /** Hosts are drawn at random for each career and season: the two Majors on different continents, and a city
+      only returns once most of the pool has hosted. Saved, so a season's hosts never change once announced. */
+  function seasonHosts(season) {
+    C.hosts = C.hosts || {};
+    if (C.hosts[season]) return C.hosts[season];
+    let used = (C.usedHosts || []).filter((c) => CITIES.includes(c));
+    if (CITIES.length - used.length < 12) used = [];
+    const pool = CITIES.filter((c) => !used.includes(c));
+    const m1 = pick(pool);
+    const m2 = pick(pool.filter((c) => c !== m1 && CITY_REGION[c] !== CITY_REGION[m1])) || pick(pool.filter((c) => c !== m1));
+    const lastW = C.hosts[season - 1] && C.hosts[season - 1].w;
+    const w = pick(WORLDS_CITIES.filter((c) => c !== lastW && c !== m1 && c !== m2));
+    C.usedHosts = used.concat([m1, m2]);
+    C.hosts[season] = { m1, m2, w };
+    return C.hosts[season];
+  }
+  const majorCity = (st) => seasonHosts(C.season)[st.split === 2 ? 'm2' : 'm1'];
+  const worldsCity = () => seasonHosts(C.season).w;
   const hostCity = (st) => (st.type === 'major' ? majorCity(st) : st.type === 'worlds' ? worldsCity() : null);
   const themeKeyFor = (st) => { if (st.type === 'open') return C && userTeam() ? regionKey(userTeam().region) : null; if (st.type === 'worlds') return 'career-worlds'; const c = hostCity(st); return c && HOST_PAL[c] ? hostKey(c) : null; };
   const hostTheme = (st) => { const k = themeKeyFor(st); return k ? window.RL_EVENT_THEMES[k] || null : null; };
@@ -644,6 +725,7 @@
       else { removeFromTeam(pid); C.fa.push(pid); news('transfer', `${esc(p.name)} leaves as a free agent.`); }
     });
     C.season++;
+    seasonHosts(C.season); // announce the new season's hosts
     C.step = 0;
     C.review = null;
     resetPoints();

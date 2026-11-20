@@ -1930,3 +1930,9 @@ html.ev .fc-chip i { background: var(--e3); color: color-mix(in srgb, var(--e2) 
 .fs-photo.flank > span { font-size: 48px; }
 @media (max-width: 760px) { .fs-photo.flank { width: 30%; } .fs-result .badge.xl { left: calc(50% - 50px); top: calc(50% - 70px); } }
 .fs-squad .badge { top: 46px; }
+/* text on highlight-coloured fills follows the highlight's lightness */
+html.ev .fc-tile.on, html.ev .fc-tile.on:hover, html.ev .fc-tile.on small { color: var(--e3-on, #0b1022); }
+html.ev .btn.primary { color: var(--e3-on, #0b1022); }
+html.ev .fc-chip i { color: var(--e3-on, #0b1022); }
+html.ev .th-note { color: var(--e3-on, #0b1022); } html.ev .th-note b { color: inherit; }
+html.ev .th-note-i { background: var(--e3-on, #0b1022); color: var(--e3); }
