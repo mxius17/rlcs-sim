@@ -1132,7 +1132,7 @@
       list.push({ id: 'arch-' + se.key + '-' + i, season: se.key, theme: e.worlds ? 'worlds-' + se.key : 'major-' + se.key + '-' + i, mono: e.worlds ? 'WC' : 'M' + (i + 1), color: e.worlds ? '#F2542D' : '#1F8BFF', name: e.name, sub: se.label.replace(/^RLCS /, '') + ' · ' + e.size + ' teams · won by ' + (e.winner || 'TBD'),
         info: { where: e.where, date: e.date, winner: e.winner || '—', runnerUp: e.runnerUp || '—' }, format: e.format, groupSize: e.groupSize, advance: e.advance, size: e.size, teams: () => ids, fmtText: e.fmtText });
     }));
-    Object.entries(REGIONS).forEach(([k, v]) => list.push({ id: 'open-' + k, mono: k, color: REGION_COLORS[k], name: v + ' Open', sub: '2026 · regional open · 16 teams', season: '2026', region: k, format: 'swiss', size: 16, teams: () => rankedTeams('2026').filter((t) => t.region === k).map((t) => t.id), fmtText: '16-team Swiss stage (3 wins to qualify, 3 losses out), then an eight-team playoff.' }));
+    Object.entries(REGIONS).forEach(([k, v]) => list.push({ id: 'open-' + k, theme: 'region-' + k.toLowerCase(), mono: k, color: REGION_COLORS[k], name: v + ' Open', sub: '2026 · regional open · 16 teams', season: '2026', region: k, format: 'swiss', size: 16, teams: () => rankedTeams('2026').filter((t) => t.region === k).map((t) => t.id), fmtText: '16-team Swiss stage (3 wins to qualify, 3 losses out), then an eight-team playoff.' }));
     return list;
   }
   /* RLCS 2027 Club Championship events (rosters as of today; TBD slots filled by the best-rated eligible teams) */
@@ -1152,7 +1152,7 @@
     }];
     D.events.filter((e) => e.id.startsWith('ko-')).forEach((e) => {
       const field = ids(e.teams).sort((a, b) => getTeam(b).ovr - getTeam(a).ovr).slice(0, 16);
-      list.push({ id: e.id, season: '2027', region: e.region, mono: e.region, color: REGION_COLORS[e.region], name: 'Kick-Off Open · ' + REGIONS[e.region], sub: e.qualified ? 'Finished · ' + e.qualified + ' qualified' : 'Live · 13–22 Nov 2026', format: 'swiss8', size: 16,
+      list.push({ id: e.id, theme: 'region-' + e.region.toLowerCase(), season: '2027', region: e.region, mono: e.region, color: REGION_COLORS[e.region], name: 'Kick-Off Open · ' + REGIONS[e.region], sub: e.qualified ? 'Finished · ' + e.qualified + ' qualified' : 'Live · 13–22 Nov 2026', format: 'swiss8', size: 16,
         teams: () => field, info27: { where: 'Online · ' + REGIONS[e.region], date: e.region === 'EU' ? '2026-11-13 – 2026-11-22' : '2026-11-06 – 2026-11-15', status: e.qualified ? 'Finished — ' + e.qualified + ' won the Kick-Off spot' : 'In progress — top 64 decided, playoffs on 20–22 Nov' },
         fmtText: 'The real Open runs double elimination → 32-team Swiss → GSL groups → AFL Final Eight. Simulated here from the top 16 of the top-64 field: 16-team Swiss, then the Final Eight.' });
     });
@@ -1228,7 +1228,7 @@
             </div>
           </button>
           <div class="feat-side">
-            <button class="feat-card" data-action="comp" data-v="ko-EU" style="--c:#3b6cf6"><span class="feat-card-title">Europe Kick-Off Open</span><span class="feat-meta">Live · playoffs 20–22 Nov · last Kick-Off spot</span><span class="feat-arrow">→</span></button>
+            <button class="feat-card" data-action="comp" data-v="ko-EU" style="--c:#2A5BD7"><span class="feat-card-title">Europe Kick-Off Open</span><span class="feat-meta">Live · playoffs 20–22 Nov · last Kick-Off spot</span><span class="feat-arrow">→</span></button>
             <button class="feat-card" data-action="comp" data-v="cf27" style="--c:#d4a017"><span class="feat-card-title">Club Finale</span><span class="feat-meta">2027 · 16 teams · $500,500</span><span class="feat-arrow">→</span></button>
           </div>
         </div>

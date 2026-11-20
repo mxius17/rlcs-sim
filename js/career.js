@@ -28,10 +28,22 @@
     'Lyon': ['France', '#D6001C', '#1F2A6B', '#F5F5F5'], 'Boston': ['United States', '#1A4E9C', '#C8102E', '#D4B483'],
     'Las Vegas': ['United States', '#E10098', '#1C0F45', '#FFD100'],
   };
+  /* Region palettes for the regional Opens (career + Simulators page): colours each region is known for. */
+  const REGION_PAL = {
+    EU: ['Europe', '#2A5BD7', '#0B1F66', '#FFCC00'],          // EU flag blue + gold stars
+    NA: ['North America', '#C8102E', '#1C3F94', '#FFFFFF'],   // red, white and blue (US / Canada)
+    SAM: ['South America', '#009C3B', '#2E6DB4', '#FFDF00'],  // Brazil green & yellow, Argentine sky blue
+    MENA: ['Middle East & North Africa', '#0F8A5F', '#6B4423', '#D4A017'], // green, desert sand, gold
+    OCE: ['Oceania', '#0097A7', '#003F5C', '#FFCD00'],        // Pacific teal, deep ocean, Aussie gold
+    APAC: ['Asia-Pacific', '#D7263D', '#4A1A6B', '#F5B700'],  // red & gold, lacquer purple
+    SSA: ['Sub-Saharan Africa', '#E87722', '#006B3F', '#FCD116'], // sunset orange, green, Pan-African gold
+  };
+  const regionKey = (r) => 'region-' + r.toLowerCase();
   const hostKey = (city) => 'host-' + city.toLowerCase().replace(/[^a-z]+/g, '-');
   (function registerHostThemes() {
     const T = (window.RL_EVENT_THEMES = window.RL_EVENT_THEMES || {});
     Object.keys(HOST_PAL).forEach((city) => { const [country, a, b, c] = HOST_PAL[city]; T[hostKey(city)] = { name: city + ', ' + country, a, b, c, on: '#fff' }; });
+    Object.keys(REGION_PAL).forEach((r) => { const [name, a, b, c] = REGION_PAL[r]; T[regionKey(r)] = { name, a, b, c, on: '#fff' }; });
   })();
   const SCHEDULE = [
     { key: 'pre', type: 'window', name: 'Pre-season transfer window', short: 'Window' },
@@ -239,7 +251,8 @@
   const majorCity = (st) => CITIES[(C.season * 2 + (st.split - 1)) % CITIES.length];
   const worldsCity = () => WORLDS_CITIES[C.season % WORLDS_CITIES.length];
   const hostCity = (st) => (st.type === 'major' ? majorCity(st) : st.type === 'worlds' ? worldsCity() : null);
-  const hostTheme = (st) => { const c = hostCity(st); return c && HOST_PAL[c] ? window.RL_EVENT_THEMES[hostKey(c)] : null; };
+  const themeKeyFor = (st) => { if (st.type === 'open') return C && userTeam() ? regionKey(userTeam().region) : null; const c = hostCity(st); return c && HOST_PAL[c] ? hostKey(c) : null; };
+  const hostTheme = (st) => { const k = themeKeyFor(st); return k ? window.RL_EVENT_THEMES[k] || null : null; };
   const hostVars = (th) => (th ? `--e1:${th.a};--e2:${th.b};--e3:${th.c};--e-on:${th.on}` : '');
 
   /* ---------------- results ---------------- */
@@ -797,8 +810,8 @@
     if (!ev.cfg.teams.includes(C.user)) { save(); api.toast('You did not make it into this event — simulate it instead.'); api.render(); return; }
     ev.cfg.managed = C.user;
     save();
-    const hc = hostCity(st);
-    api.launch(ev.cfg, eventTitle(st, reg), Object.assign({ career: { season: C.season, step: C.step } }, hc && HOST_PAL[hc] ? { theme: hostKey(hc) } : {}));
+    const tk = themeKeyFor(st);
+    api.launch(ev.cfg, eventTitle(st, reg), Object.assign({ career: { season: C.season, step: C.step } }, tk ? { theme: tk } : {}));
   }
   function recordFromT(T) {
     if (!C || !T.career || T.career.recorded || T.career.season !== C.season || T.career.step !== C.step) return;
