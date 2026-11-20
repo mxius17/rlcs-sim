@@ -1115,3 +1115,116 @@ body.hero-open { overflow: hidden; }
 
 /* events branded without key art: a slim colour band instead of a logo */
 .event-banner:not(.has-art) { height: 56px; }
+
+/* =========================================================================
+   Career hub — console-style layout (club bar, tab strip, feature panel,
+   next-up side card, big hub tiles). Design only: every action is unchanged.
+   ========================================================================= */
+.fc { overflow-x: clip; --fc-cream: #F4EEDF; --fc-slate: #2A3550; --fc-slate2: #222c44; --fc-line: rgba(255,255,255,0.08); position: relative; display: flex; flex-direction: column; gap: 14px; padding-top: 4px; }
+.fc::before { content: ''; position: absolute; inset: -40px -60px auto; height: 520px; pointer-events: none; z-index: -1;
+  background: radial-gradient(600px 260px at 12% 80%, rgba(31,139,255,0.16), transparent 70%), repeating-linear-gradient(115deg, transparent 0 46px, rgba(31,139,255,0.05) 46px 47px); }
+.fc-h, .fc-tabs button, .fc-tile b, .fc-side-head h2, .fc-club span, .fc-chip { font-family: var(--display); text-transform: uppercase; letter-spacing: .02em; }
+/* top bar */
+.fc-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.fc-club { position: relative; display: flex; align-items: center; gap: 12px; padding: 10px 14px 14px; min-width: 260px; background: var(--fc-slate); border: 0; border-radius: 4px; color: #fff; cursor: pointer; font-size: 17px; font-weight: 600; text-align: left; }
+.fc-club-name { flex: 1; line-height: 1.1; }
+.fc-club .badge { flex: none; }
+.fc-club-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(255,255,255,0.12); }
+.fc-club-bar::after { content: ''; position: absolute; inset: 0 auto 0 0; width: var(--b); background: #2fbf71; }
+.fc-thumb { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; font-size: 14px; background: rgba(47,191,113,0.2); }
+.fc-thumb.mid { background: rgba(245,184,28,0.2); } .fc-thumb.bad { background: rgba(242,84,45,0.22); }
+.fc-top-r { display: flex; gap: 2px; background: var(--fc-slate); border-radius: 4px; padding: 4px; }
+.fc-chip { background: transparent; border: 0; color: #fff; font-size: 14px; font-weight: 600; padding: 8px 12px; border-radius: 3px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+.fc-chip:hover { background: rgba(255,255,255,0.08); }
+.fc-chip i { font-style: normal; font-size: 11px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--vermilion); display: grid; place-items: center; }
+/* tabs */
+.fc-tabs { display: flex; align-items: stretch; gap: 0; overflow-x: auto; scrollbar-width: none; }
+.fc-tabs::-webkit-scrollbar { display: none; }
+.fc-tabs button { background: rgba(20,28,48,0.75); border: 0; border-bottom: 3px solid transparent; color: rgba(255,255,255,0.78); font-size: 19px; font-weight: 600; padding: 10px 22px 8px; cursor: pointer; white-space: nowrap; }
+.fc-tabs button:hover { color: #fff; }
+.fc-tabs button.on { color: #fff; border-bottom-color: var(--vermilion); background: rgba(30,40,66,0.95); }
+.fc-key { align-self: center; font: 700 11px var(--font); color: var(--ink); background: rgba(255,255,255,0.85); border-radius: 4px; padding: 2px 6px; margin: 0 8px; }
+/* central: feature panel + side card */
+.fc-central { display: grid; grid-template-columns: minmax(0, 2.15fr) minmax(280px, 1fr); gap: 12px; align-items: stretch; }
+.fc-panel { background: rgba(20,28,48,0.85); border: 1px solid var(--fc-line); border-radius: 4px; overflow: hidden; min-width: 0; }
+.fc-main { min-height: 360px; display: flex; flex-direction: column; }
+.fc-panel-body { padding: 18px 20px; overflow: auto; }
+.fc-main .fc-panel-body { max-height: 520px; }
+.fc-h { margin: 0 0 10px; font-size: 22px; font-style: italic; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+.fc-feature { position: relative; flex: 1; display: flex; flex-direction: column; min-height: 360px;
+  background: radial-gradient(520px 320px at 30% 40%, color-mix(in srgb, var(--tc) 40%, transparent), transparent 70%), linear-gradient(160deg, #23345e, #101830 70%); }
+.fc-feature::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0 2px, transparent 2px 38px), linear-gradient(180deg, rgba(255,255,255,0.06), transparent 40%); }
+.fc-feature-art { position: relative; flex: 1; display: grid; place-items: center; padding: 24px; }
+.fc-feature-art .badge.xl { width: 150px; height: 150px; border-radius: 36px; font-size: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.45); }
+.fc-feature-season { position: absolute; right: 18px; top: 14px; font: 700 13px var(--display); letter-spacing: .14em; color: rgba(255,255,255,0.55); }
+.fc-headline { position: relative; margin: 0 18% 12px 22px; }
+.fc-tag { display: inline-block; background: var(--vermilion); color: #fff; font: 700 11px var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 3px 8px; }
+.fc-headline p { margin: 0; background: var(--fc-cream); color: #121A2E; font-size: 15px; font-weight: 600; padding: 10px 14px; line-height: 1.35; }
+.fc-headline p b, .fc-headline p a { color: #121A2E; }
+.fc-feature-foot { position: relative; display: flex; justify-content: space-between; align-items: center; background: rgba(10,15,28,0.85); padding: 0 12px 0 0; min-height: 36px; }
+.fc-link { background: var(--vermilion); color: #fff; border: 0; font: 700 13px var(--display); text-transform: uppercase; padding: 9px 26px 9px 16px; clip-path: polygon(0 0, 100% 0, 88% 100%, 0 100%); cursor: pointer; }
+.fc-dots { display: flex; align-items: center; gap: 8px; }
+.fc-dot { width: 11px; height: 11px; border-radius: 50%; border: 0; padding: 0; background: rgba(255,255,255,0.35); cursor: pointer; }
+.fc-dot.on { background: var(--vermilion); }
+.fc-arrow { background: none; border: 0; color: #fff; font-size: 20px; line-height: 1; cursor: pointer; padding: 0 4px; }
+/* side card */
+.fc-side { background: var(--fc-slate); border-radius: 4px; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+.fc-side-head { padding: 16px 18px 12px; }
+.fc-side-head h2 { margin: 0; font-size: 26px; font-style: italic; font-weight: 700; line-height: 1.05; }
+.fc-side-head small { color: rgba(255,255,255,0.6); text-transform: uppercase; font-size: 12px; letter-spacing: .04em; }
+.fc-side-row { display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.05); padding: 10px 18px; border-top: 1px solid var(--fc-line); border-bottom: 1px solid var(--fc-line); }
+.fc-side-row > span:nth-child(2) { flex: 1; display: flex; flex-direction: column; }
+.fc-side-row small { color: rgba(255,255,255,0.6); text-transform: uppercase; font-size: 11px; }
+.fc-side-row b { font: 600 17px var(--display); text-transform: uppercase; }
+.fc-day { font: 300 30px var(--display); color: rgba(255,255,255,0.8); min-width: 26px; }
+.fc-ico { font-size: 20px; opacity: .9; }
+.fc-side-mid { text-align: center; padding: 14px 12px 4px; }
+.fc-side-mid > small { display: block; text-transform: uppercase; font-size: 12px; letter-spacing: .04em; color: rgba(255,255,255,0.8); }
+.fc-rings { display: flex; justify-content: space-around; gap: 6px; margin-top: 12px; }
+.fc-ring { position: relative; display: flex; flex-direction: column; align-items: center; width: 82px; }
+.fc-ring svg { width: 68px; height: 68px; transform: rotate(-90deg); }
+.fc-ring circle { fill: none; stroke-width: 6; }
+.fc-ring .trk { stroke: rgba(255,255,255,0.12); }
+.fc-ring .val { stroke-linecap: round; }
+.fc-ring-in { position: absolute; top: 22px; font-size: 18px; }
+.fc-ring b { font: 700 15px var(--display); margin-top: 4px; }
+.fc-ring small { text-transform: uppercase; font-size: 10.5px; color: rgba(255,255,255,0.6); letter-spacing: .04em; }
+.fc-next { padding: 6px 18px 0; font-size: 14px; flex: 1; }
+.fc-next .action-row { margin: 12px -18px 0; padding: 0; gap: 0; display: flex; flex-wrap: wrap; }
+.fc-next .action-row .btn { flex: 1 1 auto; border-radius: 0; min-height: 42px; font-family: var(--display); text-transform: uppercase; letter-spacing: .02em; }
+.fc-next .action-row .btn.primary { background: var(--vermilion); border-color: var(--vermilion); color: #fff; }
+.fc-next .help { color: rgba(255,255,255,0.65); }
+/* hub tiles */
+.fc-tiles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+.fc-tile { position: relative; overflow: hidden; text-align: left; min-height: 92px; padding: 12px 16px; background: linear-gradient(180deg, #2d3955, #232d47); border: 0; border-bottom: 5px solid transparent; color: #fff; cursor: pointer; display: flex; flex-direction: column; gap: 4px; }
+.fc-tile b { font-size: 22px; font-style: italic; font-weight: 700; line-height: 1; position: relative; z-index: 1; }
+.fc-tile small { color: rgba(255,255,255,0.55); font-size: 12px; position: relative; z-index: 1; }
+.fc-tile-ico { position: absolute; right: 10px; bottom: -6px; font-size: 52px; opacity: .1; }
+.fc-tile:hover { background: linear-gradient(180deg, #34425f, #283350); }
+.fc-tile.on { background: var(--fc-cream); color: #1b2440; border-bottom-color: var(--vermilion); }
+.fc-tile.on small { color: rgba(18,26,46,0.6); }
+.fc-tile.on .fc-tile-ico { opacity: .15; }
+/* other tabs */
+.fc-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.fc-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fc-stats > div { background: rgba(255,255,255,0.04); border: 1px solid var(--fc-line); padding: 12px; border-radius: 4px; display: flex; flex-direction: column; gap: 2px; }
+.fc-stats small { color: rgba(255,255,255,0.6); font-size: 12px; }
+.fc-stats b { font: 700 22px var(--display); }
+.fc-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; color: rgba(255,255,255,0.85); font: 600 14px var(--display); padding: 4px 2px; }
+.fc-legend kbd { display: inline-grid; place-items: center; min-width: 22px; height: 22px; margin-right: 4px; border-radius: 50%; background: rgba(255,255,255,0.9); color: var(--ink); font: 700 11px var(--font); }
+.fc-legend-r { margin-left: auto; color: rgba(255,255,255,0.5); text-transform: uppercase; font-size: 12px; }
+@media (max-width: 980px) {
+  .fc-central, .fc-grid2 { grid-template-columns: 1fr; }
+  .fc-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .fc-club { min-width: 0; flex: 1; font-size: 15px; }
+  .fc-top-r { width: 100%; justify-content: space-between; }
+  .fc-tabs button { font-size: 16px; padding: 9px 14px 7px; }
+  .fc-key, .fc-legend { display: none; }
+  .fc-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fc-tile { min-height: 74px; } .fc-tile b { font-size: 18px; }
+  .fc-feature, .fc-main { min-height: 280px; } .fc-feature-art .badge.xl { width: 110px; height: 110px; }
+  .fc-headline { margin: 0 12px 10px; }
+  .fc-stats { grid-template-columns: 1fr; }
+}

@@ -539,36 +539,74 @@
     }
     const roster = me.roster.map((id) => C.players[id]);
     const salaries = roster.reduce((s, p) => s + p.salary, 0);
+    const ui = api.state.ui;
+    const tab = ui.ctab || 'central', view = ui.cview || 'next';
+    const newsList = C.news.slice(0, 30);
+    // ---- building blocks ----
+    const ring = (val, max, label, txt, icon) => {
+      const f = Math.max(0, Math.min(1, val / max)), r = 30, cir = 2 * Math.PI * r;
+      const colr = f >= 0.66 ? '#2fbf71' : f >= 0.4 ? '#f5b81c' : '#F2542D';
+      return `<div class="fc-ring"><svg viewBox="0 0 76 76" aria-hidden="true"><circle cx="38" cy="38" r="${r}" class="trk"/><circle cx="38" cy="38" r="${r}" class="val" style="stroke:${colr};stroke-dasharray:${(cir * f).toFixed(1)} ${cir.toFixed(1)}"/></svg><span class="fc-ring-in" style="color:${colr}">${icon}</span><b>${txt}</b><small>${label}</small></div>`;
+    };
+    const tableHtml = `<div class="table-wrap"><table class="st"><thead><tr><th>#</th><th class="l">Team</th><th>OVR</th><th>Split 1</th><th>Split 2</th><th>Season</th></tr></thead><tbody>
+      ${table.slice(0, 16).map((id, i) => { const tt = teamObj(id); return `<tr class="${i < slots ? 'q' : ''} ${id === C.user ? 'hl' : ''}"><td class="pos">${i + 1}</td><td class="l"><div class="tcell">${api.badge(tt, 'sm')}<span>${esc(tt.name)}</span></div></td><td>${tt.ovr}</td><td>${C.points[id].s1}</td><td>${C.points[id].s2}</td><td><b>${C.points[id].season}</b></td></tr>`; }).join('')}
+      </tbody></table></div>`;
+    const timelineHtml = `<div class="timeline">${SCHEDULE.map((s, i) => { const res = myEventStatus(s); return `<div class="tl ${i < C.step ? 'done' : i === C.step ? 'now' : ''} ${s.type}"><b>${s.short}</b><small>${i < C.step ? (res || (s.type === 'window' ? 'Closed' : '✓')) : i === C.step ? 'Now' : s.type === 'major' ? esc(majorCity(s)) : s.type === 'worlds' ? esc(worldsCity()) : ''}</small></div>`; }).join('')}</div>`;
+    const squadHtml = `<div class="leader-list">${roster.map((p, i) => `<div class="leader"><span class="rk">${i < 3 ? 'ST' : 'SUB'}</span><span class="who"><b>${p.flag || ''} ${esc(p.name)}</b><small>Age ${ageLabel(p)} · ${p.contract}y · ${money(p.salary)}/yr${p.stats.gp ? ' · ' + p.stats.g + 'G ' + p.stats.sv + 'Sv' : ''}</small></span><span class="val">${p.rating}</span></div>`).join('')}</div>`;
+    const objHtml = C.objectives.map((o) => `<div class="kv"><span>${esc(o.t)}</span><span class="pill">${C.season}</span></div>`).join('');
+    const trophyHtml = C.trophies.length ? C.trophies.slice().reverse().slice(0, 8).map((x) => `<div class="kv"><span>🏆 ${esc(x.title)}</span></div>`).join('') : '<p class="muted" style="font-size:13px">No trophies yet.</p>';
+    const newsHtml = `<div class="pulse">${newsList.map((n) => `<div class="story ${n.kind === 'trophy' ? 'win' : n.kind === 'transfer' ? 'upset' : ''}"><small>${esc(n.when)}</small>${n.html}</div>`).join('')}</div>`;
+    const historyHtml = C.history.length ? `<div class="table-wrap"><table class="st"><thead><tr><th class="l">Season</th><th>Points</th><th>Region</th><th>Best Open</th><th>Majors</th><th>Worlds</th><th class="l">World champion</th><th class="l">Objectives</th></tr></thead><tbody>
+      ${C.history.map((h) => `<tr><td class="l">${h.season}</td><td>${h.points}</td><td>${E.ordinal(h.regRank)}</td><td>${h.bestOpen}</td><td>${h.majors}/2</td><td>${esc(h.worlds)}</td><td class="l">${esc(h.champion)}</td><td class="l">${h.objectives.map((o) => (o.ok ? '✓ ' : '✗ ') + esc(o.t)).join(' · ')}</td></tr>`).join('')}
+      </tbody></table></div>` : '<p class="muted" style="font-size:13px">Your finished seasons will appear here.</p>';
+    // ---- feature panel (news carousel) ----
+    const ni = Math.min(newsList.length - 1, Math.max(0, ui.cnews || 0));
+    const story = newsList[ni];
+    const feature = `<div class="fc-feature" style="--tc:${t.color || 'var(--azure)'}">
+        <div class="fc-feature-art">${api.badge(t, 'xl')}<span class="fc-feature-season">RLCS ${C.season}</span></div>
+        ${story ? `<div class="fc-headline"><span class="fc-tag">${story.kind === 'trophy' ? 'Trophy' : story.kind === 'transfer' ? 'Transfer' : 'News'}</span><p>${story.html}</p></div>` : ''}
+        <div class="fc-feature-foot"><button class="fc-link" data-action="career-view" data-v="news">Go to News</button>
+          <span class="fc-dots">${newsList.length > 1 ? `<button class="fc-arrow" data-action="career-news" data-v="${(ni - 1 + Math.min(5, newsList.length)) % Math.min(5, newsList.length)}" aria-label="Previous story">‹</button>` : ''}${newsList.slice(0, 5).map((_, k) => `<button class="fc-dot ${k === ni ? 'on' : ''}" data-action="career-news" data-v="${k}" aria-label="Story ${k + 1}"></button>`).join('')}${newsList.length > 1 ? `<button class="fc-arrow" data-action="career-news" data-v="${(ni + 1) % Math.min(5, newsList.length)}" aria-label="Next story">›</button>` : ''}</span></div>
+      </div>`;
+    const VIEWS = [['next', 'Next up', st.name], ['standings', 'Standings', api.regions[reg]], ['schedule', 'Season schedule', 'RLCS ' + C.season], ['objectives', 'Objectives', C.objectives.length + (C.objectives.length === 1 ? ' goal' : ' goals')], ['news', 'News', newsList.length + (newsList.length === 1 ? ' story' : ' stories')]];
+    const mainView = view === 'standings' ? `<div class="fc-panel-body"><h3 class="fc-h">${esc(api.regions[reg])} standings</h3><p class="help">${st.type === 'worlds' || st.type === 'review' ? 'Season points · top ' + slots + ' reach Worlds' : 'Split ' + (splitKey === 's1' ? 1 : 2) + ' points · top ' + slots + ' reach the Major'}</p>${tableHtml}</div>`
+      : view === 'schedule' ? `<div class="fc-panel-body"><h3 class="fc-h">Season ${C.season}</h3>${timelineHtml}</div>`
+      : view === 'objectives' ? `<div class="fc-panel-body"><h3 class="fc-h">Board objectives</h3>${objHtml}<h3 class="fc-h" style="margin-top:18px">Trophy cabinet <span class="pill gold">${C.trophies.length}</span></h3>${trophyHtml}</div>`
+      : view === 'news' ? `<div class="fc-panel-body"><h3 class="fc-h">News</h3>${newsHtml}</div>`
+      : feature;
+    // ---- next-up side card (all the season actions live here) ----
+    const sideCard = `<aside class="fc-side">
+        <div class="fc-side-head"><h2>${esc(st.name)}</h2><small>RLCS ${C.season} · step ${C.step + 1} of ${SCHEDULE.length}</small></div>
+        <div class="fc-side-row"><span class="fc-day">${C.step + 1}</span><span><small>${esc(st.type === 'window' ? 'Transfer window' : st.type === 'review' ? 'Season review' : st.type === 'open' ? 'Regional Open' : st.type === 'major' ? 'Major' : 'World Championship')}</small><b>${esc(st.short || st.name)}</b></span><span class="fc-ico" aria-hidden="true">${st.type === 'window' ? '⇄' : st.type === 'review' ? '★' : '🏆'}</span></div>
+        <div class="fc-side-mid"><small>${esc(t.name)} · ${regionRankLabel()} in ${esc(api.regions[reg])}</small>
+          <div class="fc-rings">${ring(t.ovr - 60, 40, 'Team rating', t.ovr, '◆')}${ring(C.board, 100, 'Board', C.board + '%', '☺')}${ring(C.step + 1, SCHEDULE.length, 'Season', (C.step + 1) + '/' + SCHEDULE.length, '▶')}</div></div>
+        <div class="fc-next">${next}</div>
+      </aside>`;
+    const tiles = `<nav class="fc-tiles" aria-label="Career hub">${VIEWS.map(([k, l, sub]) => `<button class="fc-tile ${k === view && tab === 'central' ? 'on' : ''}" data-action="career-view" data-v="${k}"><b>${l}</b><small>${esc(sub)}</small><span class="fc-tile-ico" aria-hidden="true">${{ next: '▶', standings: '☰', schedule: '▦', objectives: '✔', news: '▤' }[k]}</span></button>`).join('')}</nav>`;
+    // ---- tabs ----
+    const TABS = [['central', 'Central'], ['squad', 'Squad'], ['transfers', 'Transfers'], ['office', 'Office'], ['history', 'History']];
+    let body;
+    if (tab === 'squad') body = `<div class="fc-grid2"><section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Squad · OVR ${t.ovr}</h3>${squadHtml}<div class="action-row"><button class="btn primary" data-action="career-market">Manage squad</button></div></div></section>
+        <section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Trophy cabinet <span class="pill gold">${C.trophies.length}</span></h3>${trophyHtml}</div></section></div>`;
+    else if (tab === 'transfers') body = `<div class="fc-grid2"><section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Transfer market</h3>
+        <div class="kv"><span>Window</span><b>${st.type === 'window' ? 'Open' : 'Closed'}</b></div><div class="kv"><span>Budget</span><b>${money(me.budget)}</b></div><div class="kv"><span>Salaries</span><span>${money(salaries)} per season</span></div><div class="kv"><span>Roster</span><span>${roster.length}/4</span></div><div class="kv"><span>Free agents</span><span>${C.fa.length}</span></div>
+        <div class="action-row"><button class="btn primary" data-action="career-market">Open transfer market</button></div></div></section>
+        <section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Transfer news</h3><div class="pulse">${C.news.filter((n) => n.kind === 'transfer').slice(0, 20).map((n) => `<div class="story upset"><small>${esc(n.when)}</small>${n.html}</div>`).join('') || '<p class="muted" style="font-size:13px">No transfers yet.</p>'}</div></div></section></div>`;
+    else if (tab === 'office') body = `<div class="fc-grid2"><section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Finances</h3>
+        <div class="fc-stats"><div><small>Budget</small><b>${money(me.budget)}</b></div><div><small>Salaries / season</small><b>${money(salaries)}</b></div><div><small>Circuit points</small><b>${C.points[C.user].season}</b><small>Split 1: ${C.points[C.user].s1} · Split 2: ${C.points[C.user].s2}</small></div><div><small>Board confidence</small><b>${C.board}%</b><div class="progress" style="margin-top:6px"><i style="width:${C.board}%"></i></div></div></div>
+        <div class="action-row"><button class="btn danger" data-action="career-quit">End career</button></div></div></section>
+        <section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Board objectives</h3>${objHtml}</div></section></div>`;
+    else if (tab === 'history') body = `<section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Career history</h3>${historyHtml}<h3 class="fc-h" style="margin-top:18px">Trophy cabinet <span class="pill gold">${C.trophies.length}</span></h3>${trophyHtml}</div></section>`;
+    else body = `<div class="fc-central"><section class="fc-panel fc-main">${mainView}</section>${sideCard}</div>${tiles}`;
     app.innerHTML = `
-      <div class="page-head"><button class="btn sm" data-action="nav" data-v="home">← Back to modes</button>
-        <h1 style="display:flex;align-items:center;gap:12px">${api.badge(t, 'lg')}<span>${esc(t.name)}<span class="muted" style="display:block;font-size:.45em;font-family:var(--font);font-weight:500">${esc(api.regions[reg])} · RLCS ${C.season} · ${esc(st.name)}</span></span></h1>
-        <div class="head-actions"><button class="btn sm" data-action="career-market">Transfer market</button><button class="btn sm danger" data-action="career-quit">End career</button></div></div>
-      <div class="bento">
-        <section class="tile stat-tile accent-blue c-3"><div class="tile-kicker">Team rating</div><div class="big">${t.ovr}</div><div class="sub">${regionRankLabel()} in ${esc(api.regions[reg])}</div></section>
-        <section class="tile stat-tile accent-orange c-3"><div class="tile-kicker">Budget</div><div class="big">${money(me.budget)}</div><div class="sub">${money(salaries)} salaries per season</div></section>
-        <section class="tile stat-tile accent-violet c-3"><div class="tile-kicker">Circuit points</div><div class="big">${C.points[C.user].season}</div><div class="sub">Split 1: ${C.points[C.user].s1} · Split 2: ${C.points[C.user].s2}</div></section>
-        <section class="tile stat-tile c-3"><div class="tile-kicker">Board confidence</div><div class="big">${C.board}%</div><div class="progress" style="margin-top:4px"><i style="width:${C.board}%"></i></div></section>
-
-        <div class="stack c-8 col-main">
-          <section class="tile"><div class="tile-head"><div><div class="tile-kicker">Next up</div><h2>${esc(st.name)}</h2></div><span class="pill ${st.type === 'window' ? 'good' : ''}">${C.step + 1} / ${SCHEDULE.length}</span></div>${next}</section>
-          <section class="tile"><div class="tile-head"><h2>Season ${C.season}</h2></div>
-            <div class="timeline">${SCHEDULE.map((s, i) => { const res = myEventStatus(s); return `<div class="tl ${i < C.step ? 'done' : i === C.step ? 'now' : ''} ${s.type}"><b>${s.short}</b><small>${i < C.step ? (res || (s.type === 'window' ? 'Closed' : '✓')) : i === C.step ? 'Now' : s.type === 'major' ? esc(majorCity(s)) : s.type === 'worlds' ? esc(worldsCity()) : ''}</small></div>`; }).join('')}</div>
-          </section>
-          <section class="tile"><div class="tile-head"><div><h2>${esc(api.regions[reg])} standings</h2><p>${st.type === 'worlds' || st.type === 'review' ? 'Season points · top ' + slots + ' reach Worlds' : 'Split ' + (splitKey === 's1' ? 1 : 2) + ' points · top ' + slots + ' reach the Major'}</p></div></div>
-            <div class="table-wrap"><table class="st"><thead><tr><th>#</th><th class="l">Team</th><th>OVR</th><th>Split 1</th><th>Split 2</th><th>Season</th></tr></thead><tbody>
-            ${table.slice(0, 16).map((id, i) => { const tt = teamObj(id); return `<tr class="${i < slots ? 'q' : ''} ${id === C.user ? 'hl' : ''}"><td class="pos">${i + 1}</td><td class="l"><div class="tcell">${api.badge(tt, 'sm')}<span>${esc(tt.name)}</span></div></td><td>${tt.ovr}</td><td>${C.points[id].s1}</td><td>${C.points[id].s2}</td><td><b>${C.points[id].season}</b></td></tr>`; }).join('')}
-            </tbody></table></div></section>
+      <div class="fc">
+        <div class="fc-top">
+          <button class="fc-club" data-action="nav" data-v="home" title="Back to modes">${api.badge(t, 'sm')}<span class="fc-club-name">${esc(t.name)}</span><i class="fc-club-bar" style="--b:${C.board}%"></i><span class="fc-thumb ${C.board >= 60 ? 'good' : C.board >= 35 ? 'mid' : 'bad'}" aria-label="Board ${C.board}%">${C.board >= 60 ? '👍' : C.board >= 35 ? '✋' : '👎'}</span></button>
+          <div class="fc-top-r"><button class="fc-chip" data-action="career-view" data-v="news">✉ Inbox <i>${Math.min(99, newsList.length)}</i></button><button class="fc-chip" data-action="career-market">⇄ Market</button><button class="fc-chip" data-action="nav" data-v="home">← Modes</button></div>
         </div>
-        <div class="stack c-4 col-info">
-          <section class="tile"><div class="tile-head"><h2>Squad</h2><button class="btn xs" data-action="career-market">Manage</button></div>
-            <div class="leader-list">${roster.map((p, i) => `<div class="leader"><span class="rk">${i < 3 ? 'ST' : 'SUB'}</span><span class="who"><b>${p.flag || ''} ${esc(p.name)}</b><small>Age ${ageLabel(p)} · ${p.contract}y · ${money(p.salary)}/yr${p.stats.gp ? ' · ' + p.stats.g + 'G ' + p.stats.sv + 'Sv' : ''}</small></span><span class="val">${p.rating}</span></div>`).join('')}</div></section>
-          <section class="tile"><div class="tile-head"><h2>Objectives</h2></div>${C.objectives.map((o) => `<div class="kv"><span>${esc(o.t)}</span><span class="pill">${C.season}</span></div>`).join('')}</section>
-          <section class="tile"><div class="tile-head"><h2>Trophy cabinet</h2><span class="pill gold">${C.trophies.length}</span></div>${C.trophies.length ? C.trophies.slice().reverse().slice(0, 8).map((x) => `<div class="kv"><span>🏆 ${esc(x.title)}</span></div>`).join('') : '<p class="muted" style="font-size:13px">No trophies yet.</p>'}</section>
-          <section class="tile grow"><div class="tile-head"><h2>News</h2></div><div class="pulse">${C.news.slice(0, 30).map((n) => `<div class="story ${n.kind === 'trophy' ? 'win' : n.kind === 'transfer' ? 'upset' : ''}"><small>${esc(n.when)}</small>${n.html}</div>`).join('')}</div></section>
-        </div>
-        ${C.history.length ? `<section class="tile c-12"><div class="tile-head"><h2>Career history</h2></div><div class="table-wrap"><table class="st"><thead><tr><th class="l">Season</th><th>Points</th><th>Region</th><th>Best Open</th><th>Majors</th><th>Worlds</th><th class="l">World champion</th><th class="l">Objectives</th></tr></thead><tbody>
-          ${C.history.map((h) => `<tr><td class="l">${h.season}</td><td>${h.points}</td><td>${E.ordinal(h.regRank)}</td><td>${h.bestOpen}</td><td>${h.majors}/2</td><td>${esc(h.worlds)}</td><td class="l">${esc(h.champion)}</td><td class="l">${h.objectives.map((o) => (o.ok ? '✓ ' : '✗ ') + esc(o.t)).join(' · ')}</td></tr>`).join('')}
-        </tbody></table></div></section>` : ''}
+        <div class="fc-tabs" role="tablist"><span class="fc-key" aria-hidden="true">Q</span>${TABS.map(([k, l]) => `<button role="tab" aria-selected="${k === tab}" class="${k === tab ? 'on' : ''}" data-action="career-tab" data-v="${k}">${l}</button>`).join('')}<span class="fc-key" aria-hidden="true">E</span></div>
+        ${body}
+        <div class="fc-legend"><span><kbd>Q</kbd><kbd>E</kbd> Switch tabs</span><span><kbd>1</kbd>–<kbd>5</kbd> Hub tiles</span><span class="fc-legend-r">${esc(api.regions[reg])} · ${esc(st.name)}</span></div>
       </div>`;
   }
   function regionRankLabel() { return E.ordinal(regionRankOfUser()); }
@@ -697,6 +735,9 @@
         news('career', `After leaving ${esc(old)}, you take over <b>${esc(C.teams[id].name)}</b>.`); save(); api.render(); window.scrollTo({ top: 0 }); return true;
       }
       case 'career-resign': { const p = C.players[id]; const sal = salaryFor(p.rating); if (userTeam().budget < sal) { api.toast('Not enough budget.'); return true; } p.contract = 2; p.salary = sal; news('transfer', `${esc(p.name)} signs a new two-season deal.`); save(); api.render(); return true; }
+      case 'career-tab': api.state.ui.ctab = v; api.render(); return true;
+      case 'career-view': api.state.ui.ctab = 'central'; api.state.ui.cview = v; api.render(); return true;
+      case 'career-news': api.state.ui.cnews = +v; api.state.ui.cview = 'next'; api.render(); return true;
       case 'career-market': api.state.ui.mkTab = api.state.ui.mkTab || 'squad'; openMarket(); return true;
       case 'mk-tab': api.state.ui.mkTab = v; openMarket(); return true;
       case 'mk-reg': api.state.ui.mkReg = v; openMarket(); return true;
@@ -724,7 +765,17 @@
   function canAdvanceCheck() { return !C || userTeam().roster.length >= 3; }
 
   global.RLCareer = {
-    init(a) { api = a; E = a.E; load(); },
+    init(a) {
+      api = a; E = a.E; load();
+      document.addEventListener('keydown', (ev) => {
+        if (!C || api.state.view !== 'career' || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+        if (document.querySelector('#modalRoot .modal') || /input|select|textarea/i.test((ev.target && ev.target.tagName) || '')) return;
+        const TABS = ['central', 'squad', 'transfers', 'office', 'history'], VIEWS = ['next', 'standings', 'schedule', 'objectives', 'news'];
+        const ui = api.state.ui, k = ev.key.toLowerCase();
+        if (k === 'q' || k === 'e') { const i = TABS.indexOf(ui.ctab || 'central'); ui.ctab = TABS[(i + (k === 'e' ? 1 : TABS.length - 1)) % TABS.length]; api.render(); }
+        else if (/^[1-5]$/.test(k)) { ui.ctab = 'central'; ui.cview = VIEWS[+k - 1]; api.render(); }
+      });
+    },
     render, onAction, recordFromT, simRest,
     has: () => !!C,
     teamObj: (id) => (C ? teamObj(id) : null),
