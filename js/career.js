@@ -214,7 +214,7 @@
   }
 
   /* ---------------- persistence ---------------- */
-  function load() { try { const raw = localStorage.getItem(KEY); C = raw ? JSON.parse(raw) : null; } catch (e) { C = null; } fixAges(); fixEconomy(); fixHosts(); bump(); }
+  function load() { try { const raw = localStorage.getItem(KEY); C = raw ? JSON.parse(raw) : null; } catch (e) { C = null; } fixAges(); fixEconomy(); fixHosts(); if (C && !C.academyV1) { fixAcademy(); save(); } bump(); }
   function fixHosts() {
     if (!C || C.hostsV2) return;
     C.hosts = C.hosts || {};
@@ -291,6 +291,111 @@
     return addPlayer({ name: newName(), country, flag: global.RL_DATA.flagFor(country), region, age, rating, pot: clamp(rating + ri(6, 22), rating, 97) });
   }
 
+  /* ---------------- youth academies ----------------
+     Clubs from Established up run an academy (you always have one). Prospects join at 15–16, develop
+     faster than normal players and graduate at 18–19. A talent balance keeps the number of stars steady:
+     each season it compares current and upcoming stars with the 2027 level and adds more "wonderkids"
+     to the intake when the pipeline runs low, so the top level never thins out over a long career. */
+  const AC_COST = [0, 0, 60000, 130000, 240000, 380000]; // cost to reach each level
+  const AC_UPKEEP = 6000; // per level, per season
+  const acTier = (cid) => (cid === C.user ? C.acLevel || 1 : Math.max(1, tierOf(cid) - 1)); // AI: Established 2, Major 3, Elite 4
+  const acCap = (cid) => (cid === C.user ? 2 + Math.floor((C.acLevel || 1) / 2) : tierOf(cid) >= 4 ? 3 : 2);
+  const hasAcademy = (cid) => cid === C.user || tierOf(cid) >= 3;
+  /** The star count of the real 2027 scene, used as the long-run target. */
+  function talentBase() {
+    const r = []; (api.libraryTeams() || []).forEach((t) => t.players.slice(0, 4).forEach((p) => r.push(p.rating)));
+    return { n90: r.filter((x) => x >= 90).length, n88: r.filter((x) => x >= 88).length, n85: r.filter((x) => x >= 85).length };
+  }
+  function makeProspect(cid, elite) {
+    const reg = C.teams[cid] ? C.teams[cid].region : cid;
+    const country = pick(ROOKIE_COUNTRIES[reg]);
+    const q = C.teams[cid] ? acTier(cid) : 2;
+    const pot = elite ? ri(91, 97) : clamp(ri(70, 80 + q * 2), 68, 90);
+    const rating = elite ? ri(67, 74) : ri(54, 64 + q);
+    const id = addPlayer({ name: newName(), country, flag: global.RL_DATA.flagFor(country), region: reg, age: ri(15, 16), rating, pot, contract: 0, salary: 0, academy: C.teams[cid] ? cid : null, wonder: elite || undefined, intake: C.season });
+    if (C.teams[cid]) (C.academy[cid] = C.academy[cid] || []).push(id);
+    return id;
+  }
+  function leaveAcademy(pid) {
+    const p = C.players[pid]; if (!p || !p.academy) return;
+    if (C.academy[p.academy]) C.academy[p.academy] = C.academy[p.academy].filter((x) => x !== pid);
+    p.academy = null;
+  }
+  /** Stars now (older ones count less) and the pipeline of likely future stars aged 21 or under. */
+  function talentSupply() {
+    let now = 0, pipe = 0;
+    Object.values(C.players).forEach((p) => {
+      if (!(p.team || p.academy || C.fa.includes(p.id))) return;
+      if (p.rating >= 88) now += p.age <= 26 ? 1 : p.age <= 28 ? 0.6 : 0.25;
+      else if (p.age <= 21 && (p.wonder || (p.rating >= 80 && p.pot >= 90))) pipe += 1;
+    });
+    return { now, pipe };
+  }
+  /** Season end: academy development, graduations, then the new intake. */
+  function academySeason(lines) {
+    C.academy = C.academy || {};
+    // extra development for academy players (on top of the normal growth)
+    Object.keys(C.academy).forEach((cid) => (C.academy[cid] || []).forEach((pid) => {
+      const p = C.players[pid]; if (!p) return;
+      const d = rnd(1.5, 3.5) + (acTier(cid) - 2) * 0.5;
+      p.rating = clamp(Math.round(Math.min(p.pot, p.rating + d)), 45, 99);
+    }));
+    // graduations
+    Object.keys(C.academy).forEach((cid) => {
+      if (!C.teams[cid]) { delete C.academy[cid]; return; }
+      (C.academy[cid] || []).slice().forEach((pid) => {
+        const p = C.players[pid]; if (!p) { leaveAcademy(pid); return; }
+        if (cid === C.user) {
+          if (p.age >= 19) { leaveAcademy(pid); C.fa.push(pid); lines.push(`${esc(p.name)} (${p.rating}) left your academy as a free agent.`); news('academy', `<b>${esc(p.name)}</b> (${p.rating}) leaves the ${esc(C.teams[cid].name)} academy without a pro contract.`); }
+          return;
+        }
+        if (p.age < 18 && p.rating < 82) return;
+        const tm = C.teams[cid];
+        const weakest = tm.roster.map((id) => C.players[id]).sort((a, b) => a.rating - b.rating)[0];
+        if (tm.roster.length < 4 && p.rating >= 72 || weakest && p.rating >= weakest.rating + 1) {
+          leaveAcademy(pid);
+          if (tm.roster.length >= 4 && weakest) { removeFromTeam(weakest.id); C.fa.push(weakest.id); }
+          joinTeam(pid, cid, salaryFor(p.rating), ri(2, 3));
+          if (p.rating >= 80 || p.wonder) news('academy', `${p.wonder ? '<span class="tag-hot">Wonderkid</span> ' : ''}<b>${esc(p.name)}</b> (${p.rating}, age ${p.age}) graduates from the academy into the <b>${esc(tm.name)}</b> roster.`, { pid, to: cid });
+        } else if (p.age >= 19) { leaveAcademy(pid); C.fa.push(pid); }
+      });
+    });
+    // intake: fill every academy, plus extra wonderkids when the star pipeline runs low
+    const base = C.base || (C.base = talentBase());
+    const sup = talentSupply();
+    // a steady flow (stars last about five or six seasons at the top), corrected for the pipeline and today's stars
+    const elite = clamp(Math.round(base.n88 / 6 + (base.n88 * 0.8 - sup.pipe) * 0.3 + (base.n88 - sup.now) * 0.25), 2, 14);
+    const clubs = Object.keys(C.teams).filter(hasAcademy);
+    clubs.forEach((cid) => { while ((C.academy[cid] || []).length < acCap(cid)) makeProspect(cid, false); });
+    const wonders = [];
+    for (let i = 0; i < elite; i++) {
+      // bigger academies find more of them; a quarter come through unattached and can be signed by anyone
+      if (Math.random() < 0.25) { const id = makeProspect(pick(REGIONS), true); C.players[id].age = ri(16, 17); C.fa.push(id); wonders.push(C.players[id]); continue; }
+      const w = clubs.map((cid) => (cid === C.user ? 1 + (C.acLevel || 1) * 0.8 : [0, 0, 0, 1, 2, 3.2][tierOf(cid)]));
+      let x = Math.random() * w.reduce((a, b) => a + b, 0), k = 0;
+      while (k < clubs.length - 1 && x > w[k]) { x -= w[k]; k++; }
+      wonders.push(C.players[makeProspect(clubs[k], true)]);
+    }
+    const mine = wonders.filter((p) => p.academy === C.user);
+    mine.forEach((p) => news('academy', `<span class="tag-hot">Wonderkid</span> Your academy signs <b>${esc(p.name)}</b> (${p.age}), scouts see a future star.`, { pid: p.id }));
+    const free = wonders.filter((p) => !p.academy);
+    if (free.length) news('academy', `${free.length === 1 ? 'An unattached wonderkid is' : free.length + ' unattached wonderkids are'} on the market: ${free.map((p) => `<b>${esc(p.name)}</b> (${p.age}, ${esc(p.region)})`).join(', ')}. Check the free agents.`, { pid: free[0].id });
+    if (mine.length) lines.push(`Wonderkid intake: ${mine.map((p) => esc(p.name)).join(', ')}.`);
+    C.ys = { elite, now: Math.round(sup.now), pipe: sup.pipe, target: base.n88 };
+  }
+  function fixAcademy() {
+    if (!C || C.academyV1) return;
+    C.academy = {}; C.base = talentBase();
+    C.acLevel = { 1: 1, 2: 1, 3: 2, 4: 3, 5: 3 }[tierOf(C.user)] || 1;
+    Object.keys(C.teams).filter(hasAcademy).forEach((cid) => { for (let i = 0; i < acCap(cid); i++) { const id = makeProspect(cid, false); C.players[id].age = ri(15, 17); } });
+    C.academyV1 = true;
+  }
+  /** Scouted potential: a range that narrows as your academy level rises. */
+  function potRange(p) {
+    const w = Math.max(0, 6 - (C.acLevel || 1)) * 2, lo = clamp(p.pot - Math.floor(w * hash(p.id + 'pr')), 50, 99);
+    return w ? lo + '–' + Math.min(99, lo + w) : String(p.pot);
+  }
+
   /* ---------------- new career ---------------- */
   function newCareer(teamId, level) {
     const lib = api.libraryTeams();
@@ -311,6 +416,7 @@
     });
     REGIONS.forEach((r) => { for (let i = 0; i < 6; i++) C.fa.push(makeRookie(r)); });
     seasonHosts(C.season);
+    fixAcademy();
     resetPoints();
     bump();
     setObjectives();
@@ -679,8 +785,9 @@
     const seasonTrophies = C.trophies.filter((t) => t.season === C.season).length;
     const bonus = Math.min(0.24, seasonTrophies * 0.08) + (worlds ? 0.05 : 0) + (okN === 2 ? 0.03 : 0);
     const sponsor = Math.round((TIERS[myTier].sponsor * diff().sponsor * (1 + bonus)) / 1000) * 1000;
-    me.budget += sponsor - salaries;
-    C.seasonFin.salaries = salaries; C.seasonFin.sponsor = sponsor;
+    const upkeep = (C.acLevel || 1) * AC_UPKEEP;
+    me.budget += sponsor - salaries - upkeep;
+    C.seasonFin.salaries = salaries; C.seasonFin.sponsor = sponsor; C.seasonFin.academy = upkeep;
     // club growth: two strong seasons in a row move you up a tier, two poor ones down
     const strong = diff().growEasy ? !!worlds || seasonTrophies >= 1 || regRank <= 3 : (worlds && worlds.place <= 8) || seasonTrophies >= 2;
     const poor = !worlds && majors === 0 && regRank > 10;
@@ -720,12 +827,14 @@
         else { const tm = p.team; removeFromTeam(p.id); C.fa.push(p.id); aiFill(tm); }
       }
     });
+    const acLines = [];
+    academySeason(acLines);
     REGIONS.forEach((r) => { for (let i = 0; i < 5; i++) C.fa.push(makeRookie(r)); });
     C.fa = C.fa.filter((id) => C.players[id]);
     Object.keys(C.teams).forEach((id) => { if (id !== C.user) aiFill(id); });
     const champion = C.results.w && C.results.w.champion;
     C.history.unshift({ season: C.season, worlds: worlds ? worlds.label : 'DNQ', majors, bestOpen: bestOpen < 99 ? E.ordinal(bestOpen) : '—', regRank, objectives: objRes, champion: champion && C.teams[champion] ? C.teams[champion].name : '—', mvp: mvp ? mvp.name : '—', points: C.points[C.user].season });
-    C.review = { objRes, salaries, sponsor, mvp: mvp && { name: mvp.name, team: mvp.team }, topG: topG && { name: topG.name, g: topG.stats.g }, devLines, retired: retired.filter((p) => p.team === C.user || p.rating >= 80).map((p) => p.name), expiring, champion, regRank };
+    C.review = { acLines, upkeep, objRes, salaries, sponsor, mvp: mvp && { name: mvp.name, team: mvp.team }, topG: topG && { name: topG.name, g: topG.stats.g }, devLines, retired: retired.filter((p) => p.team === C.user || p.rating >= 80).map((p) => p.name), expiring, champion, regRank };
     bump();
   }
   function startNextSeason() {
@@ -883,9 +992,10 @@
           <div class="team-grid">${(C.jobs || []).map((id) => { const tt = teamObj(id); return `<button class="browse-item" data-action="career-job" data-id="${id}">${api.badge(tt)}<span class="meta"><b>${esc(tt.name)}</b><small>${esc(api.regions[tt.region])} · OVR ${tt.ovr}</small></span></button>`; }).join('')}</div>
           <p class="help">After you choose, start the next season from the new club.</p>`;
       } else next = `<p>Season ${C.season} is over. ${R.champion ? `<b>${esc(C.teams[R.champion].name)}</b> are world champions.` : ''}</p>
-        <div class="kv"><span>Sponsorship</span><b>+${money(R.sponsor)}</b></div><div class="kv"><span>Salaries paid</span><b>-${money(R.salaries)}</b></div>
+        <div class="kv"><span>Sponsorship</span><b>+${money(R.sponsor)}</b></div><div class="kv"><span>Salaries paid</span><b>-${money(R.salaries)}</b></div>${R.upkeep ? `<div class="kv"><span>Academy upkeep</span><b>-${money(R.upkeep)}</b></div>` : ''}
         <div class="kv"><span>Season MVP</span><span>${R.mvp ? esc(R.mvp.name) + ' · ' + esc(C.teams[R.mvp.team] ? C.teams[R.mvp.team].name : '') : '—'}</span></div>
         <div class="kv"><span>Top scorer</span><span>${R.topG ? esc(R.topG.name) + ' · ' + R.topG.g + ' goals' : '—'}</span></div>
+        ${(R.acLines || []).length ? `<div class="tile-kicker" style="margin-top:12px">Academy</div><p class="help">${R.acLines.join(' · ')}</p>` : ''}
         ${R.devLines.length ? `<div class="tile-kicker" style="margin-top:12px">Your players</div><p class="help">${R.devLines.join(' · ')}</p>` : ''}
         ${R.expiring.filter((pid) => C.players[pid] && C.players[pid].contract <= 0).length ? `<div class="tile-kicker" style="margin-top:12px">Expiring contracts</div>${R.expiring.filter((pid) => C.players[pid] && C.players[pid].contract <= 0).map((pid) => { const p = C.players[pid]; const go = (R.letGo || []).includes(pid); return `<div class="kv"><span>${esc(p.name)} · ${p.rating} · age ${ageLabel(p)}</span><span class="toolbar"><span class="pill ${go ? 'bad' : 'good'}">${go ? 'Leaving' : 'Re-signs 2y · ' + money(salaryFor(p.rating)) + '/yr'}</span><button class="btn xs" data-action="career-letgo" data-id="${pid}">${go ? 'Keep' : 'Let go'}</button></span></div>`; }).join('')}<p class="help">Players marked to re-sign get a new two-season deal when the next season starts, if the budget allows.</p>` : ''}
         <div class="action-row"><button class="btn primary" data-action="career-next-season">Start ${C.season + 1} season →</button></div>`;
@@ -969,9 +1079,24 @@
       const slots = Array.from({ length: Math.max(0, 4 - roster.length) }, (_, k) => `<button class="sq-card sq-empty" data-action="th-tab" data-v="${C.fa.length ? 'fa' : 'scout'}"><span class="sq-plus" aria-hidden="true">+</span><b>${roster.length + k < 3 ? 'Starter needed' : 'Open sub slot'}</b><small>Find a player in the transfer hub</small></button>`).join('');
       const contracts = roster.slice().sort((x, y) => x.contract - y.contract).map((p) => `<tr><td class="l"><div class="tcell">${avatar(p, 'sm')}<span>${esc(p.name)}</span></div></td><td>${p.contract}y</td><td>${money(p.salary)}</td><td>${money(valueFor(p))}</td><td>${p.contract <= 1 ? '<span class="pill warn">Expiring</span>' : '<span class="muted">—</span>'}</td></tr>`).join('');
       const leaders = [['Goals', 'g'], ['Assists', 'a'], ['Saves', 'sv'], ['Games', 'gp']].map(([l, k]) => { const best = roster.slice().sort((x, y) => y.stats[k] - x.stats[k])[0]; return best ? `<div><small>${l}</small><b>${best.stats[k] || '—'}</b><span>${best.stats[k] ? esc(best.name) : 'No games yet'}</span></div>` : ''; }).join('');
+      const acIds = (C.academy && C.academy[C.user]) || [], lvl = C.acLevel || 1, canMove = isWindow() || st.type === 'review';
+      const acCards = acIds.map((pid) => C.players[pid]).filter(Boolean).sort((a, b) => b.pot - a.pot).map((p) => { const pr = potRange(p), f = clamp((p.rating - 50) / Math.max(1, p.pot - 50), 0, 1);
+        return `<div class="ac-card${p.wonder ? ' wonder' : ''}">${avatar(p)}<div class="ac-info"><b>${p.flag || ''} ${esc(p.name)}${p.wonder ? ' <span class="tag-hot">Wonderkid</span>' : ''}</b><small>Age ${p.age} · joined ${p.intake || C.season}${p.age >= 18 ? ' · <span class="ac-due">' + (p.age >= 19 ? 'leaves at season end' : 'ready to step up') + '</span>' : ''}</small>
+          <div class="ac-bar" title="Rating ${p.rating} of potential ${pr}"><i style="width:${Math.round(f * 100)}%"></i></div></div>
+          <div class="ac-nums"><span><b>${p.rating}</b><small>OVR</small></span><span><b>${pr}</b><small>Pot.</small></span></div>
+          <div class="ac-acts"><button class="btn sm primary" data-action="career-ac-promote" data-id="${p.id}" ${roster.length < 4 && canMove ? '' : 'disabled'} title="${roster.length >= 4 ? 'Your roster is full' : canMove ? 'Sign a pro contract' : 'Promote during a transfer window'}">Promote</button><button class="btn sm" data-action="career-ac-release" data-id="${p.id}">Release</button></div></div>`; }).join('');
+      const acEmpty = Array.from({ length: Math.max(0, acCap(C.user) - acIds.length) }, () => '<div class="ac-card ac-empty"><span class="ac-plus" aria-hidden="true">+</span><div class="ac-info"><b>Open place</b><small>Filled by the next intake at the end of the season</small></div></div>').join('');
+      const upCost = lvl < 5 ? AC_COST[lvl + 1] : 0;
+      const academyHtml = `<section class="fc-panel"><div class="fc-panel-body">
+          <div class="sq-head"><h3 class="fc-h">Youth academy</h3><span class="sq-meta">Level ${lvl} of 5 · ${acIds.length}/${acCap(C.user)} prospects · upkeep ${money(lvl * AC_UPKEEP)}/season</span>
+            ${lvl < 5 ? `<button class="btn" data-action="career-ac-upgrade" ${me.budget >= upCost ? '' : 'disabled'}>Upgrade to level ${lvl + 1} · ${money(upCost)}</button>` : '<span class="pill gold">Top academy</span>'}</div>
+          <span class="ac-levels" aria-hidden="true">${[1, 2, 3, 4, 5].map((n) => `<i class="${n <= lvl ? 'f' : ''}"></i>`).join('')}</span>
+          <p class="help">Prospects join at 15–16, develop faster than other players and can be promoted to your roster during a transfer window. Anyone still in the academy at 19 leaves. A higher level means more places, faster growth, better wonderkid odds and sharper scouting of potential.</p>
+          <div class="ac-grid">${acCards}${acEmpty}</div></div></section>`;
       body = `<section class="fc-panel"><div class="fc-panel-body">
           <div class="sq-head"><h3 class="fc-h">Squad · OVR ${t.ovr}</h3><span class="sq-meta">Average age ${avgAge} · wage bill ${money(salaries)}/season · ${roster.length}/4 players</span><button class="btn primary" data-action="th-tab" data-v="squad">Manage in transfer hub →</button></div>
           <div class="sq-cards">${cards}${slots}</div></div></section>
+        ${academyHtml}
         <div class="fc-grid2"><section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Contracts</h3>
             <div class="table-wrap"><table class="st"><thead><tr><th class="l">Player</th><th>Left</th><th>Salary</th><th>Value</th><th></th></tr></thead><tbody>${contracts}</tbody></table></div></div></section>
           <section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Season leaders</h3><div class="fc-stats sq-leaders">${leaders}</div>
@@ -1026,7 +1151,7 @@
   /** Carousel slides: recent stories with artwork matched to the story, mixed with spotlights from the career. */
   function buildSlides(st, me, t, reg, newsList) {
     const slides = [];
-    const pushStory = (n) => n && slides.push(Object.assign({ tag: n.kind === 'trophy' ? 'Trophy' : n.kind === 'transfer' ? 'Transfer' : n.kind === 'result' ? 'Result' : 'News' }, n));
+    const pushStory = (n) => n && slides.push(Object.assign({ tag: n.kind === 'trophy' ? 'Trophy' : n.kind === 'transfer' ? 'Transfer' : n.kind === 'result' ? 'Result' : n.kind === 'academy' ? 'Academy' : 'News' }, n));
     // spotlight: next event in its colours
     let nextUp = null;
     if (st.type === 'open' || st.type === 'major' || st.type === 'worlds') {
@@ -1070,6 +1195,12 @@
       const fromT = teams.length > 1 ? teams[0] : m.from;
       const tc = toT && teamObj(toT) ? teamObj(toT).color : t.color;
       return { tc, cls: 'fs-transfer', html: `${p ? photoBox(p, 'big') : ''}<div class="fs-move">${fromT && teamObj(fromT) ? api.badge(teamObj(fromT), 'lg') : '<span class="fs-fa">Free<br>agent</span>'}<span class="fs-arrow" aria-hidden="true">→</span>${toT && teamObj(toT) ? api.badge(teamObj(toT), 'lg') : ''}</div>${m.fee ? `<span class="fs-fee">${money(m.fee)}</span>` : ''}${p ? `<span class="fs-ovr"><small>OVR</small>${p.rating}</span>` : ''}` };
+    }
+    if (sl.kind === 'academy') {
+      const p = m.pid && C.players[m.pid];
+      const club = (m.to && C.teams[m.to]) ? m.to : p && (p.team || p.academy);
+      const ct = club && teamObj(club);
+      return { tc: ct ? ct.color : t.color, cls: 'fs-academy', html: `<span class="fs-word">Academy</span>${p ? `<div class="fs-stats"><span><small>Age</small><b>${p.age}</b></span><span><small>OVR</small><b>${p.rating}</b></span><span><small>Potential</small><b>${p.academy === C.user || p.team === C.user ? potRange(p) : '?'}</b></span><span><small>From</small><b>${esc(p.region)}</b></span></div><span class="fs-kid">${esc(initialsOf(p.name))}</span>` : ''}${ct ? api.badge(ct, 'lg') : ''}` };
     }
     if (sl.kind === 'trophy' || sl.kind === 'result') {
       const stp = SCHEDULE.find((x) => x.key === m.ev);
@@ -1148,7 +1279,7 @@
       return `<article class="tm-card${mine ? ' mine' : ''}" style="--tc:${tm.color || 'var(--azure)'}">
         <header class="tm-head">${api.badge(to, 'md')}<span class="tm-name"><b>${esc(tm.name)}${mine ? ' <span class="pill">You</span>' : ''}</b><small>${esc(api.regions[tm.region] || tm.region)} · ${esc(tierName(tierOf(id)))} · ${E.ordinal(rank[id])} · ${pts(id)} pts</small></span><span class="tm-ovr"><b>${to.ovr}</b><small>OVR</small></span></header>
         <div class="tm-list">${rows}${empty}</div>
-        <footer class="tm-foot"><span>Squad value <b>${money(val(id))}</b></span><span>Avg age <b>${ps.length ? (ps.reduce((x, p) => x + p.age, 0) / ps.length).toFixed(1) : '—'}</b></span></footer></article>`;
+        <footer class="tm-foot"><span>Squad value <b>${money(val(id))}</b></span>${(C.academy && (C.academy[id] || []).length) ? `<span>Academy <b>${C.academy[id].length}</b>${C.academy[id].some((x) => C.players[x] && C.players[x].wonder) ? ' <span class="tag-hot">★</span>' : ''}</span>` : ''}<span>Avg age <b>${ps.length ? (ps.reduce((x, p) => x + p.age, 0) / ps.length).toFixed(1) : '—'}</b></span></footer></article>`;
     }).join('');
     const regBar = `<div class="seg th-reg">${[['all', 'All'], ...REGIONS.map((k) => [k, k])].map(([k, v]) => `<button class="${k === reg ? 'active' : ''}" data-action="career-teams-reg" data-v="${k}">${v}</button>`).join('')}</div>`;
     return `<section class="fc-panel"><div class="fc-panel-body">
@@ -1364,6 +1495,24 @@
       case 'th-tab': api.state.ui.ctab = 'transfers'; api.state.ui.thTab = v; api.state.ui.thSel = null; api.render(); return true;
       case 'th-sel': api.state.ui.thSel = id; api.render(); if (narrow()) { const d = document.querySelector('.th-detail'); if (d) d.scrollIntoView({ behavior: 'smooth', block: 'start' }); } return true;
       case 'th-top': { const l = document.querySelector('.th-list .th-row.on, .th-list'); if (l) l.scrollIntoView({ behavior: 'smooth', block: 'center' }); return true; }
+      case 'career-ac-promote': {
+        const p = C.players[id], me = userTeam();
+        if (!p || p.academy !== C.user) return true;
+        if (me.roster.length >= 4) { api.toast('Your roster is full (4).'); return true; }
+        if (!(isWindow() || step().type === 'review')) { api.toast('Promote academy players during a transfer window.'); return true; }
+        leaveAcademy(id); joinTeam(id, C.user, Math.max(5000, Math.round(salaryFor(p.rating) * 0.6 / 1000) * 1000), 3);
+        news('academy', `<b>${esc(p.name)}</b> (${p.rating}, age ${p.age}) signs a first pro contract with ${esc(me.name)}.`, { pid: id, to: C.user });
+        bump(); save(); api.toast(p.name + ' joins the roster on a three-season deal.'); api.render(); return true;
+      }
+      case 'career-ac-release': { const p = C.players[id]; if (!p || p.academy !== C.user) return true; leaveAcademy(id); C.fa.push(id); save(); api.toast(p.name + ' released. Other clubs can now sign them.'); api.render(); return true; }
+      case 'career-ac-upgrade': {
+        const lvl = C.acLevel || 1, cost = AC_COST[lvl + 1], me = userTeam();
+        if (lvl >= 5) return true;
+        if (me.budget < cost) { api.toast('Not enough budget: the upgrade costs ' + money(cost) + '.'); return true; }
+        me.budget -= cost; C.acLevel = lvl + 1; C.seasonFin.academyUp = (C.seasonFin.academyUp || 0) + cost;
+        news('academy', `The ${esc(me.name)} academy is upgraded to level ${C.acLevel}.`);
+        save(); api.toast('Academy upgraded to level ' + C.acLevel + '.'); api.render(); return true;
+      }
       case 'career-teams-all': api.state.ui.tmAll = true; api.render(); return true;
       case 'th-pick': api.state.ui.ctab = 'transfers'; api.state.ui.thTab = v; api.state.ui.thSel = id; api.render(); window.scrollTo({ top: 0 }); return true;
       case 'th-reg': api.state.ui.thReg = v; api.state.ui.thSel = null; api.render(); return true;

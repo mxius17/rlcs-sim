@@ -2078,3 +2078,25 @@ html.ev .th-note-i { background: var(--e3-on, #0b1022); color: var(--e3); }
   .fc-ring small { font-size: 9.5px; }
   .fc-next { padding-top: 6px; }
 }
+/* career: youth academy */
+.ac-levels { display: inline-flex; gap: 4px; margin: 2px 0 6px; } .ac-levels i { width: 26px; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.12); } .ac-levels i.f { background: var(--azure); }
+.ac-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 10px; margin-top: 12px; }
+.ac-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "av info nums" "acts acts acts"; gap: 8px 12px; align-items: center; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,0.03); }
+.ac-card > .pav { grid-area: av; width: 46px; height: 46px; border-radius: 12px; }
+.ac-card.wonder { border-color: color-mix(in srgb, #D4A017 55%, var(--line)); background: linear-gradient(120deg, rgba(212,160,23,0.12), rgba(255,255,255,0.02) 60%); }
+.ac-info { grid-area: info; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.ac-info b { font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ac-info small { font-size: 12px; color: var(--text-3); }
+.ac-due { color: var(--vermilion); font-weight: 600; }
+.ac-bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,0.1); overflow: hidden; margin-top: 3px; } .ac-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--azure), #6fd3ff); }
+.ac-card.wonder .ac-bar i { background: linear-gradient(90deg, #D4A017, #ffe08a); }
+.ac-nums { grid-area: nums; display: flex; gap: 12px; text-align: center; }
+.ac-nums span { display: flex; flex-direction: column; } .ac-nums b { font: 800 19px var(--display); } .ac-nums small { font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); }
+.ac-acts { grid-area: acts; display: flex; gap: 8px; } .ac-acts .btn { flex: 1; }
+.ac-card.ac-empty { grid-template-areas: "av info"; grid-template-columns: auto 1fr; border-style: dashed; background: transparent; opacity: .75; }
+.ac-plus { grid-area: av; display: grid; place-items: center; width: 46px; height: 46px; border-radius: 12px; border: 1px dashed var(--line-strong); font-size: 22px; color: var(--text-3); }
+.fs-academy .fs-stats { left: auto; right: 8%; }
+.fs-kid { position: absolute; left: 10%; top: 50%; transform: translateY(-50%); display: grid; place-items: center; width: 150px; height: 150px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--tc) 70%, #fff 10%), color-mix(in srgb, var(--tc) 35%, #05070e)); font: 900 54px var(--display); box-shadow: 0 20px 60px rgba(0,0,0,0.45), 0 0 0 6px rgba(255,255,255,0.08); z-index: 1; }
+.fs-academy .badge.lg { position: absolute; left: calc(10% + 112px); top: calc(50% + 34px); width: 56px; height: 56px; z-index: 2; }
+@media (max-width: 760px) { .ac-grid { grid-template-columns: 1fr; } .fs-kid { width: 96px; height: 96px; font-size: 34px; left: 6%; } .fs-academy .badge.lg { left: calc(6% + 70px); top: calc(50% + 20px); width: 40px; height: 40px; } .fs-academy .fs-stats { right: 4%; } }
+@media (min-width: 981px) { .fs-kid { width: clamp(150px, 43.48cqh, 240px); height: clamp(150px, 43.48cqh, 240px); font-size: clamp(54px, 15.65cqh, 86px); } }
