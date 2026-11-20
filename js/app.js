@@ -1160,7 +1160,7 @@
     Object.entries(LEAGUE_SIZE).forEach(([k, n]) => {
       const partners = r27.filter((t) => t.region === k && t.partner).map((t) => t.id);
       const rest = r27.filter((t) => t.region === k && !t.partner).slice(0, n - partners.length);
-      list.push({ id: 'cl-' + k, season: '2027', region: k, mono: k, color: REGION_COLORS[k], name: 'Club League · ' + REGIONS[k], sub: '2027 · ' + n + ' teams · ' + partners.length + ' partners', format: 'league', size: n,
+      list.push({ id: 'cl-' + k, theme: 'region-' + k.toLowerCase(), season: '2027', region: k, mono: k, color: REGION_COLORS[k], name: 'Club League · ' + REGIONS[k], sub: '2027 · ' + n + ' teams · ' + partners.length + ' partners', format: 'league', size: n,
         teams: () => partners.concat(rest.map((t) => t.id)), info27: { where: REGIONS[k], date: '2027 (dates TBA)', status: 'Upcoming — Club League qualifiers not yet played' },
         projected: [rest.length + ' qualifier spot' + (rest.length === 1 ? '' : 's') + ' filled by the best-rated non-partner teams'],
         fmtText: 'Regional league play: partners plus Club League qualifiers. The top teams reach the Club Finale (EU 4, NA 4, MENA 2, SAM 2, OCE/APAC/SSA 1). Simulated as a single round robin.' });
@@ -1266,7 +1266,7 @@
       })() : ''}
 
       <div class="home-h-row"><h2 class="home-h">Regional leagues</h2>${seasonSeg()}</div>
-      <div class="tile-grid">${Object.entries(REGIONS).map(([k, v]) => `<button class="comp-tile" data-action="region-league" data-v="${k}" style="--c:${REGION_COLORS[k]}"><span class="comp-ico">${k}</span><span class="comp-txt"><b>${esc(v)}</b><small>${regionCounts[k] || 0} teams · ${seasonLabel(curSeason())} · league + playoffs</small></span></button>`).join('')}</div>
+      <div class="tile-grid">${Object.entries(REGIONS).map(([k, v]) => `<button class="comp-tile${themeOf('region-' + k.toLowerCase()) ? ' themed' : ''}" data-action="region-league" data-v="${k}" style="${themeOf('region-' + k.toLowerCase()) ? themeVars(themeOf('region-' + k.toLowerCase())) : '--c:' + REGION_COLORS[k]}"><span class="comp-ico">${k}</span><span class="comp-txt"><b>${esc(v)}</b><small>${regionCounts[k] || 0} teams · ${seasonLabel(curSeason())} · league + playoffs</small></span></button>`).join('')}</div>
 
       <h2 class="home-h">More simulators</h2>
       <div class="sim-grid">
@@ -1513,7 +1513,7 @@
       case 'comp-start': { const c = competitions().find((x) => x.id === v); presetSetup(c); launch(state.setup, c.name, c.theme ? { theme: c.theme } : null); break; }
       case 'region-league': {
         const ids = rankedTeams().filter((t) => t.region === v).slice(0, 10).map((t) => t.id);
-        state.setup = Object.assign(defaultSetup(), { format: 'leaguePlayoffs', size: 10, quickFill: v, teams: ids, title: REGIONS[v] + ' League' });
+        state.setup = Object.assign(defaultSetup(), { format: 'leaguePlayoffs', size: 10, quickFill: v, teams: ids, title: REGIONS[v] + ' League', theme: 'region-' + v.toLowerCase() });
         go('setup'); toast(REGIONS[v] + ' League loaded — adjust anything, then start.'); break;
       }
       case 'mega': state.setup = Object.assign(defaultSetup(), { format: 'knockout', size: 128, quickFill: 'top', title: '128-team knockout' }); state.setup.teams = rankedTeams().slice(0, 128).map((t) => t.id); go('setup'); break;
