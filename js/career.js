@@ -469,6 +469,20 @@
     return `<div class="team-chip">${api.badge(t)}<div class="meta"><div class="name">${esc(t.name)}</div><div class="sub">${extra || 'OVR ' + t.ovr}</div></div></div>`;
   }
 
+  /* ---------- motion: entrance animations replay only when the view actually changes ---------- */
+  let lastHubKey = null, lastPick = null, lastPickIdx = 0;
+  const reduceMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function countUp(root) {
+    if (reduceMotion()) return;
+    root.querySelectorAll('[data-count]').forEach((el) => {
+      const to = +el.dataset.count, fmt = el.dataset.fmt, suf = el.dataset.suf || '';
+      const show = (v) => (fmt === 'money' ? money(Math.round(v / 1000) * 1000) : Math.round(v)) + suf;
+      const t0 = performance.now(), dur = 900;
+      const step = (now) => { const q = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - q, 3); el.textContent = show(to * e); if (q < 1) requestAnimationFrame(step); };
+      el.textContent = show(0); requestAnimationFrame(step);
+    });
+  }
+
   // club selection: console-style "choose your club" card (design only — same teams, same start)
   const REG_COL = { EU: '#1F8BFF', NA: '#F2542D', SAM: '#2fbf71', MENA: '#d4a017', OCE: '#22b8cf', APAC: '#e11d48', SSA: '#a855f7' };
   const LEVELS = [null, ['Critical', 'crit'], ['Very high', 'vhigh'], ['High', 'high'], ['Medium', 'med'], ['Low', 'low'], ['Very low', 'vlow']];
@@ -494,6 +508,8 @@
     if (!t) { app.innerHTML = `<div class="cs"><div class="cs-title"><button class="btn sm" data-action="nav" data-v="home">← Back to modes</button><h1>Choose your club</h1></div>${list}</div>`; bindQ(app); return; }
     const idx = lib.indexOf(t);
     const prev = lib[(idx - 1 + lib.length) % lib.length], next = lib[(idx + 1) % lib.length];
+    const motion = lastPick === null ? 'cs-enter' : lastPick !== t.id ? (idx >= lastPickIdx ? 'cs-swap cs-from-r' : 'cs-swap cs-from-l') : '';
+    lastPick = t.id; lastPickIdx = idx;
     const regTeams = all.filter((x) => x.region === t.region).sort((a, b) => b.ovr - a.ovr);
     const rank = regTeams.findIndex((x) => x.id === t.id) + 1;
     const big = t.region === 'EU' || t.region === 'NA';
@@ -513,7 +529,7 @@
     const lineup = t.players.slice(0, 4);
     const desc = `${esc(t.name)} ${rank === 1 ? 'are the highest-rated team' : 'are ranked ' + E.ordinal(rank) + ' of ' + regTeams.length} in ${esc(api.regions[t.region])} going into the 2027 RLCS season, with a team rating of ${t.ovr}. The roster is led by ${esc(lineup.slice().sort((a, b) => b.rating - a.rating)[0].name)} (${lineup.slice().sort((a, b) => b.rating - a.rating)[0].rating})${lineup.length > 3 ? `, with ${esc(lineup[3].name)} as the substitute` : ''}.`;
     app.innerHTML = `
-      <div class="cs">
+      <div class="cs ${motion}">
         <div class="cs-title"><button class="btn sm" data-action="nav" data-v="home">← Back to modes</button><h1>Choose your club</h1><span class="muted">${lib.length} teams · RLCS 2027</span></div>
         <div class="cs-card">
           <div class="cs-left">
@@ -532,7 +548,7 @@
           </div>
           <div class="cs-right">
             <div class="cs-about"><small>${esc(t.name)}</small><b>RLCS ${esc(t.region)} · ${E.ordinal(rank)} seed</b><p>${desc}</p></div>
-            <div class="cs-money"><div><small>Transfer budget</small><b>${money(budget)}</b></div><span class="cs-coin" aria-hidden="true">$</span><div><small>Team rating</small><b>${t.ovr} OVR</b></div></div>
+            <div class="cs-money"><div><small>Transfer budget</small><b data-count="${budget}" data-fmt="money">${money(budget)}</b></div><span class="cs-coin" aria-hidden="true">$</span><div><small>Team rating</small><b data-count="${t.ovr}" data-suf=" OVR">${t.ovr} OVR</b></div></div>
             <div class="cs-bottom">
               <div class="cs-lineup">${lineup.map((p, k) => `<div class="cs-player"><span class="cs-shirt" style="--tc:${t.color || 'var(--azure)'}">${p.rating}</span><b>${p.flag || ''} ${esc(p.name)}</b><small>${k < 3 ? 'Starter' : 'Sub'}</small></div>`).join('')}</div>
               <div class="cs-home"><span class="cs-arena" aria-hidden="true"></span><small>Home region</small><b>${esc(api.regions[t.region])}</b></div>
@@ -543,6 +559,7 @@
         ${list}
       </div>`;
     bindQ(app);
+    if (motion) countUp(app);
   }
   function bindQ(app) {
     const inp = app.querySelector('#careerQ');
@@ -598,12 +615,15 @@
     const salaries = roster.reduce((s, p) => s + p.salary, 0);
     const ui = api.state.ui;
     const tab = ui.ctab || 'central', view = ui.cview || 'next';
+    const hubKey = [tab, view, C.season, C.step, ui.cnews || 0].join('|'), enter = hubKey !== lastHubKey;
+    const tabChanged = !lastHubKey || lastHubKey.split('|')[0] !== tab;
+    lastHubKey = hubKey; lastPick = null;
     const newsList = C.news.slice(0, 30);
     // ---- building blocks ----
     const ring = (val, max, label, txt, icon) => {
       const f = Math.max(0, Math.min(1, val / max)), r = 30, cir = 2 * Math.PI * r;
       const colr = f >= 0.66 ? '#2fbf71' : f >= 0.4 ? '#f5b81c' : '#F2542D';
-      return `<div class="fc-ring"><svg viewBox="0 0 76 76" aria-hidden="true"><circle cx="38" cy="38" r="${r}" class="trk"/><circle cx="38" cy="38" r="${r}" class="val" style="stroke:${colr};stroke-dasharray:${(cir * f).toFixed(1)} ${cir.toFixed(1)}"/></svg><span class="fc-ring-in" style="color:${colr}">${icon}</span><b>${txt}</b><small>${label}</small></div>`;
+      return `<div class="fc-ring"><svg viewBox="0 0 76 76" aria-hidden="true"><circle cx="38" cy="38" r="${r}" class="trk"/><circle cx="38" cy="38" r="${r}" class="val" style="stroke:${colr};--dash:${(cir * f).toFixed(1)}px;--cir:${cir.toFixed(1)}px;stroke-dasharray:${(cir * f).toFixed(1)} ${cir.toFixed(1)}"/></svg><span class="fc-ring-in" style="color:${colr}">${icon}</span><b>${txt}</b><small>${label}</small></div>`;
     };
     const tableHtml = `<div class="table-wrap"><table class="st"><thead><tr><th>#</th><th class="l">Team</th><th>OVR</th><th>Split 1</th><th>Split 2</th><th>Season</th></tr></thead><tbody>
       ${table.slice(0, 16).map((id, i) => { const tt = teamObj(id); return `<tr class="${i < slots ? 'q' : ''} ${id === C.user ? 'hl' : ''}"><td class="pos">${i + 1}</td><td class="l"><div class="tcell">${api.badge(tt, 'sm')}<span>${esc(tt.name)}</span></div></td><td>${tt.ovr}</td><td>${C.points[id].s1}</td><td>${C.points[id].s2}</td><td><b>${C.points[id].season}</b></td></tr>`; }).join('')}
@@ -636,7 +656,7 @@
         <div class="fc-side-head"><h2>${esc(st.name)}</h2><small>RLCS ${C.season} · step ${C.step + 1} of ${SCHEDULE.length}</small></div>
         <div class="fc-side-row"><span class="fc-day">${C.step + 1}</span><span><small>${esc(st.type === 'window' ? 'Transfer window' : st.type === 'review' ? 'Season review' : st.type === 'open' ? 'Regional Open' : st.type === 'major' ? 'Major' : 'World Championship')}</small><b>${esc(st.short || st.name)}</b></span><span class="fc-ico" aria-hidden="true">${st.type === 'window' ? '⇄' : st.type === 'review' ? '★' : '🏆'}</span></div>
         <div class="fc-side-mid"><small>${esc(t.name)} · ${regionRankLabel()} in ${esc(api.regions[reg])}</small>
-          <div class="fc-rings">${ring(t.ovr - 60, 40, 'Team rating', t.ovr, '◆')}${ring(C.board, 100, 'Board', C.board + '%', '☺')}${ring(C.step + 1, SCHEDULE.length, 'Season', (C.step + 1) + '/' + SCHEDULE.length, '▶')}</div></div>
+          <div class="fc-rings">${ring(t.ovr - 60, 40, 'Team rating', `<span data-count="${t.ovr}">${t.ovr}</span>`, '◆')}${ring(C.board, 100, 'Board', `<span data-count="${C.board}" data-suf="%">${C.board}%</span>`, '☺')}${ring(C.step + 1, SCHEDULE.length, 'Season', (C.step + 1) + '/' + SCHEDULE.length, '▶')}</div></div>
         <div class="fc-next">${next}</div>
       </aside>`;
     const tiles = `<nav class="fc-tiles" aria-label="Career hub">${VIEWS.map(([k, l, sub]) => `<button class="fc-tile ${k === view && tab === 'central' ? 'on' : ''}" data-action="career-view" data-v="${k}"><b>${l}</b><small>${esc(sub)}</small><span class="fc-tile-ico" aria-hidden="true">${{ next: '▶', standings: '☰', schedule: '▦', objectives: '✔', news: '▤' }[k]}</span></button>`).join('')}</nav>`;
@@ -650,13 +670,13 @@
         <div class="action-row"><button class="btn primary" data-action="career-market">Open transfer market</button></div></div></section>
         <section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Transfer news</h3><div class="pulse">${C.news.filter((n) => n.kind === 'transfer').slice(0, 20).map((n) => `<div class="story upset"><small>${esc(n.when)}</small>${n.html}</div>`).join('') || '<p class="muted" style="font-size:13px">No transfers yet.</p>'}</div></div></section></div>`;
     else if (tab === 'office') body = `<div class="fc-grid2"><section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Finances</h3>
-        <div class="fc-stats"><div><small>Budget</small><b>${money(me.budget)}</b></div><div><small>Salaries / season</small><b>${money(salaries)}</b></div><div><small>Circuit points</small><b>${C.points[C.user].season}</b><small>Split 1: ${C.points[C.user].s1} · Split 2: ${C.points[C.user].s2}</small></div><div><small>Board confidence</small><b>${C.board}%</b><div class="progress" style="margin-top:6px"><i style="width:${C.board}%"></i></div></div></div>
+        <div class="fc-stats"><div><small>Budget</small><b data-count="${me.budget}" data-fmt="money">${money(me.budget)}</b></div><div><small>Salaries / season</small><b data-count="${salaries}" data-fmt="money">${money(salaries)}</b></div><div><small>Circuit points</small><b data-count="${C.points[C.user].season}">${C.points[C.user].season}</b><small>Split 1: ${C.points[C.user].s1} · Split 2: ${C.points[C.user].s2}</small></div><div><small>Board confidence</small><b>${C.board}%</b><div class="progress" style="margin-top:6px"><i style="width:${C.board}%"></i></div></div></div>
         <div class="action-row"><button class="btn danger" data-action="career-quit">End career</button></div></div></section>
         <section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Board objectives</h3>${objHtml}</div></section></div>`;
     else if (tab === 'history') body = `<section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Career history</h3>${historyHtml}<h3 class="fc-h" style="margin-top:18px">Trophy cabinet <span class="pill gold">${C.trophies.length}</span></h3>${trophyHtml}</div></section>`;
     else body = `<div class="fc-central"><section class="fc-panel fc-main">${mainView}</section>${sideCard}</div>${tiles}`;
     app.innerHTML = `
-      <div class="fc">
+      <div class="fc ${enter ? 'fc-enter' : ''} ${tabChanged ? 'fc-tabin' : ''}">
         <div class="fc-top">
           <button class="fc-club" data-action="nav" data-v="home" title="Back to modes">${api.badge(t, 'sm')}<span class="fc-club-name">${esc(t.name)}</span><i class="fc-club-bar" style="--b:${C.board}%"></i><span class="fc-thumb ${C.board >= 60 ? 'good' : C.board >= 35 ? 'mid' : 'bad'}" aria-label="Board ${C.board}%">${C.board >= 60 ? '👍' : C.board >= 35 ? '✋' : '👎'}</span></button>
           <div class="fc-top-r"><button class="fc-chip" data-action="career-view" data-v="news">✉ Inbox <i>${Math.min(99, newsList.length)}</i></button><button class="fc-chip" data-action="career-market">⇄ Market</button><button class="fc-chip" data-action="nav" data-v="home">← Modes</button></div>
@@ -665,6 +685,7 @@
         ${body}
         <div class="fc-legend"><span><kbd>Q</kbd><kbd>E</kbd> Switch tabs</span><span><kbd>1</kbd>–<kbd>5</kbd> Hub tiles</span><span class="fc-legend-r">${esc(api.regions[reg])} · ${esc(st.name)}</span></div>
       </div>`;
+    if (enter) countUp(app);
   }
   function regionRankLabel() { return E.ordinal(regionRankOfUser()); }
 

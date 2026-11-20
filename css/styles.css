@@ -1316,3 +1316,90 @@ body.hero-open { overflow: hidden; }
   .cs-about { padding: 18px; }
   .cs-legend .cs-key { display: none; } .cs-go { margin-left: 0; width: 100%; }
 }
+
+/* =========================================================================
+   Career motion — entrances replay only when the view changes (JS adds
+   .fc-enter / .cs-enter / .cs-swap); hover and ambient motion always on.
+   ========================================================================= */
+@keyframes fcUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes fcLeft { from { opacity: 0; transform: translateX(-26px); } to { opacity: 1; transform: none; } }
+@keyframes fcRight { from { opacity: 0; transform: translateX(26px); } to { opacity: 1; transform: none; } }
+@keyframes fcFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fcPop { 0% { opacity: 0; transform: scale(.4); } 70% { opacity: 1; transform: scale(1.18); } 100% { transform: scale(1); } }
+@keyframes fcRing { from { stroke-dasharray: 0 var(--cir); } to { stroke-dasharray: var(--dash) var(--cir); } }
+@keyframes fcPan { 0% { background-position: 0% 50%, 0 0, 0 0; } 50% { background-position: 100% 40%, 0 0, 0 0; } 100% { background-position: 0% 50%, 0 0, 0 0; } }
+@keyframes fcFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes fcShine { from { transform: translateX(-120%) skewX(-20deg); } to { transform: translateX(220%) skewX(-20deg); } }
+@keyframes fcGlow { 0%, 100% { box-shadow: inset 3px 0 0 var(--gc), 0 0 0 rgba(0,0,0,0); } 50% { box-shadow: inset 3px 0 0 var(--gc), 0 0 18px color-mix(in srgb, var(--gc) 35%, transparent); } }
+@keyframes fcLine { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes csIn { from { opacity: 0; transform: translateX(var(--dx, 0)) scale(.85); } to { opacity: 1; transform: none; } }
+
+/* hub entrance: staggered */
+.fc-enter .fc-top { animation: fcFade .35s ease-out both; }
+.fc-enter .fc-tabs { animation: fcFade .35s .05s ease-out both; }
+.fc-enter .fc-main, .fc-enter .fc-grid2 > :first-child, .fc-tabin > section.fc-panel { animation: fcLeft .5s .08s cubic-bezier(.2,.8,.2,1) both; }
+.fc-enter .fc-side, .fc-enter .fc-grid2 > :nth-child(2) { animation: fcRight .5s .16s cubic-bezier(.2,.8,.2,1) both; }
+.fc-enter .fc-tile { animation: fcUp .45s cubic-bezier(.2,.8,.2,1) both; }
+.fc-enter .fc-tile:nth-child(1) { animation-delay: .22s; } .fc-enter .fc-tile:nth-child(2) { animation-delay: .27s; } .fc-enter .fc-tile:nth-child(3) { animation-delay: .32s; }
+.fc-enter .fc-tile:nth-child(4) { animation-delay: .37s; } .fc-enter .fc-tile:nth-child(5) { animation-delay: .42s; }
+.fc-enter .fc-legend { animation: fcFade .4s .45s both; }
+.fc-enter .fc-ring .val { animation: fcRing 1s .3s cubic-bezier(.2,.8,.2,1) both; }
+.fc-enter .fc-ring-in { animation: fcPop .5s .55s both; }
+.fc-enter .fc-headline { animation: fcLeft .6s .35s cubic-bezier(.2,.8,.2,1) both; }
+.fc-enter .fc-tag { animation: fcPop .45s .6s both; }
+.fc-enter .fc-side-head h2 { animation: fcLeft .5s .2s both; }
+.fc-enter .fc-next .action-row .btn { animation: fcUp .4s .5s both; }
+.fc-enter .fc-panel-body .kv, .fc-enter .fc-panel-body .leader, .fc-enter .fc-panel-body tbody tr, .fc-enter .fc-panel-body .story, .fc-enter .fc-panel-body .tl { animation: fcUp .35s both; }
+.fc-enter .fc-panel-body :is(.kv, .leader, tbody tr, .story, .tl):nth-child(2) { animation-delay: .04s; }
+.fc-enter .fc-panel-body :is(.kv, .leader, tbody tr, .story, .tl):nth-child(3) { animation-delay: .08s; }
+.fc-enter .fc-panel-body :is(.kv, .leader, tbody tr, .story, .tl):nth-child(4) { animation-delay: .12s; }
+.fc-enter .fc-panel-body :is(.kv, .leader, tbody tr, .story, .tl):nth-child(5) { animation-delay: .16s; }
+.fc-enter .fc-panel-body :is(.kv, .leader, tbody tr, .story, .tl):nth-child(n+6) { animation-delay: .2s; }
+.fc-tabs button.on { position: relative; }
+.fc-tabin .fc-tabs button.on { border-bottom-color: transparent; }
+.fc-tabin .fc-tabs button.on::after { content: ''; position: absolute; left: 0; right: 0; bottom: -3px; height: 3px; background: var(--vermilion); transform-origin: left; animation: fcLine .35s cubic-bezier(.2,.8,.2,1) both; }
+
+/* ambient motion (always on) */
+.fc-feature { background-size: 180% 180%, auto, auto; animation: fcPan 18s ease-in-out infinite; }
+.fc-feature-art .badge.xl { animation: fcFloat 5s ease-in-out infinite; }
+.fc-tile { transition: transform .18s, background .18s; }
+.fc-tile:hover { transform: translateY(-3px); }
+.fc-tile .fc-tile-ico { transition: transform .25s, opacity .25s; }
+.fc-tile:hover .fc-tile-ico { transform: translateX(-6px) scale(1.08); opacity: .2; }
+.fc-tile.on::after { content: ''; position: absolute; top: 0; bottom: 0; width: 40%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.45), transparent); animation: fcShine 3.5s 1s ease-in-out infinite; pointer-events: none; }
+.fc-dot { transition: transform .2s, background .2s; } .fc-dot:hover { transform: scale(1.3); }
+.fc-chip i { animation: fcPop .5s .4s both; }
+.fc-club-bar::after { transition: width .8s cubic-bezier(.2,.8,.2,1); }
+.fc .story.win { --gc: #f5b81c; animation: fcGlow 2.4s ease-in-out infinite; }
+.fc .story.upset { --gc: var(--azure); }
+/* orange buttons: a shine sweep on hover */
+.fc-next .action-row .btn.primary, .cs-go, .fc-link { position: relative; overflow: hidden; }
+.fc-next .action-row .btn.primary::after, .cs-go::after, .fc-link::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 35%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent); transform: translateX(-120%) skewX(-20deg); pointer-events: none; }
+.fc-next .action-row .btn.primary:hover::after, .cs-go:hover::after, .fc-link:hover::after { animation: fcShine .7s ease-out; }
+.fc-next .action-row .btn, .cs-go { transition: filter .15s, transform .15s; }
+.fc-next .action-row .btn:hover, .cs-go:hover { filter: brightness(1.08); }
+.fc-next .action-row .btn:active, .cs-go:active { transform: scale(.98); }
+
+/* club selection */
+.cs-enter .cs-left > * , .cs-enter .cs-mid, .cs-enter .cs-right { animation: fcUp .5s cubic-bezier(.2,.8,.2,1) both; }
+.cs-enter .cs-left > :nth-child(2) { animation-delay: .06s; } .cs-enter .cs-left > :nth-child(3) { animation-delay: .12s; }
+.cs-enter .cs-mid { animation-delay: .14s; } .cs-enter .cs-right { animation-delay: .22s; }
+.cs-enter .cs-browse { animation: fcFade .5s .3s both; }
+.cs-from-r { --dx: 60px; } .cs-from-l { --dx: -60px; }
+.cs-swap .cs-crest .badge, .cs-enter .cs-crest .badge { animation: csIn .45s cubic-bezier(.2,.8,.2,1) both; }
+.cs-swap .cs-club h2, .cs-swap .cs-about, .cs-swap .cs-region { animation: fcFade .35s both; }
+.cs-swap .cs-stars i, .cs-enter .cs-stars i { animation: fcPop .4s both; }
+.cs-stars i:nth-child(1) { animation-delay: .15s !important; } .cs-stars i:nth-child(2) { animation-delay: .22s !important; } .cs-stars i:nth-child(3) { animation-delay: .29s !important; }
+.cs-stars i:nth-child(4) { animation-delay: .36s !important; } .cs-stars i:nth-child(5) { animation-delay: .43s !important; }
+.cs-swap .cs-exp, .cs-enter .cs-exp { animation: fcLeft .4s cubic-bezier(.2,.8,.2,1) both; }
+.cs-exp:nth-of-type(1) { animation-delay: .05s; } .cs-exp:nth-of-type(2) { animation-delay: .1s; } .cs-exp:nth-of-type(3) { animation-delay: .15s; } .cs-exp:nth-of-type(4) { animation-delay: .2s; } .cs-exp:nth-of-type(5) { animation-delay: .25s; }
+.cs-swap .cs-player, .cs-enter .cs-player { animation: fcUp .4s both; }
+.cs-player:nth-child(1) { animation-delay: .2s; } .cs-player:nth-child(2) { animation-delay: .28s; } .cs-player:nth-child(3) { animation-delay: .36s; } .cs-player:nth-child(4) { animation-delay: .44s; }
+.cs-coin { transition: transform .5s; } .cs-swap .cs-coin, .cs-enter .cs-coin { animation: fcPop .5s .2s both; }
+.cs-crest .badge.xl { transition: transform .25s; } .cs-crest .badge.xl:hover { transform: scale(1.05) rotate(-3deg); }
+.cs-nav { transition: transform .15s, color .15s; } .cs-nav:hover { transform: scale(1.25); }
+.cs-item { transition: transform .15s, border-color .15s, background .15s; } .cs-item:hover { transform: translateY(-2px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .fc *, .fc *::before, .fc *::after, .fc, .cs *, .cs *::before, .cs *::after, .cs { animation: none !important; transition: none !important; }
+}
