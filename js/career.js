@@ -460,7 +460,7 @@
     removeFromTeam(pid);
     C.fa = C.fa.filter((x) => x !== pid);
     const p = C.players[pid];
-    p.team = cid; p.salary = salary; p.contract = years;
+    p.team = cid; p.salary = salary; p.contract = years; p.joined = C.season;
     C.teams[cid].roster.push(pid);
   }
   /** AI team needs at least three players: sign the best affordable free agent from its region (or anywhere). */
@@ -472,33 +472,91 @@
       joinTeam(p.id, cid, salaryFor(p.rating), ri(1, 2));
     }
   }
+  /** Regions whose stars commonly move to each other (real RLCS migration paths). */
+  const MIGRATE = { EU: ['MENA', 'NA'], MENA: ['EU'], NA: ['EU'], SAM: ['NA', 'EU'], OCE: ['NA', 'EU'], APAC: ['OCE', 'MENA'], SSA: ['EU', 'MENA'] };
+  /** Small reshuffles (free agents, minor fees): kept out of the inbox, listed under Activity → Other moves. */
+  function minorMove(html) { C.minor = C.minor || []; C.minor.unshift({ when: C.season + ' · ' + step().short, html }); C.minor = C.minor.slice(0, 160); }
+  function recordDeal(p, from, to, fee) {
+    C.deals = C.deals || [];
+    C.deals.unshift({ season: C.season, when: C.season + ' · ' + step().short, pid: p.id, name: p.name, flag: p.flag || '', rating: p.rating, from: from ? C.teams[from].name : 'Free agent', fromId: from || null, to: C.teams[to].name, toId: to, fee });
+    C.deals = C.deals.slice(0, 120);
+  }
   function aiWindow() {
+    const pre = C.step === 0;
     const ai = Object.keys(C.teams).filter((id) => id !== C.user);
+    const signed = {}, sold = {}, headlines = [];
     let moves = 0;
-    for (let tries = 0; tries < 220 && moves < 14; tries++) {
+    // ---- phase A: ambitious clubs chase a marquee upgrade from anywhere in their region (stars also across regions) ----
+    const chance = pre ? [0, 0, 0, 0.3, 0.5, 0.7] : [0, 0, 0, 0.05, 0.08, 0.12];
+    for (let pass = 0; pass < 2; pass++) {
+      const buyers = ai.filter((id) => (C.teams[id].tier || 1) >= 3 && !signed[id]).sort(() => Math.random() - 0.5).sort((a, b) => (C.teams[b].tier || 1) - (C.teams[a].tier || 1));
+      for (const buyer of buyers) {
+        const bt = C.teams[buyer], tier = bt.tier || 3;
+        // second pass: only clubs that just sold someone and have cash to reinvest
+        if (pass === 1 ? !sold[buyer] : Math.random() > chance[tier]) continue;
+        const starters = bt.roster.slice(0, 3).map((id) => C.players[id]).filter(Boolean);
+        if (starters.length < 3) continue;
+        const weakest = starters.slice().sort((a, b) => a.rating - b.rating)[0];
+        const regs = [bt.region].concat(MIGRATE[bt.region] || []);
+        const priced = [];
+        Object.values(C.players).forEach((p) => {
+          const st = p.team && C.teams[p.team];
+          if (!st || p.team === buyer || p.team === C.user || sold[p.team] || !regs.includes(st.region) || p.joined === C.season) return; // new signings stay for the season
+          if (st.region !== bt.region && p.rating < 86) return; // only stars move across regions
+          if (p.rating < weakest.rating + 2 || minTierFor(p) > tier) return;
+          const stT = st.tier || 1;
+          const best = st.roster.every((x) => !C.players[x] || C.players[x].rating <= p.rating);
+          let prem = 1;
+          if (best) prem *= 1.3;            // their best player
+          if (stT > tier) prem *= 1.35;     // prising a player from a bigger org
+          if (p.contract <= 1) prem *= 0.8; // final contract year
+          const fee = Math.round((valueFor(p) * prem * rnd(0.95, 1.12)) / 1000) * 1000;
+          const sal = Math.max(salaryFor(p.rating), askingSalary(p, buyer));
+          if (bt.budget < fee + sal) return;
+          priced.push({ p, fee, sal, score: (p.rating - weakest.rating) * 3 + Math.max(0, p.pot - p.rating) * 0.6 + (st.region === bt.region ? 2 : 0) + Math.random() * 5 });
+        });
+        priced.sort((a, b) => b.score - a.score);
+        const deal = priced[0];
+        if (!deal) continue;
+        const { p, fee, sal } = deal, from = p.team, ft = C.teams[from];
+        bt.budget -= fee; ft.budget += fee;
+        removeFromTeam(weakest.id); C.fa.push(weakest.id);
+        joinTeam(p.id, buyer, sal, ri(2, 3));
+        aiFill(from);
+        signed[buyer] = true; sold[from] = true; moves++;
+        recordDeal(p, from, buyer, fee);
+        const blockbuster = fee >= 400000 || p.rating >= 90;
+        headlines.push(`${blockbuster ? '<span class="tag-hot">Blockbuster</span> ' : ''}<b>${esc(p.name)}</b> (${p.rating}) joins <b>${esc(bt.name)}</b> from ${esc(ft.name)} for ${money(fee)}${ft.region !== bt.region ? ` and moves to ${esc(api.regions[bt.region])}` : ''}; ${esc(weakest.name)} leaves.`);
+      }
+    }
+    // ---- phase B: smaller clubs upgrade from free agents and weaker teams nearby ----
+    const target = pre ? 14 : 7;
+    for (let tries = 0; tries < 260 && moves < target + Object.keys(signed).length; tries++) {
       const buyer = pick(ai);
+      if (signed[buyer]) continue;
       const bt = C.teams[buyer];
-      const starters = bt.roster.slice(0, 3).map((id) => C.players[id]);
+      const starters = bt.roster.slice(0, 3).map((id) => C.players[id]).filter(Boolean);
       const weakest = starters.sort((a, b) => a.rating - b.rating)[0];
       if (!weakest) continue;
-      // targets: free agents, or better players on clearly weaker teams in the same region
-      const cands = C.fa.map((id) => C.players[id]).concat(Object.values(C.players).filter((p) => p.team && p.team !== buyer && p.team !== C.user && C.teams[p.team].region === bt.region && ovr(p.team) < ovr(buyer) - 3))
-        .filter((p) => p.rating >= weakest.rating + 3 && p.rating <= weakest.rating + 12);
+      const cands = C.fa.map((id) => C.players[id]).concat(Object.values(C.players).filter((p) => p.team && p.team !== buyer && p.team !== C.user && !sold[p.team] && C.teams[p.team].region === bt.region && ovr(p.team) < ovr(buyer) - 3 && p.joined !== C.season))
+        .filter((p) => p.rating >= weakest.rating + 3 && p.rating <= weakest.rating + 12 && minTierFor(p) <= (bt.tier || 1) + 1);
       if (!cands.length) continue;
       const p = pick(cands.sort((a, b) => b.rating - a.rating).slice(0, 5));
       const fee = p.team ? valueFor(p) : 0;
       if (bt.budget < fee + salaryFor(p.rating)) continue;
       const from = p.team;
       bt.budget -= fee;
-      if (from) C.teams[from].budget += fee;
-      // the replaced starter leaves (released)
+      if (from) { C.teams[from].budget += fee; sold[from] = true; }
       removeFromTeam(weakest.id); C.fa.push(weakest.id);
       joinTeam(p.id, buyer, salaryFor(p.rating), ri(1, 3));
       if (from) aiFill(from);
-      moves++;
-      news('transfer', `<b>${esc(p.name)}</b> joins ${esc(bt.name)}${from ? ` from ${esc(C.teams[from].name)} (${money(fee)})` : ' as a free agent'}; ${esc(weakest.name)} released.`);
+      signed[buyer] = true; moves++;
+      if (from && fee >= 50000) recordDeal(p, from, buyer, fee);
+      const line = `<b>${esc(p.name)}</b> joins ${esc(bt.name)}${from ? ` from ${esc(C.teams[from].name)} (${money(fee)})` : ' as a free agent'}; ${esc(weakest.name)} released.`;
+      if (from && fee >= 150000) news('transfer', line); else minorMove(line);
     }
     ai.forEach(aiFill);
+    headlines.reverse().forEach((h) => news('transfer', h)); // biggest clubs' deals end up on top
     bump();
   }
 
@@ -925,7 +983,9 @@
       </div>`;
     let list;
     if (tab === 'activity') {
-      list = `<div class="th-feed">${moves.slice(0, 40).map((n) => `<div class="th-feed-row"><small>${esc(n.when)}</small><span>${n.html}</span></div>`).join('') || '<p class="muted th-empty">No transfers yet. Moves by every club appear here.</p>'}</div>`;
+      const minor = C.minor || [];
+      list = `<div class="th-feed"><div class="tile-kicker th-feed-h">Headline moves</div>${moves.slice(0, 40).map((n) => `<div class="th-feed-row"><small>${esc(n.when)}</small><span>${n.html}</span></div>`).join('') || '<p class="muted th-empty">No transfers yet. Moves by every club appear here.</p>'}
+        ${minor.length ? `<div class="tile-kicker th-feed-h">Other moves</div>${minor.slice(0, 40).map((n) => `<div class="th-feed-row minor"><small>${esc(n.when)}</small><span>${n.html}</span></div>`).join('')}` : ''}</div>`;
     } else {
       const head = `<div class="th-row th-headrow" aria-hidden="true"><span></span><span>${tab === 'squad' ? 'Player · role' : 'Player · club'}</span><span class="th-c">Age</span><span class="th-c">OVR</span><span class="th-c hide-sm">Pot.</span><span class="th-c">${tab === 'fa' ? 'Asks' : tab === 'squad' ? 'Salary' : 'Value'}</span><span></span></div>`;
       const rows = pool.map((p) => {
@@ -942,6 +1002,7 @@
       const mine = moves.filter((n) => n.html.includes(esc(me.name)));
       detail = `<div class="th-dbody"><h3 class="fc-h">Window summary</h3>
           <div class="th-grid"><div><small>Moves this career</small><b>${moves.length}</b></div><div><small>Involving you</small><b>${mine.length}</b></div><div><small>Spent this season</small><b>${money(spent)}</b></div><div><small>Budget left</small><b>${money(me.budget)}</b></div></div>
+          ${(() => { const big = (C.deals || []).filter((d) => d.season === C.season).sort((a, b) => b.fee - a.fee).slice(0, 6); return `<div class="tile-kicker" style="margin-top:4px">Biggest deals of ${C.season}</div>${big.length ? `<div class="th-deals">${big.map((d, k) => `<div class="th-deal"><span class="th-deal-rk">${k + 1}</span><span class="th-deal-who"><b>${d.flag} ${esc(d.name)} <i>${d.rating}</i></b><small>${esc(d.from)} → ${esc(d.to)}</small></span><b class="th-deal-fee">${money(d.fee)}</b></div>`).join('')}</div>` : '<p class="muted" style="font-size:13px;margin:0">No paid transfers yet this season. Clubs make their moves when the window closes.</p>'}`; })()}
           <div class="th-note">${open ? 'The window is open. AI clubs make their moves when you close it, so the best free agents can go quickly.' : `The window is closed. You can still scout and shortlist players; deals reopen at the ${esc(nextWindowLabel())}.`}</div></div>`;
     } else if (!sel) {
       detail = `<div class="th-dbody th-dempty"><span class="th-big-ico" aria-hidden="true">⇄</span><p>Select a player to see their scouting report.</p></div>`;
@@ -1016,6 +1077,7 @@
     const from = p.team;
     me.budget -= fee; C.seasonFin.transfers += fee;
     if (from) { C.teams[from].budget += fee; }
+    if (from) recordDeal(p, from, C.user, fee);
     joinTeam(pid, C.user, sal, years);
     if (from) aiFill(from);
     news('transfer', `<b>${esc(p.name)}</b> signs for ${esc(me.name)}${from ? ` from ${esc(C.teams[from].name)} for ${money(fee)}` : ' as a free agent'}.`);
