@@ -1644,3 +1644,60 @@ tbody tr { transition: background .12s; }
 .comp-tile.themed .comp-ico { border: 0; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18); }
 .comp-txt b { line-height: 1.25; }
 @media (max-width: 600px) { .tile-grid { gap: 8px; } .comp-tile { min-height: 64px; padding: 12px 14px; } }
+
+/* =========================================================================
+   FULL-SCREEN EVENT PALETTE (html.ev) — like a console career mode, the whole
+   screen takes the event's colours while you are in a themed event (or the
+   career hub while one is next). The ink is re-mixed from the event colours,
+   so every panel, header and border follows; a fixed backdrop adds a deep
+   colour wash and large faint watermark rings. --e1/--e2/--e3 set on <html>.
+   ========================================================================= */
+html.ev:root:not(#_ink) {
+  --ink: color-mix(in srgb, var(--e1) 22%, #070a14);
+  --ev-deep: color-mix(in srgb, var(--e2) 34%, #05070e);
+  --ev-panel: color-mix(in srgb, var(--e1) 16%, rgb(6 8 18 / 0.78));
+  --bg-2: rgba(255, 255, 255, 0.06);
+  --tile-3: rgba(255, 255, 255, 0.1);
+  --surface: var(--ev-panel);
+  --hero: var(--ev-panel);
+  --line: color-mix(in srgb, var(--e3) 14%, rgba(255, 255, 255, 0.11));
+  --line-strong: color-mix(in srgb, var(--e3) 30%, rgba(255, 255, 255, 0.2));
+  --accent: color-mix(in srgb, var(--e3) 70%, #fff);
+}
+html.ev, html.ev body { background: var(--ev-deep); }
+html.ev body { background:
+    radial-gradient(1100px 700px at 8% 0%, color-mix(in srgb, var(--e1) 55%, transparent), transparent 65%),
+    radial-gradient(900px 700px at 100% 100%, color-mix(in srgb, var(--e2) 60%, transparent), transparent 70%),
+    linear-gradient(160deg, color-mix(in srgb, var(--e1) 38%, #070a14), var(--ev-deep) 70%);
+  background-attachment: fixed; }
+/* watermark: big faint rings + a slanted band, fixed behind the page */
+html.ev body::before { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(circle at 82% 38%, transparent 0 230px, color-mix(in srgb, var(--e3) 13%, transparent) 231px 238px, transparent 239px 330px, color-mix(in srgb, var(--e3) 8%, transparent) 331px 336px, transparent 337px),
+    radial-gradient(circle at 18% 92%, transparent 0 160px, color-mix(in srgb, #fff 6%, transparent) 161px 166px, transparent 167px),
+    linear-gradient(115deg, transparent 0 58%, rgba(255, 255, 255, 0.035) 58% 66%, transparent 66%); }
+html.ev-art body::before { background:
+    linear-gradient(90deg, var(--ev-deep) 0%, color-mix(in srgb, var(--ev-deep) 70%, transparent) 55%, color-mix(in srgb, var(--ev-deep) 40%, transparent) 100%),
+    var(--ev-art) center / cover no-repeat; opacity: .55; }
+html.ev .topbar, html.ev .app, html.ev .site-footer { position: relative; z-index: 1; background: transparent; }
+html.ev .topbar { background: rgba(4, 6, 14, 0.35); backdrop-filter: blur(10px); }
+html.ev .topnav button.active::after, html.ev .topnav [aria-current]::after { background: var(--e3); }
+/* tournament view: frameless sections become solid event panels */
+html.ev .app.event-theme .tile, html.ev .app.event-theme .table-card, html.ev .app.event-theme .group-card {
+  background: var(--ev-panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+html.ev .app.event-theme .page-head { background: linear-gradient(110deg, color-mix(in srgb, var(--e1) 70%, #000), color-mix(in srgb, var(--e2) 55%, #000) 75%); border-color: color-mix(in srgb, var(--e3) 40%, transparent); }
+html.ev .app.event-theme.has-art .page-head { background: linear-gradient(90deg, color-mix(in srgb, var(--e1) 80%, #000) 0%, color-mix(in srgb, var(--e1) 55%, transparent) 55%, transparent 100%), var(--e-art) var(--e-pos, center) / cover; }
+html.ev .seg button.active, html.ev .tabs button.active, html.ev .stage-tabs button.active { box-shadow: inset 0 -2px 0 var(--e3); }
+html.ev .btn.primary { background: var(--e3); border-color: var(--e3); color: color-mix(in srgb, var(--e2) 70%, #000); }
+html.ev .input, html.ev .select { background: rgba(0, 0, 0, 0.25); }
+/* career hub: panels are darker shades of the event colour */
+html.ev .fc, html.ev .cs { --fc-slate: color-mix(in srgb, var(--e2) 22%, rgb(6 8 18 / 0.82)); --fc-slate2: color-mix(in srgb, var(--e2) 16%, rgb(6 8 18 / 0.75)); --fc-raise: color-mix(in srgb, var(--e1) 30%, rgb(6 8 18 / 0.8)); }
+html.ev .fc::before { display: none; }
+html.ev .fc-tabs button.on { border-bottom-color: var(--e3); }
+html.ev .fc-tile.on, html.ev .fc-tile.on:hover { background: var(--e3); color: color-mix(in srgb, var(--e2) 80%, #000); border-color: var(--e3); border-bottom-color: var(--e1); }
+html.ev .fc-tile.on small { color: color-mix(in srgb, var(--e2) 70%, #000); opacity: .8; }
+html.ev .fc-tile.on .fc-tile-ico { opacity: .2; }
+html.ev .fc-feature { background: radial-gradient(520px 320px at 30% 40%, color-mix(in srgb, var(--tc) 26%, transparent), transparent 70%), linear-gradient(150deg, color-mix(in srgb, var(--e1) 55%, #05070e), color-mix(in srgb, var(--e2) 40%, #05070e) 70%); }
+@media (prefers-reduced-motion: no-preference) { html.ev body { transition: background .3s; } }
+html.ev .app.event-theme table td, html.ev .app.event-theme table th { white-space: nowrap; }
+@media (max-width: 720px) { html.ev .app.event-theme .tile, html.ev .app.event-theme .table-card, html.ev .app.event-theme .group-card { padding: 12px; } }

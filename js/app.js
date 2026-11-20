@@ -1467,6 +1467,13 @@
   function render() {
     if (state.view === 'tournament' && !state.T) state.view = 'home';
     const th = state.view === 'tournament' && state.T ? themeOf(state.T.theme) : null;
+    // whole-screen event palette: tournament theme, or the career hub's upcoming event
+    const pth = th || (state.view === 'career' && window.RLCareer && window.RLCareer.theme ? window.RLCareer.theme() : null);
+    const root = document.documentElement;
+    root.classList.toggle('ev', !!pth);
+    root.classList.toggle('ev-art', !!(pth && pth.art));
+    ['--e1', '--e2', '--e3', '--e-on'].forEach((k, i) => (pth ? root.style.setProperty(k, [pth.a, pth.b, pth.c, pth.on || '#fff'][i]) : root.style.removeProperty(k)));
+    if (pth && pth.art) root.style.setProperty('--ev-art', `url(${pth.art})`); else root.style.removeProperty('--ev-art');
     app.classList.toggle('event-theme', !!th);
     app.classList.toggle('has-art', !!(th && th.art));
     if (th && th.art) { app.style.setProperty('--e-art', `url(${th.art})`); app.style.setProperty('--e-pos', th.pos || 'center'); } else { app.style.removeProperty('--e-art'); app.style.removeProperty('--e-pos'); }

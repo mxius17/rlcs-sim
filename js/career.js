@@ -880,6 +880,7 @@
   function canAdvanceCheck() { return !C || userTeam().roster.length >= 3; }
 
   global.RLCareer = {
+    theme() { try { return C && api && api.state.view === 'career' ? hostTheme(step()) : null; } catch (e) { return null; } },
     init(a) {
       api = a; E = a.E; load();
       document.addEventListener('keydown', (ev) => {
