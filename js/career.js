@@ -944,7 +944,7 @@
       </aside>`;
     const tiles = `<nav class="fc-tiles" aria-label="Career hub">${VIEWS.map(([k, l, sub]) => `<button class="fc-tile ${k === view && tab === 'central' ? 'on' : ''}" data-action="career-view" data-v="${k}"><b>${l}</b><small>${esc(sub)}</small><span class="fc-tile-ico" aria-hidden="true">${{ next: '▶', standings: '☰', schedule: '▦', objectives: '✔', news: '▤' }[k]}</span></button>`).join('')}</nav>`;
     // ---- tabs ----
-    const TABS = [['central', 'Central'], ['squad', 'Squad'], ['transfers', 'Transfers'], ['office', 'Office'], ['history', 'History']];
+    const TABS = [['central', 'Central'], ['squad', 'Squad'], ['transfers', 'Transfers'], ['teams', 'Teams'], ['office', 'Office'], ['history', 'History']];
     let body;
     const avgAge = roster.length ? (roster.reduce((x, p) => x + p.age, 0) / roster.length).toFixed(1) : '—';
     const fin = C.seasonFin || { prize: 0, sponsor: 0, salaries: 0, transfers: 0 };
@@ -965,6 +965,7 @@
           <section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Season leaders</h3><div class="fc-stats sq-leaders">${leaders}</div>
             <h3 class="fc-h" style="margin-top:18px">Trophy cabinet <span class="pill gold">${C.trophies.length}</span></h3>${trophyHtml}</div></section></div>`;
     } else if (tab === 'transfers') body = transferHub(st, me, roster, salaries);
+    else if (tab === 'teams') body = teamsPage(reg);
     else if (tab === 'office') {
       const evRows = SCHEDULE.filter((x) => x.type === 'open' || x.type === 'major' || x.type === 'worlds').map((x) => { const i = SCHEDULE.indexOf(x); const res = myEventStatus(x); const where = x.type === 'open' ? api.regions[reg] : hostCity(x); const th = hostTheme(x); return `<tr class="${i === C.step ? 'hl' : ''}"><td class="l"><span class="of-dot" style="background:${th ? th.a : 'var(--line-strong)'}"></span>${esc(x.name)}</td><td class="l muted">${esc(where || '')}</td><td>${res ? esc(res) : i === C.step ? '<b>Next</b>' : i < C.step ? '—' : '<span class="muted">Upcoming</span>'}</td></tr>`; }).join('');
       const mood = C.board >= 75 ? 'The board is delighted with the direction of the club.' : C.board >= 60 ? 'The board is happy. Keep hitting the season objectives.' : C.board >= 40 ? 'The board is getting nervous. Results need to improve.' : 'The board is close to losing patience. Your job is at risk.';
@@ -1002,6 +1003,10 @@
     if (enter) countUp(app);
     const tq = app.querySelector('#thQ');
     if (tq) tq.addEventListener('input', () => { ui.thQ = tq.value; ui.thSel = null; const pos = tq.selectionStart; api.render(); const n = document.getElementById('thQ'); if (n) { n.focus(); n.setSelectionRange(pos, pos); } });
+    const mq = app.querySelector('#tmQ');
+    if (mq) mq.addEventListener('input', () => { ui.tmQ = mq.value; const pos = mq.selectionStart; api.render(); const n = document.getElementById('tmQ'); if (n) { n.focus(); n.setSelectionRange(pos, pos); } });
+    const ms = app.querySelector('#tmSort');
+    if (ms) ms.addEventListener('change', () => { ui.tmSort = ms.value; api.render(); });
     const ts = app.querySelector('#thSort');
     if (ts) ts.addEventListener('change', () => { ui.thSort = ts.value; ui.thSel = null; api.render(); });
   }
@@ -1107,6 +1112,39 @@
     if (gap > 0) parts.push(`a player this good expects at least ${aTier(minTierFor(p)).replace(/(\w+)$/, '<b>$1</b>')} org, so it would take a much bigger salary to convince them`);
     return parts.join('; ') + '.';
   }
+  /** Teams page: every club's current roster, by region. */
+  function teamsPage(myReg) {
+    const ui = api.state.ui;
+    const reg = ui.tmReg || myReg, q = (ui.tmQ || '').trim().toLowerCase(), sort = ui.tmSort || 'ovr';
+    let ids = Object.keys(C.teams).filter((id) => reg === 'all' || C.teams[id].region === reg);
+    if (q) ids = ids.filter((id) => C.teams[id].name.toLowerCase().includes(q) || C.teams[id].roster.some((pid) => C.players[pid] && C.players[pid].name.toLowerCase().includes(q)));
+    const val = (id) => C.teams[id].roster.reduce((x, pid) => x + (C.players[pid] ? valueFor(C.players[pid]) : 0), 0);
+    const pts = (id) => (C.points[id] ? C.points[id].season : 0);
+    const by = { ovr: (a, b) => ovr(b) - ovr(a), pts: (a, b) => pts(b) - pts(a) || ovr(b) - ovr(a), value: (a, b) => val(b) - val(a), name: (a, b) => C.teams[a].name.localeCompare(C.teams[b].name) }[sort] || ((a, b) => ovr(b) - ovr(a));
+    ids.sort(by);
+    const rank = {};
+    REGIONS.forEach((r) => regionTeams(r).sort((a, b) => pts(b) - pts(a) || ovr(b) - ovr(a)).forEach((id, i) => { rank[id] = i + 1; }));
+    const fromOf = (p) => { const d = (C.deals || []).find((x) => x.pid === p.id && x.toId === p.team && x.season === C.season); return d ? d.from : null; };
+    const cards = ids.map((id) => {
+      const tm = C.teams[id], to = teamObj(id), mine = id === C.user;
+      const ps = tm.roster.map((pid) => C.players[pid]).filter(Boolean);
+      const rows = ps.map((p, i) => { const fresh = p.joined === C.season, fr = fresh ? fromOf(p) : null; const q2 = q && p.name.toLowerCase().includes(q);
+        return `<button class="tm-pl${q2 ? ' hit' : ''}" data-action="career-teams-pl" data-id="${p.id}" title="Open ${esc(p.name)} in the transfer hub">${avatar(p, 'sm')}<span class="tm-who"><b>${p.flag || ''} ${esc(p.name)}${fresh ? ' <span class="new-tag">New</span>' : ''}</b><small>${i < 3 ? 'Starter' : 'Sub'} · age ${ageLabel(p)} · ${p.contract}y${fr ? ' · from ' + esc(fr) : ''}</small></span><span class="tm-r">${p.rating}</span></button>`; }).join('');
+      const empty = Array.from({ length: Math.max(0, 3 - ps.length) }, () => '<div class="tm-pl tm-open"><span class="pav sm"><span>?</span></span><span class="tm-who"><b>Open slot</b><small>Plays with a stand-in</small></span></div>').join('');
+      return `<article class="tm-card${mine ? ' mine' : ''}" style="--tc:${tm.color || 'var(--azure)'}">
+        <header class="tm-head">${api.badge(to, 'md')}<span class="tm-name"><b>${esc(tm.name)}${mine ? ' <span class="pill">You</span>' : ''}</b><small>${esc(api.regions[tm.region] || tm.region)} · ${esc(tierName(tierOf(id)))} · ${E.ordinal(rank[id])} · ${pts(id)} pts</small></span><span class="tm-ovr"><b>${to.ovr}</b><small>OVR</small></span></header>
+        <div class="tm-list">${rows}${empty}</div>
+        <footer class="tm-foot"><span>Squad value <b>${money(val(id))}</b></span><span>Avg age <b>${ps.length ? (ps.reduce((x, p) => x + p.age, 0) / ps.length).toFixed(1) : '—'}</b></span></footer></article>`;
+    }).join('');
+    const regBar = `<div class="seg th-reg">${[['all', 'All'], ...REGIONS.map((k) => [k, k])].map(([k, v]) => `<button class="${k === reg ? 'active' : ''}" data-action="career-teams-reg" data-v="${k}">${v}</button>`).join('')}</div>`;
+    return `<section class="fc-panel"><div class="fc-panel-body">
+        <div class="tm-bar"><h3 class="fc-h">${reg === 'all' ? 'All regions' : esc(api.regions[reg])} · ${ids.length} teams</h3>
+          <div class="search"><input class="input" id="tmQ" placeholder="Search a team or player" value="${esc(ui.tmQ || '')}" aria-label="Search teams and players" /></div>
+          <label class="th-sort">Sort <select class="select" id="tmSort">${[['ovr', 'Team rating'], ['pts', 'Circuit points'], ['value', 'Squad value'], ['name', 'Name']].map(([k, l]) => `<option value="${k}" ${k === sort ? 'selected' : ''}>${l}</option>`).join('')}</select></label>${regBar}</div>
+        <p class="help">Current rosters across the circuit. Players marked New joined this season; click a player to scout them in the transfer hub.</p>
+        ${ids.length ? `<div class="tm-grid">${cards}</div>` : '<p class="muted">No team or player matches that search.</p>'}
+      </div></section>`;
+  }
   function transferHub(st, me, roster, salaries) {
     const ui = api.state.ui;
     const open = isWindow();
@@ -1126,6 +1164,8 @@
       const key = { ovr: (p) => -p.rating, pot: (p) => -p.pot, age: (p) => p.age, value: (p) => -valueFor(p) }[sort] || ((p) => -p.rating);
       pool.sort((a, b) => key(a) - key(b) || b.rating - a.rating);
       pool = pool.slice(0, 60);
+      const picked = ui.thSel && C.players[ui.thSel];
+      if (tab === 'scout' && picked && picked.team && picked.team !== C.user && !pool.includes(picked)) pool.unshift(picked); // opened from the Teams page
     }
     const sel = pool.find((p) => p.id === ui.thSel) || pool[0] || null;
     const spent = (C.seasonFin && C.seasonFin.transfers) || 0;
@@ -1300,6 +1340,8 @@
       }
       case 'career-resign': { const p = C.players[id]; const sal = salaryFor(p.rating); if (userTeam().budget < sal) { api.toast('Not enough budget.'); return true; } p.contract = 2; p.salary = sal; news('transfer', `${esc(p.name)} signs a new two-season deal.`); save(); api.render(); return true; }
       case 'career-tab': api.state.ui.ctab = v; api.render(); return true;
+      case 'career-teams-reg': api.state.ui.tmReg = v; api.render(); return true;
+      case 'career-teams-pl': { const ui = api.state.ui, p = C.players[id]; ui.ctab = 'transfers'; if (p && p.team === C.user) ui.thTab = 'squad'; else { ui.thTab = 'scout'; ui.thReg = 'all'; } ui.thQ = ''; ui.thSel = id; api.render(); window.scrollTo({ top: 0 }); return true; }
       case 'career-view': api.state.ui.ctab = 'central'; api.state.ui.cview = v; api.render(); return true;
       case 'career-news': api.state.ui.cnews = +v; api.state.ui.cview = 'next'; api.render(); return true;
       case 'career-market': openMarket(); return true;
@@ -1348,7 +1390,7 @@
           return;
         }
         if (document.querySelector('#modalRoot .modal') || /input|select|textarea/i.test((ev.target && ev.target.tagName) || '')) return;
-        const TABS = ['central', 'squad', 'transfers', 'office', 'history'], VIEWS = ['next', 'standings', 'schedule', 'objectives', 'news'];
+        const TABS = ['central', 'squad', 'transfers', 'teams', 'office', 'history'], VIEWS = ['next', 'standings', 'schedule', 'objectives', 'news'];
         const ui = api.state.ui, k = ev.key.toLowerCase();
         if (k === 'q' || k === 'e') { const i = TABS.indexOf(ui.ctab || 'central'); ui.ctab = TABS[(i + (k === 'e' ? 1 : TABS.length - 1)) % TABS.length]; api.render(); }
         else if (/^[1-5]$/.test(k)) { ui.ctab = 'central'; ui.cview = VIEWS[+k - 1]; api.render(); }

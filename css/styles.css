@@ -1968,3 +1968,30 @@ html.ev .th-note-i { background: var(--e3-on, #0b1022); color: var(--e3); }
   .fs-squad .badge { width: clamp(56px, 16.23cqh, 90px); height: clamp(56px, 16.23cqh, 90px); }
   .fc-feature-art .badge.xl { width: clamp(150px, 43.48cqh, 240px); height: clamp(150px, 43.48cqh, 240px); }
 }
+/* career: teams page (every club's current roster) */
+.tm-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 4px; }
+.tm-bar .fc-h { margin: 0 auto 0 0; }
+.tm-bar .search { width: 240px; max-width: 100%; }
+.tm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; margin-top: 12px; }
+.tm-card { position: relative; display: flex; flex-direction: column; background: var(--fc-slate2, rgba(255,255,255,0.03)); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.tm-card::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: var(--tc); }
+.tm-card.mine { border-color: color-mix(in srgb, var(--vermilion) 60%, var(--line)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--vermilion) 35%, transparent); }
+.tm-head { display: flex; align-items: center; gap: 10px; padding: 14px 14px 10px; background: linear-gradient(180deg, color-mix(in srgb, var(--tc) 16%, transparent), transparent); }
+.tm-name { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.tm-name b { font: 700 16px var(--display); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tm-name small { font-size: 12px; color: var(--text-3); }
+.tm-ovr { display: flex; flex-direction: column; align-items: center; min-width: 46px; padding: 4px 6px; border-radius: 8px; background: rgba(0,0,0,0.3); }
+.tm-ovr b { font: 800 22px/1 var(--display); } .tm-ovr small { font-size: 9.5px; letter-spacing: .1em; color: var(--text-3); }
+.tm-list { display: flex; flex-direction: column; padding: 0 6px 6px; flex: 1; }
+.tm-pl { display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 8px; border: 0; border-radius: 6px; background: transparent; color: inherit; text-align: left; cursor: pointer; font: inherit; }
+.tm-pl:hover, .tm-pl:focus-visible { background: rgba(255,255,255,0.06); }
+.tm-pl.hit { background: color-mix(in srgb, var(--azure) 16%, transparent); }
+.tm-pl.tm-open { cursor: default; opacity: .6; } .tm-pl.tm-open:hover { background: transparent; }
+.tm-pl .pav.sm { width: 36px; height: 36px; border-radius: 8px; }
+.tm-who { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.tm-who b { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tm-who small { font-size: 12px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tm-r { font: 800 18px var(--display); min-width: 28px; text-align: right; }
+.tm-foot { display: flex; justify-content: space-between; gap: 8px; padding: 8px 14px; border-top: 1px solid var(--line); font-size: 12px; color: var(--text-3); }
+.tm-foot b { color: var(--text); font-weight: 600; }
+@media (max-width: 600px) { .tm-bar .search { width: 100%; } .tm-grid { grid-template-columns: 1fr; } }
