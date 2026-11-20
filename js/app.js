@@ -73,7 +73,7 @@
   /** Every roster season the app knows, newest first: 2027 (current), 2026, then the archive (2025 … 2021-22). */
   const SEASON_KEYS = (HAS27 ? ['2027'] : []).concat(['2026'], HIST.map((x) => x.key));
   const curSeason = () => { const v = state.settings.season; return SEASON_KEYS.includes(v) ? v : SEASON_KEYS[0]; };
-  const seasonLabel = (s) => 'RLCS ' + s;
+  const seasonLabel = (s) => { const h = HIST.find((x) => x.key === s); return h ? h.label : 'RLCS ' + s; };
   function rankedTeams(season) { const se = season || curSeason(); return allTeams().filter((t) => t.season === se || t.custom).sort((a, b) => b.ovr - a.ovr || a.name.localeCompare(b.name)); }
   const seasonSeg = (action) => SEASON_KEYS.length > 1 ? `<label class="season-pick"><span>Season</span><select class="select" data-season-select="${action || 'set-season'}" aria-label="Roster season">${SEASON_KEYS.map((k) => `<option value="${k}" ${curSeason() === k ? 'selected' : ''}>${seasonLabel(k)}${k === '2027' ? ' · current' : ''}</option>`).join('')}</select></label>` : '';
 
@@ -1129,7 +1129,7 @@
     HIST.forEach((se) => se.events.forEach((e, i) => {
       const byName = {}; se.teams.forEach((t) => (byName[t.name] = 'h' + se.key + '-' + t.id.replace(/^h[^-]*-/, '')));
       const ids = e.teams.map((n) => { const t = se.teams.find((x) => x.name === n); return t && t.id; }).filter(Boolean);
-      list.push({ id: 'arch-' + se.key + '-' + i, season: se.key, theme: e.worlds ? 'worlds-' + se.key : 'major-' + se.key + '-' + i, mono: e.worlds ? 'WC' : 'M' + (i + 1), color: e.worlds ? '#F2542D' : '#1F8BFF', name: e.name, sub: se.key + ' · ' + e.size + ' teams · won by ' + (e.winner || 'TBD'),
+      list.push({ id: 'arch-' + se.key + '-' + i, season: se.key, theme: e.worlds ? 'worlds-' + se.key : 'major-' + se.key + '-' + i, mono: e.worlds ? 'WC' : 'M' + (i + 1), color: e.worlds ? '#F2542D' : '#1F8BFF', name: e.name, sub: se.label.replace(/^RLCS /, '') + ' · ' + e.size + ' teams · won by ' + (e.winner || 'TBD'),
         info: { where: e.where, date: e.date, winner: e.winner || '—', runnerUp: e.runnerUp || '—' }, format: e.format, groupSize: e.groupSize, advance: e.advance, size: e.size, teams: () => ids, fmtText: e.fmtText });
     }));
     Object.entries(REGIONS).forEach(([k, v]) => list.push({ id: 'open-' + k, mono: k, color: REGION_COLORS[k], name: v + ' Open', sub: '2026 · regional open · 16 teams', season: '2026', region: k, format: 'swiss', size: 16, teams: () => rankedTeams('2026').filter((t) => t.region === k).map((t) => t.id), fmtText: '16-team Swiss stage (3 wins to qualify, 3 losses out), then an eight-team playoff.' }));
@@ -1260,8 +1260,8 @@
       ${HIST.length ? (() => {
         const ak = HIST.some((x) => x.key === state.ui.archive) ? state.ui.archive : HIST[0].key;
         const se = HIST.find((x) => x.key === ak);
-        return `<div class="home-h-row"><h2 class="home-h">Season archive</h2><div class="seg" role="tablist" aria-label="Archive season">${HIST.map((x) => `<button class="${x.key === ak ? 'active' : ''}" data-action="archive" data-v="${x.key}">${x.key}</button>`).join('')}</div></div>
-        <p class="help" style="margin:-6px 0 0">${esc(se.label)}: real fields and rosters from every Major and the World Championship. Pick one to simulate it again.</p>
+        return `<div class="home-h-row"><h2 class="home-h">Season archive</h2><div class="seg archive-seg" role="tablist" aria-label="Archive season">${HIST.map((x) => `<button class="${x.key === ak ? 'active' : ''}" data-action="archive" data-v="${x.key}" title="${esc(x.label)}">${esc(x.key.replace(/^S(\w+)$/, 'S$1'))}</button>`).join('')}</div></div>
+        <p class="help" style="margin:-6px 0 0">${esc(se.label)}: real fields and rosters from ${se.key === 'S9' ? 'the regional championships (the Season 9 Finals were cancelled because of COVID-19)' : se.key === 'SX' ? 'the online regional Majors of each split and the regional Championships (RLCS X had no LAN events)' : /^S\d$/.test(se.key) ? 'the season Finals (the World Championship of its day)' : 'every Major and the World Championship'}. Pick one to simulate it again.</p>
         <div class="tile-grid">${compList.filter((c) => c.season === ak).map(compTile).join('') || '<p class="muted">No competitions match.</p>'}</div>`;
       })() : ''}
 
