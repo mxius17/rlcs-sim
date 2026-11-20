@@ -201,7 +201,28 @@
   }
   function resetPoints() { C.points = {}; Object.keys(C.teams).forEach((id) => (C.points[id] = { s1: 0, s2: 0, season: 0 })); C.results = {}; C.seasonFin = { prize: 0, sponsor: 0, salaries: 0, transfers: 0 }; Object.values(C.players).forEach((p) => (p.stats = { gp: 0, g: 0, a: 0, sv: 0, score: 0 })); }
   const esc = (s) => api.esc(s);
-  function news(kind, html) { C.news.unshift({ kind, html, when: C.season + ' · ' + step().short }); C.news = C.news.slice(0, 80); }
+  function news(kind, html) {
+    if (C.newsN == null) { C.newsN = C.news.length; C.newsRead = C.news.length; }
+    C.news.unshift({ kind, html, when: C.season + ' · ' + step().short }); C.news = C.news.slice(0, 80); C.newsN++;
+  }
+  /** Stories added since the inbox was last opened (older saves start fully read). */
+  function unreadCount() {
+    if (C.newsN == null) { C.newsN = C.news.length; C.newsRead = C.news.length; }
+    return Math.max(0, Math.min(C.news.length, C.newsN - (C.newsRead || 0)));
+  }
+
+  /* ---------------- player photos + avatars (photos shared with the team pages) ---------------- */
+  let photoReq = false;
+  function photoOf(p) {
+    const P = global.RL_PHOTOS;
+    if (!P) {
+      if (!photoReq) { photoReq = true; const sc = document.createElement('script'); sc.src = 'js/photos.js'; sc.async = true; sc.onload = () => { if (api.state.view === 'career' && C) api.render(); }; document.head.appendChild(sc); }
+      return null;
+    }
+    return P[p.name + '|' + (p.country || '')] || null;
+  }
+  const initialsOf = (n) => (String(n).replace(/[^A-Za-z0-9]/g, '').slice(0, 2) || '?').toUpperCase();
+  function avatar(p, cls) { const ph = photoOf(p); return `<span class="pav ${cls || ''}"><span>${esc(initialsOf(p.name))}</span>${ph ? `<img src="${esc(ph)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}</span>`; }
 
   function regionRankOfUser() {
     const reg = userTeam().region;
@@ -677,6 +698,10 @@
     const tabChanged = !lastHubKey || lastHubKey.split('|')[0] !== tab;
     lastHubKey = hubKey; lastPick = null;
     const newsList = C.news.slice(0, 30);
+    // inbox: opening the news view marks everything read; the stories that were new keep a tag while you read
+    if (tab === 'central' && view === 'news') { const u = unreadCount(); if (u) { ui.newsFresh = u; C.newsRead = C.newsN; save(); } } else ui.newsFresh = 0;
+    const unread = unreadCount();
+    const fresh = ui.newsFresh || 0;
     // ---- building blocks ----
     const ring = (val, max, label, txt, icon) => {
       const f = Math.max(0, Math.min(1, val / max)), r = 30, cir = 2 * Math.PI * r;
@@ -690,7 +715,7 @@
     const squadHtml = `<div class="leader-list">${roster.map((p, i) => `<div class="leader"><span class="rk">${i < 3 ? 'ST' : 'SUB'}</span><span class="who"><b>${p.flag || ''} ${esc(p.name)}</b><small>Age ${ageLabel(p)} · ${p.contract}y · ${money(p.salary)}/yr${p.stats.gp ? ' · ' + p.stats.g + 'G ' + p.stats.sv + 'Sv' : ''}</small></span><span class="val">${p.rating}</span></div>`).join('')}</div>`;
     const objHtml = C.objectives.map((o) => `<div class="kv"><span>${esc(o.t)}</span><span class="pill">${C.season}</span></div>`).join('');
     const trophyHtml = C.trophies.length ? C.trophies.slice().reverse().slice(0, 8).map((x) => `<div class="kv"><span>🏆 ${esc(x.title)}</span></div>`).join('') : '<p class="muted" style="font-size:13px">No trophies yet.</p>';
-    const newsHtml = `<div class="pulse">${newsList.map((n) => `<div class="story ${n.kind === 'trophy' ? 'win' : n.kind === 'transfer' ? 'upset' : ''}"><small>${esc(n.when)}</small>${n.html}</div>`).join('')}</div>`;
+    const newsHtml = `<div class="pulse">${newsList.map((n, i) => `<div class="story ${n.kind === 'trophy' ? 'win' : n.kind === 'transfer' ? 'upset' : ''}${i < fresh ? ' fresh' : ''}"><small>${i < fresh ? '<span class="new-tag">New</span>' : ''}${esc(n.when)}</small>${n.html}</div>`).join('')}</div>`;
     const historyHtml = C.history.length ? `<div class="table-wrap"><table class="st"><thead><tr><th class="l">Season</th><th>Points</th><th>Region</th><th>Best Open</th><th>Majors</th><th>Worlds</th><th class="l">World champion</th><th class="l">Objectives</th></tr></thead><tbody>
       ${C.history.map((h) => `<tr><td class="l">${h.season}</td><td>${h.points}</td><td>${E.ordinal(h.regRank)}</td><td>${h.bestOpen}</td><td>${h.majors}/2</td><td>${esc(h.worlds)}</td><td class="l">${esc(h.champion)}</td><td class="l">${h.objectives.map((o) => (o.ok ? '✓ ' : '✗ ') + esc(o.t)).join(' · ')}</td></tr>`).join('')}
       </tbody></table></div>` : '<p class="muted" style="font-size:13px">Your finished seasons will appear here.</p>';
@@ -721,62 +746,180 @@
     // ---- tabs ----
     const TABS = [['central', 'Central'], ['squad', 'Squad'], ['transfers', 'Transfers'], ['office', 'Office'], ['history', 'History']];
     let body;
-    if (tab === 'squad') body = `<div class="fc-grid2"><section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Squad · OVR ${t.ovr}</h3>${squadHtml}<div class="action-row"><button class="btn primary" data-action="career-market">Manage squad</button></div></div></section>
-        <section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Trophy cabinet <span class="pill gold">${C.trophies.length}</span></h3>${trophyHtml}</div></section></div>`;
-    else if (tab === 'transfers') body = `<div class="fc-grid2"><section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Transfer market</h3>
-        <div class="kv"><span>Window</span><b>${st.type === 'window' ? 'Open' : 'Closed'}</b></div><div class="kv"><span>Budget</span><b>${money(me.budget)}</b></div><div class="kv"><span>Salaries</span><span>${money(salaries)} per season</span></div><div class="kv"><span>Roster</span><span>${roster.length}/4</span></div><div class="kv"><span>Free agents</span><span>${C.fa.length}</span></div>
-        <div class="action-row"><button class="btn primary" data-action="career-market">Open transfer market</button></div></div></section>
-        <section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Transfer news</h3><div class="pulse">${C.news.filter((n) => n.kind === 'transfer').slice(0, 20).map((n) => `<div class="story upset"><small>${esc(n.when)}</small>${n.html}</div>`).join('') || '<p class="muted" style="font-size:13px">No transfers yet.</p>'}</div></div></section></div>`;
-    else if (tab === 'office') body = `<div class="fc-grid2"><section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Finances</h3>
-        <div class="fc-stats"><div><small>Budget</small><b data-count="${me.budget}" data-fmt="money">${money(me.budget)}</b></div><div><small>Salaries / season</small><b data-count="${salaries}" data-fmt="money">${money(salaries)}</b></div><div><small>Circuit points</small><b data-count="${C.points[C.user].season}">${C.points[C.user].season}</b><small>Split 1: ${C.points[C.user].s1} · Split 2: ${C.points[C.user].s2}</small></div><div><small>Board confidence</small><b>${C.board}%</b><div class="progress" style="margin-top:6px"><i style="width:${C.board}%"></i></div></div></div>
-        <div class="action-row"><button class="btn danger" data-action="career-quit">End career</button></div></div></section>
-        <section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Board objectives</h3>${objHtml}</div></section></div>`;
-    else if (tab === 'history') body = `<section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Career history</h3>${historyHtml}<h3 class="fc-h" style="margin-top:18px">Trophy cabinet <span class="pill gold">${C.trophies.length}</span></h3>${trophyHtml}</div></section>`;
-    else body = `<div class="fc-central"><section class="fc-panel fc-main">${mainView}</section>${sideCard}</div>${tiles}`;
+    const avgAge = roster.length ? (roster.reduce((x, p) => x + p.age, 0) / roster.length).toFixed(1) : '—';
+    const fin = C.seasonFin || { prize: 0, sponsor: 0, salaries: 0, transfers: 0 };
+    if (tab === 'squad') {
+      const cards = roster.map((p, i) => { const ph = photoOf(p); return `<button class="sq-card" data-action="th-pick" data-v="squad" data-id="${p.id}" title="Open ${esc(p.name)} in the transfer hub">
+          <span class="sq-photo" style="--tc:${t.color || 'var(--azure)'}">${ph ? `<img src="${esc(ph)}" alt="" loading="lazy" onerror="this.remove()">` : ''}<span class="sq-ini">${esc(initialsOf(p.name))}</span><span class="sq-ovr">${p.rating}</span><span class="sq-role">${i < 3 ? 'Starter' : 'Sub'}</span></span>
+          <span class="sq-info"><b>${esc(p.name)}</b><small>${p.flag || ''} ${esc(p.country || '')} · Age ${ageLabel(p)}</small>
+          <span class="sq-line"><span><i>GP</i>${p.stats.gp}</span><span><i>G</i>${p.stats.g}</span><span><i>A</i>${p.stats.a}</span><span><i>Sv</i>${p.stats.sv}</span></span>
+          <span class="sq-contract">${p.contract}y · ${money(p.salary)}/yr · pot. ~${p.pot}</span></span></button>`; }).join('');
+      const slots = Array.from({ length: Math.max(0, 4 - roster.length) }, (_, k) => `<button class="sq-card sq-empty" data-action="th-tab" data-v="${C.fa.length ? 'fa' : 'scout'}"><span class="sq-plus" aria-hidden="true">+</span><b>${roster.length + k < 3 ? 'Starter needed' : 'Open sub slot'}</b><small>Find a player in the transfer hub</small></button>`).join('');
+      const contracts = roster.slice().sort((x, y) => x.contract - y.contract).map((p) => `<tr><td class="l"><div class="tcell">${avatar(p, 'sm')}<span>${esc(p.name)}</span></div></td><td>${p.contract}y</td><td>${money(p.salary)}</td><td>${money(valueFor(p))}</td><td>${p.contract <= 1 ? '<span class="pill warn">Expiring</span>' : '<span class="muted">—</span>'}</td></tr>`).join('');
+      const leaders = [['Goals', 'g'], ['Assists', 'a'], ['Saves', 'sv'], ['Games', 'gp']].map(([l, k]) => { const best = roster.slice().sort((x, y) => y.stats[k] - x.stats[k])[0]; return best ? `<div><small>${l}</small><b>${best.stats[k] || '—'}</b><span>${best.stats[k] ? esc(best.name) : 'No games yet'}</span></div>` : ''; }).join('');
+      body = `<section class="fc-panel"><div class="fc-panel-body">
+          <div class="sq-head"><h3 class="fc-h">Squad · OVR ${t.ovr}</h3><span class="sq-meta">Average age ${avgAge} · wage bill ${money(salaries)}/season · ${roster.length}/4 players</span><button class="btn primary" data-action="th-tab" data-v="squad">Manage in transfer hub →</button></div>
+          <div class="sq-cards">${cards}${slots}</div></div></section>
+        <div class="fc-grid2"><section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Contracts</h3>
+            <div class="table-wrap"><table class="st"><thead><tr><th class="l">Player</th><th>Left</th><th>Salary</th><th>Value</th><th></th></tr></thead><tbody>${contracts}</tbody></table></div></div></section>
+          <section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Season leaders</h3><div class="fc-stats sq-leaders">${leaders}</div>
+            <h3 class="fc-h" style="margin-top:18px">Trophy cabinet <span class="pill gold">${C.trophies.length}</span></h3>${trophyHtml}</div></section></div>`;
+    } else if (tab === 'transfers') body = transferHub(st, me, roster, salaries);
+    else if (tab === 'office') {
+      const evRows = SCHEDULE.filter((x) => x.type === 'open' || x.type === 'major' || x.type === 'worlds').map((x) => { const i = SCHEDULE.indexOf(x); const res = myEventStatus(x); const where = x.type === 'open' ? api.regions[reg] : hostCity(x); const th = hostTheme(x); return `<tr class="${i === C.step ? 'hl' : ''}"><td class="l"><span class="of-dot" style="background:${th ? th.a : 'var(--line-strong)'}"></span>${esc(x.name)}</td><td class="l muted">${esc(where || '')}</td><td>${res ? esc(res) : i === C.step ? '<b>Next</b>' : i < C.step ? '—' : '<span class="muted">Upcoming</span>'}</td></tr>`; }).join('');
+      const mood = C.board >= 75 ? 'The board is delighted with the direction of the club.' : C.board >= 60 ? 'The board is happy. Keep hitting the season objectives.' : C.board >= 40 ? 'The board is getting nervous. Results need to improve.' : 'The board is close to losing patience. Your job is at risk.';
+      body = `<div class="fc-grid2"><section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Finances</h3>
+          <div class="fc-stats"><div><small>Budget</small><b data-count="${me.budget}" data-fmt="money">${money(me.budget)}</b></div><div><small>Salaries / season</small><b data-count="${salaries}" data-fmt="money">${money(salaries)}</b></div>
+          <div><small>Prize money this season</small><b>${money(fin.prize || 0)}</b></div><div><small>Spent on transfers</small><b>${money(fin.transfers || 0)}</b></div>
+          <div><small>Circuit points</small><b data-count="${C.points[C.user].season}">${C.points[C.user].season}</b><small>Split 1: ${C.points[C.user].s1} · Split 2: ${C.points[C.user].s2}</small></div><div><small>Region rank</small><b>${regionRankLabel()}</b><small>${esc(api.regions[reg])}</small></div></div></div></section>
+        <section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Board</h3>
+          <div class="of-board"><div class="of-meter"><b>${C.board}%</b><small>Confidence</small><div class="progress"><i style="width:${C.board}%"></i></div></div><p>${mood}</p></div>
+          <div class="tile-kicker" style="margin-top:14px">Season objectives</div>${objHtml}</div></section></div>
+        <section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Season ${C.season} results</h3>
+          <div class="table-wrap"><table class="st"><thead><tr><th class="l">Event</th><th class="l">Where</th><th>Your result</th></tr></thead><tbody>${evRows}</tbody></table></div>
+          <div class="action-row"><button class="btn danger" data-action="career-quit">End career</button></div></div></section>`;
+    } else if (tab === 'history') {
+      const H = C.history;
+      const bestW = H.map((h) => h.worlds).filter((w) => w && w !== 'DNQ');
+      const rec = [['Seasons completed', H.length], ['Trophies', C.trophies.length], ['World Championships played', bestW.length], ['Best region finish', H.length ? E.ordinal(Math.min(...H.map((h) => h.regRank))) : '—'], ['Majors qualified', H.reduce((x, h) => x + (h.majors || 0), 0)], ['Objectives met', H.length ? H.reduce((x, h) => x + h.objectives.filter((o) => o.ok).length, 0) + '/' + H.reduce((x, h) => x + h.objectives.length, 0) : '—']];
+      const cabinet = C.trophies.length ? `<div class="hi-cab">${C.trophies.slice().reverse().map((x) => `<div class="hi-trophy"><span aria-hidden="true">🏆</span><b>${esc(x.title)}</b><small>${x.season}</small></div>`).join('')}</div>` : '<p class="muted" style="font-size:13px">No trophies yet. Win an Open, a Major or Worlds to fill the cabinet.</p>';
+      body = `<section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Career history</h3>${historyHtml}</div></section>
+        <div class="fc-grid2"><section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Trophy cabinet <span class="pill gold">${C.trophies.length}</span></h3>${cabinet}</div></section>
+          <section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Records</h3><div class="fc-stats">${rec.map(([l, v]) => `<div><small>${l}</small><b>${v}</b></div>`).join('')}</div></div></section></div>`;
+    }
+    else if (tab === 'central') body = `<div class="fc-central"><section class="fc-panel fc-main">${mainView}</section>${sideCard}</div>${tiles}`;
     app.innerHTML = `
       <div class="fc ${enter ? 'fc-enter' : ''} ${tabChanged ? 'fc-tabin' : ''}${hostTheme(st) ? ' fc-host' : ''}" style="${hostVars(hostTheme(st))}">
         <div class="fc-top">
           <button class="fc-club" data-action="nav" data-v="home" title="Back to modes">${api.badge(t, 'sm')}<span class="fc-club-name">${esc(t.name)}</span><i class="fc-club-bar" style="--b:${C.board}%"></i><span class="fc-thumb ${C.board >= 60 ? 'good' : C.board >= 35 ? 'mid' : 'bad'}" aria-label="Board ${C.board}%">${C.board >= 60 ? '👍' : C.board >= 35 ? '✋' : '👎'}</span></button>
-          <div class="fc-top-r"><button class="fc-chip" data-action="career-view" data-v="news">✉ Inbox <i>${Math.min(99, newsList.length)}</i></button><button class="fc-chip" data-action="career-market">⇄ Market</button><button class="fc-chip" data-action="nav" data-v="home">← Modes</button></div>
+          <div class="fc-top-r"><button class="fc-chip" data-action="career-view" data-v="news" aria-label="Inbox${unread ? ', ' + unread + ' unread' : ''}">✉ Inbox${unread ? ` <i>${Math.min(99, unread)}</i>` : ''}</button><button class="fc-chip" data-action="career-market">⇄ Market</button><button class="fc-chip" data-action="nav" data-v="home">← Modes</button></div>
         </div>
         <div class="fc-tabs" role="tablist"><span class="fc-key" aria-hidden="true">Q</span>${TABS.map(([k, l]) => `<button role="tab" aria-selected="${k === tab}" class="${k === tab ? 'on' : ''}" data-action="career-tab" data-v="${k}">${l}</button>`).join('')}<span class="fc-key" aria-hidden="true">E</span></div>
         ${body}
         <div class="fc-legend"><span><kbd>Q</kbd><kbd>E</kbd> Switch tabs</span><span><kbd>1</kbd>–<kbd>5</kbd> Hub tiles</span><span class="fc-legend-r">${esc(api.regions[reg])} · ${esc(st.name)}</span></div>
       </div>`;
     if (enter) countUp(app);
+    const tq = app.querySelector('#thQ');
+    if (tq) tq.addEventListener('input', () => { ui.thQ = tq.value; ui.thSel = null; const pos = tq.selectionStart; api.render(); const n = document.getElementById('thQ'); if (n) { n.focus(); n.setSelectionRange(pos, pos); } });
+    const ts = app.querySelector('#thSort');
+    if (ts) ts.addEventListener('change', () => { ui.thSort = ts.value; ui.thSel = null; api.render(); });
   }
   function regionRankLabel() { return E.ordinal(regionRankOfUser()); }
 
   /* ---------------- transfer market ---------------- */
-  function openMarket() {
+  /** The market lives in the Transfers tab (Transfer Hub); old entry points land there. */
+  function openMarket() { try { api.closeModal(); } catch (e) { /* no modal */ } api.state.ui.ctab = 'transfers'; api.render(); }
+
+  function nextWindowLabel() {
+    const k = SCHEDULE.findIndex((x, i) => i > C.step && x.type === 'window');
+    return k > 0 ? SCHEDULE[k].name.toLowerCase() : 'the next pre-season';
+  }
+  function scoutNote(p) {
+    const ask = askingSalary(p, C.user);
+    if (p.team === C.user) {
+      return `${esc(p.name)} is valued at <b>${money(valueFor(p))}</b>. ${p.contract <= 1 ? 'The contract ends this season, so extend it or the player can leave for free.' : `A club in your region would pay around ${money(Math.round(valueFor(p) * 0.95 / 1000) * 1000)}.`}`;
+    }
+    if (!p.team) return `Free agent, so there is no transfer fee. ${esc(p.name)} wants about <b>${money(ask)}</b> per season${p.pot - p.rating >= 5 ? ` and still has room to grow (potential ~${p.pot})` : ''}.`;
+    const club = C.teams[p.team];
+    const best = club.roster.every((x) => !C.players[x] || C.players[x].rating <= p.rating);
+    const parts = [`${esc(club.name)} value ${esc(p.name)} at about <b>${money(valueFor(p))}</b>`];
+    if (best) parts.push(`as their best player, expect to pay around <b>${money(Math.round(valueFor(p) * 1.25 / 1000) * 1000)}</b>`);
+    else if (p.contract <= 1) parts.push('the contract ends this season, so they may accept less');
+    if (p.age <= 20 && p.pot - p.rating >= 4) parts.push(`scouts rate the potential at ~${p.pot}`);
+    if (ask > salaryFor(p.rating)) parts.push('a move to a weaker team would need a pay rise');
+    return parts.join('; ') + '.';
+  }
+  function transferHub(st, me, roster, salaries) {
     const ui = api.state.ui;
     const open = isWindow();
-    const me = userTeam();
-    const q = (ui.mkQ || '').toLowerCase();
-    const reg = ui.mkReg || me.region;
-    const tab = ui.mkTab || 'squad';
-    let body = '';
-    if (tab === 'squad') {
-      body = `<div class="leader-list">${me.roster.map((pid, i) => { const p = C.players[pid]; return `<div class="leader"><span class="rk">${i < 3 ? 'ST' : 'SUB'}</span><span class="who"><b>${p.flag || ''} ${esc(p.name)} · ${p.rating}</b><small>Age ${ageLabel(p)} · potential ~${p.pot - 2}-${p.pot + 2} · ${p.contract}y left · ${money(p.salary)}/yr · value ${money(valueFor(p))}</small></span>
-        <span class="toolbar">${i >= 3 ? `<button class="btn xs" data-action="mk-promote" data-id="${pid}">Make starter</button>` : ''}${open ? `<button class="btn xs" data-action="mk-extend" data-id="${pid}">Extend</button><button class="btn xs" data-action="mk-sell" data-id="${pid}">Sell</button><button class="btn xs danger" data-action="mk-release" data-id="${pid}">Release</button>` : ''}</span></div>`; }).join('')}</div>
-        <p class="help">The first three players start. Rosters hold up to four. ${open ? 'Releasing a player costs half a season of their salary.' : 'Signings, sales and releases open in the next transfer window.'}</p>`;
-    } else {
-      const pool = tab === 'fa' ? C.fa.map((id) => C.players[id]) : Object.values(C.players).filter((p) => p.team && p.team !== C.user && (reg === 'all' || C.teams[p.team].region === reg));
-      const list = pool.filter((p) => p && (!q || p.name.toLowerCase().includes(q) || (p.team && C.teams[p.team].name.toLowerCase().includes(q)))).sort((a, b) => b.rating - a.rating).slice(0, 80);
-      body = `<div class="modal-toolbar"><div class="search"><input class="input" id="mkQ" placeholder="Search players or teams" value="${esc(ui.mkQ || '')}" aria-label="Search players or teams" /></div>
-        ${tab === 'players' ? `<div class="seg">${[['all', 'All'], ...REGIONS.map((k) => [k, k])].map(([k, v]) => `<button class="${k === reg ? 'active' : ''}" data-action="mk-reg" data-v="${k}">${v}</button>`).join('')}</div>` : ''}</div>
-        <div class="table-wrap"><table class="st"><thead><tr><th class="l">Player</th><th class="l hide-sm">Team</th><th>Age</th><th>OVR</th><th class="hide-sm">Pot.</th><th>${tab === 'fa' ? 'Asks' : 'Value'}</th><th></th></tr></thead><tbody>
-        ${list.map((p) => `<tr><td class="l">${p.flag || ''} <b>${esc(p.name)}</b></td><td class="l hide-sm muted">${p.team ? esc(C.teams[p.team].name) : 'Free agent'}</td><td>${ageLabel(p)}</td><td><b>${p.rating}</b></td><td class="hide-sm">~${p.pot}</td><td>${money(tab === 'fa' ? askingSalary(p, C.user) : valueFor(p))}</td><td>${open ? `<button class="btn xs" data-action="mk-offer" data-id="${p.id}">${tab === 'fa' ? 'Sign' : 'Bid'}</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="7" class="l muted">No players match.</td></tr>'}
-        </tbody></table></div>`;
+    const tab = ui.thTab || 'scout';
+    const q = (ui.thQ || '').toLowerCase();
+    const reg = ui.thReg || me.region;
+    const sort = ui.thSort || 'ovr';
+    C.shortlist = (C.shortlist || []).filter((id) => C.players[id]);
+    const sl = new Set(C.shortlist);
+    let pool = [];
+    if (tab === 'fa') pool = C.fa.map((id) => C.players[id]).filter(Boolean);
+    else if (tab === 'shortlist') pool = C.shortlist.map((id) => C.players[id]).filter((p) => p && p.team !== C.user);
+    else if (tab === 'squad') pool = roster.slice();
+    else if (tab === 'scout') pool = Object.values(C.players).filter((p) => p.team && p.team !== C.user && C.teams[p.team] && (reg === 'all' || C.teams[p.team].region === reg));
+    if (tab !== 'squad' && tab !== 'activity') {
+      pool = pool.filter((p) => !q || p.name.toLowerCase().includes(q) || (p.team && C.teams[p.team].name.toLowerCase().includes(q)));
+      const key = { ovr: (p) => -p.rating, pot: (p) => -p.pot, age: (p) => p.age, value: (p) => -valueFor(p) }[sort] || ((p) => -p.rating);
+      pool.sort((a, b) => key(a) - key(b) || b.rating - a.rating);
+      pool = pool.slice(0, 60);
     }
-    api.openModal(`${api.modalHead('Transfer market', open ? `Window open · budget ${money(me.budget)}` : 'Window closed · you can browse, but deals wait for the next window')}
-      <div class="modal-body">
-        <div class="tabs" style="margin-bottom:12px">${[['squad', 'Your squad'], ['players', 'Players'], ['fa', 'Free agents · ' + C.fa.length]].map(([k, v]) => `<button class="${k === tab ? 'active' : ''}" data-action="mk-tab" data-v="${k}">${v}</button>`).join('')}</div>
-        ${body}
-      </div>
-      <div class="modal-foot"><span class="count-pill" style="margin-right:auto">Roster ${me.roster.length}/4 · OVR ${ovr(C.user)}</span><button class="btn primary" data-action="close-modal">Done</button></div>`, { onClose: api.render, focus: false });
-    const inp = document.getElementById('mkQ');
-    if (inp) inp.addEventListener('input', () => { ui.mkQ = inp.value; const pos = inp.selectionStart; openMarket(); const n = document.getElementById('mkQ'); n.focus(); n.setSelectionRange(pos, pos); });
+    const sel = pool.find((p) => p.id === ui.thSel) || pool[0] || null;
+    const spent = (C.seasonFin && C.seasonFin.transfers) || 0;
+    const moves = C.news.filter((n) => n.kind === 'transfer');
+    const stats = `<div class="th-stats">
+        <div class="th-stat ${open ? 'live' : ''}"><small>Transfer window</small><b>${open ? 'Open' : 'Closed'}</b><span>${open ? 'Closes when you continue to ' + esc(SCHEDULE[C.step + 1] ? SCHEDULE[C.step + 1].name : 'the next event') : 'Reopens at the ' + esc(nextWindowLabel())}</span></div>
+        <div class="th-stat"><small>Transfer budget</small><b>${money(me.budget)}</b><span>${money(spent)} spent this season</span></div>
+        <div class="th-stat"><small>Wage bill</small><b>${money(salaries)}</b><span>per season · ${roster.length} player${roster.length === 1 ? '' : 's'}</span></div>
+        <div class="th-stat"><small>Roster</small><b>${roster.length}/4</b><span class="th-slots" aria-hidden="true">${[0, 1, 2, 3].map((i) => `<i class="${i < roster.length ? 'f' : ''}${i === 3 ? ' sub' : ''}"></i>`).join('')}</span></div>
+        <div class="th-stat"><small>Shortlist</small><b>${C.shortlist.length}</b><span>players tracked</span></div>
+      </div>`;
+    const TT = [['scout', 'Scout players'], ['fa', 'Free agents · ' + C.fa.length], ['shortlist', 'Shortlist · ' + C.shortlist.length], ['squad', 'My squad'], ['activity', 'Activity']];
+    const tabs = `<div class="th-tabs" role="tablist">${TT.map(([k, l]) => `<button role="tab" aria-selected="${k === tab}" class="${k === tab ? 'on' : ''}" data-action="th-tab" data-v="${k}">${esc(l)}</button>`).join('')}</div>`;
+    const tools = tab === 'squad' || tab === 'activity' ? '' : `<div class="th-tools">
+        <div class="search"><input class="input" id="thQ" placeholder="Search players or teams" value="${esc(ui.thQ || '')}" aria-label="Search players or teams" /></div>
+        ${tab === 'scout' ? `<div class="seg th-reg">${[['all', 'All'], ...REGIONS.map((k) => [k, k])].map(([k, v]) => `<button class="${k === reg ? 'active' : ''}" data-action="th-reg" data-v="${k}">${v}</button>`).join('')}</div>` : ''}
+        <label class="th-sort">Sort <select class="select" id="thSort">${[['ovr', 'Rating'], ['pot', 'Potential'], ['value', 'Value'], ['age', 'Youngest']].map(([k, v]) => `<option value="${k}" ${k === sort ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+      </div>`;
+    let list;
+    if (tab === 'activity') {
+      list = `<div class="th-feed">${moves.slice(0, 40).map((n) => `<div class="th-feed-row"><small>${esc(n.when)}</small><span>${n.html}</span></div>`).join('') || '<p class="muted th-empty">No transfers yet. Moves by every club appear here.</p>'}</div>`;
+    } else {
+      const head = `<div class="th-row th-headrow" aria-hidden="true"><span></span><span>${tab === 'squad' ? 'Player · role' : 'Player · club'}</span><span class="th-c">Age</span><span class="th-c">OVR</span><span class="th-c hide-sm">Pot.</span><span class="th-c">${tab === 'fa' ? 'Asks' : tab === 'squad' ? 'Salary' : 'Value'}</span><span></span></div>`;
+      const rows = pool.map((p) => {
+        const club = p.team && C.teams[p.team];
+        const sub = tab === 'squad' ? (me.roster.indexOf(p.id) < 3 ? 'Starter' : 'Substitute') + ' · ' + p.contract + 'y left' : club ? `${api.badge(teamObj(p.team), 'sm')}<span>${esc(club.name)}</span>` : 'Free agent';
+        const val = tab === 'fa' ? askingSalary(p, C.user) : tab === 'squad' ? p.salary : valueFor(p);
+        return `<button class="th-row ${sel && sel.id === p.id ? 'on' : ''}" data-action="th-sel" data-id="${p.id}">${avatar(p)}<span class="th-who"><b>${p.flag || ''} ${esc(p.name)}</b><small>${sub}</small></span><span class="th-c">${ageLabel(p)}</span><span class="th-c th-ovr">${p.rating}</span><span class="th-c hide-sm">~${p.pot}</span><span class="th-c th-val">${money(val)}</span><span class="th-star" aria-label="${sl.has(p.id) ? 'Shortlisted' : ''}">${sl.has(p.id) ? '★' : ''}</span></button>`;
+      }).join('');
+      const empty = { shortlist: 'Your shortlist is empty. Select a player and press ☆ Shortlist to track them here.', fa: 'No free agents right now.', scout: 'No players match.', squad: 'Your roster is empty.' }[tab];
+      list = `${head}<div class="th-rows">${rows || `<p class="muted th-empty">${empty}</p>`}</div>`;
+    }
+    let detail;
+    if (tab === 'activity') {
+      const mine = moves.filter((n) => n.html.includes(esc(me.name)));
+      detail = `<div class="th-dbody"><h3 class="fc-h">Window summary</h3>
+          <div class="th-grid"><div><small>Moves this career</small><b>${moves.length}</b></div><div><small>Involving you</small><b>${mine.length}</b></div><div><small>Spent this season</small><b>${money(spent)}</b></div><div><small>Budget left</small><b>${money(me.budget)}</b></div></div>
+          <div class="th-note">${open ? 'The window is open. AI clubs make their moves when you close it, so the best free agents can go quickly.' : `The window is closed. You can still scout and shortlist players; deals reopen at the ${esc(nextWindowLabel())}.`}</div></div>`;
+    } else if (!sel) {
+      detail = `<div class="th-dbody th-dempty"><span class="th-big-ico" aria-hidden="true">⇄</span><p>Select a player to see their scouting report.</p></div>`;
+    } else {
+      const p = sel, mine = p.team === C.user, club = p.team && C.teams[p.team], tobj = p.team ? teamObj(p.team) : null;
+      const ph = photoOf(p);
+      const idx = me.roster.indexOf(p.id);
+      let acts = '';
+      if (mine) acts = `${idx >= 3 ? `<button class="btn" data-action="mk-promote" data-id="${p.id}">Make starter</button>` : ''}${open ? `<button class="btn" data-action="mk-extend" data-id="${p.id}">Extend contract</button><button class="btn" data-action="mk-sell" data-id="${p.id}">Find a buyer</button><button class="btn danger" data-action="mk-release" data-id="${p.id}">Release</button>` : ''}`;
+      else acts = `<button class="btn primary" data-action="mk-offer" data-id="${p.id}" ${open && roster.length < 4 ? '' : 'disabled'}>${club ? 'Make a bid' : 'Offer a contract'}</button><button class="btn" data-action="th-star" data-id="${p.id}">${sl.has(p.id) ? '★ Shortlisted' : '☆ Shortlist'}</button>`;
+      const why = !mine && !open ? `Deals reopen at the ${esc(nextWindowLabel())}.` : !mine && roster.length >= 4 ? 'Your roster is full: sell or release a player first.' : mine && !open ? 'Contracts, sales and releases open in the next transfer window.' : '';
+      detail = `<div class="th-dhead" style="--tc:${(tobj && tobj.color) || 'var(--azure)'}">
+          <div class="th-dname"><small>${club ? esc(club.name) : 'Free agent'}</small><b>${esc(p.name)}</b><span>${p.flag || ''} ${esc(p.country || '')} · Age ${ageLabel(p)}${mine ? ' · ' + (idx < 3 ? 'Starter' : 'Substitute') : ''}</span></div>
+          <div class="th-dovr"><small>OVR</small><b>${p.rating}</b></div>
+          <div class="th-dphoto">${ph ? `<img src="${esc(ph)}" alt="${esc(p.name)}" onerror="this.remove()">` : ''}<span>${esc(initialsOf(p.name))}</span></div>
+        </div>
+        <div class="th-dbody">
+          <div class="th-grid">
+            <div><small>Market value</small><b>${money(valueFor(p))}</b></div>
+            <div><small>${mine ? 'Salary' : 'Asking salary'}</small><b>${money(mine ? p.salary : askingSalary(p, C.user))}</b></div>
+            <div><small>Potential</small><b>~${p.pot}</b></div>
+            <div><small>Contract</small><b>${p.team ? p.contract + ' season' + (p.contract === 1 ? '' : 's') : 'None'}</b></div>
+            <div><small>Games · goals</small><b>${p.stats.gp} · ${p.stats.g}</b></div>
+            <div><small>Assists · saves</small><b>${p.stats.a} · ${p.stats.sv}</b></div>
+          </div>
+          <div class="th-note"><span class="th-note-i" aria-hidden="true">!</span><span>${scoutNote(p)}</span></div>
+          <div class="th-actions">${acts}</div>
+          ${why ? `<p class="help">${why}</p>` : ''}
+        </div>`;
+    }
+    return `<div class="th">
+        <div class="th-crumb">Career <span aria-hidden="true">›</span> <b>Transfer hub</b></div>
+        ${stats}${tabs}
+        <div class="th-main"><section class="fc-panel th-list${tab === 'activity' ? ' th-list-feed' : ''}">${tools}${list}</section><aside class="fc-panel th-detail">${detail}</aside></div>
+      </div>`;
   }
 
   function openOffer(pid) {
@@ -820,7 +963,7 @@
     news('transfer', `<b>${esc(p.name)}</b> signs for ${esc(me.name)}${from ? ` from ${esc(C.teams[from].name)} for ${money(fee)}` : ' as a free agent'}.`);
     bump(); save();
     api.toast(`${p.name} signed!`);
-    api.state.ui.mkTab = 'squad';
+    api.state.ui.thTab = 'squad'; api.state.ui.thSel = pid;
     openMarket();
   }
 
@@ -876,9 +1019,14 @@
       case 'career-tab': api.state.ui.ctab = v; api.render(); return true;
       case 'career-view': api.state.ui.ctab = 'central'; api.state.ui.cview = v; api.render(); return true;
       case 'career-news': api.state.ui.cnews = +v; api.state.ui.cview = 'next'; api.render(); return true;
-      case 'career-market': api.state.ui.mkTab = api.state.ui.mkTab || 'squad'; openMarket(); return true;
-      case 'mk-tab': api.state.ui.mkTab = v; openMarket(); return true;
-      case 'mk-reg': api.state.ui.mkReg = v; openMarket(); return true;
+      case 'career-market': openMarket(); return true;
+      case 'th-tab': api.state.ui.ctab = 'transfers'; api.state.ui.thTab = v; api.state.ui.thSel = null; api.render(); return true;
+      case 'th-sel': api.state.ui.thSel = id; api.render(); return true;
+      case 'th-pick': api.state.ui.ctab = 'transfers'; api.state.ui.thTab = v; api.state.ui.thSel = id; api.render(); window.scrollTo({ top: 0 }); return true;
+      case 'th-reg': api.state.ui.thReg = v; api.state.ui.thSel = null; api.render(); return true;
+      case 'th-star': { C.shortlist = C.shortlist || []; C.shortlist = C.shortlist.includes(id) ? C.shortlist.filter((x) => x !== id) : C.shortlist.concat(id); save(); api.render(); return true; }
+      case 'mk-tab': api.state.ui.thTab = { players: 'scout', fa: 'fa', squad: 'squad' }[v] || 'scout'; openMarket(); return true;
+      case 'mk-reg': api.state.ui.thReg = v; openMarket(); return true;
       case 'mk-offer': openOffer(id); return true;
       case 'mk-submit': submitOffer(id); return true;
       case 'mk-promote': { const r = userTeam().roster; const i = r.indexOf(id); const weakest = r.slice(0, 3).sort((x, y) => C.players[x].rating - C.players[y].rating)[0]; const j = r.indexOf(weakest); [r[i], r[j]] = [r[j], r[i]]; bump(); save(); openMarket(); return true; }

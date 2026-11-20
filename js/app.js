@@ -1507,7 +1507,7 @@
     if (!el || el.disabled) return;
     const a = el.dataset.action, v = el.dataset.v, id = el.dataset.id;
     const s = state.setup;
-    if ((a.startsWith('career-') || a.startsWith('mk-')) && a !== 'career-out-sim' && window.RLCareer.onAction(a, el)) return;
+    if ((a.startsWith('career-') || a.startsWith('mk-') || a.startsWith('th-')) && a !== 'career-out-sim' && window.RLCareer.onAction(a, el)) return;
     switch (a) {
       case 'career-out-sim': { closeModal(); const T = state.T; T.managedOutShown = true; T.championShown = true; window.RLCareer.simRest(T); save(); go('career'); break; }
       case 'close-modal': closeModal(); break;
