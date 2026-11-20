@@ -1936,3 +1936,35 @@ html.ev .btn.primary { color: var(--e3-on, #0b1022); }
 html.ev .fc-chip i { color: var(--e3-on, #0b1022); }
 html.ev .th-note { color: var(--e3-on, #0b1022); } html.ev .th-note b { color: inherit; }
 html.ev .th-note-i { background: var(--e3-on, #0b1022); color: var(--e3); }
+
+/* carousel art scales with the panel: the season review makes the hub taller than a normal step */
+@media (min-width: 981px) {
+  .fc-feature[class*="fs-"] .fc-feature-art { container-type: size; }
+  .fs-move { top: calc(50% - clamp(69px, 20.00cqh, 110px)); gap: clamp(18px, 5.22cqh, 29px); }
+  .fs-move .badge.lg, .fs-fa { width: clamp(92px, 26.67cqh, 147px); height: clamp(92px, 26.67cqh, 147px); border-radius: clamp(24px, 6.96cqh, 38px); font-size: clamp(24px, 6.96cqh, 38px); }
+  .fs-arrow { font-size: clamp(54px, 15.65cqh, 86px); }
+  .fs-fee { top: calc(50% + clamp(40px, 11.59cqh, 64px)); font-size: clamp(34px, 9.86cqh, 54px); }
+  .fs-ovr { font-size: clamp(30px, 8.70cqh, 48px); padding: clamp(6px, 1.74cqh, 10px) clamp(12px, 3.48cqh, 19px); }
+  .fs-cup { font-size: clamp(150px, 43.48cqh, 240px); }
+  .fs-word { font-size: clamp(110px, 31.88cqh, 176px); }
+  .fs-trophy .badge.lg { width: clamp(72px, 20.87cqh, 115px); height: clamp(72px, 20.87cqh, 115px); left: calc(50% + clamp(60px, 17.39cqh, 96px)); top: calc(50% + clamp(10px, 2.90cqh, 16px)); }
+  .fs-result .badge.xl { width: clamp(140px, 40.58cqh, 224px); height: clamp(140px, 40.58cqh, 224px); border-radius: clamp(36px, 10.43cqh, 58px); left: calc(50% - clamp(70px, 20.29cqh, 112px)); top: calc(50% - clamp(92px, 26.67cqh, 147px)); }
+  .fs-stamp { font-size: clamp(22px, 6.38cqh, 35px); transform: translate(-50%, clamp(58px, 16.81cqh, 93px)) rotate(-6deg); }
+  .fs-you { width: clamp(110px, 31.88cqh, 176px); height: clamp(110px, 31.88cqh, 176px); font-size: clamp(26px, 7.54cqh, 42px); }
+  .fs-label { font-size: clamp(14px, 4.06cqh, 22px); }
+  .fs-city { font-size: clamp(88px, 25.51cqh, 141px); }
+  .fs-swap { font-size: clamp(120px, 34.78cqh, 192px); }
+  .fs-stats { top: calc(50% - clamp(70px, 20.29cqh, 112px)); grid-template-columns: repeat(2, clamp(104px, 30.14cqh, 166px)); gap: clamp(8px, 2.32cqh, 13px); }
+  .fs-stats span { padding: clamp(10px, 2.90cqh, 16px) clamp(12px, 3.48cqh, 19px); }
+  .fs-stats b { font-size: clamp(28px, 8.12cqh, 45px); }
+  .fs-stats small { font-size: clamp(10.5px, 3.04cqh, 15px); }
+  .fs-podium { gap: clamp(10px, 2.90cqh, 16px); }
+  .fs-pod { width: clamp(130px, 37.68cqh, 208px); }
+  .fs-pod.p1 { height: clamp(210px, 60.87cqh, 336px); } .fs-pod.p2 { height: clamp(165px, 47.83cqh, 264px); } .fs-pod.p3 { height: clamp(130px, 37.68cqh, 208px); }
+  .fs-pod i { font-size: clamp(30px, 8.70cqh, 48px); }
+  .fs-pod .badge { width: clamp(52px, 15.07cqh, 83px); height: clamp(52px, 15.07cqh, 83px); } .fs-pod.p1 .badge { width: clamp(72px, 20.87cqh, 115px); height: clamp(72px, 20.87cqh, 115px); }
+  .fs-line { gap: clamp(10px, 2.90cqh, 16px); }
+  .fs-photo.tall { width: clamp(150px, 43.48cqh, 240px); height: clamp(210px, 60.87cqh, 336px); }
+  .fs-squad .badge { width: clamp(56px, 16.23cqh, 90px); height: clamp(56px, 16.23cqh, 90px); }
+  .fc-feature-art .badge.xl { width: clamp(150px, 43.48cqh, 240px); height: clamp(150px, 43.48cqh, 240px); }
+}
