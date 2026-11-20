@@ -99,7 +99,8 @@
   let modalOnClose = null;
   function openModal(html, opts) {
     opts = opts || {};
-    modalRoot.innerHTML = `<div class="modal-backdrop" data-backdrop><div class="modal ${opts.size || ''} ${opts.cls || ''}" role="dialog" aria-modal="true" style="${opts.style || ''}">${html}</div></div>`;
+    const fresh = !modalRoot.querySelector('.modal'); // pop in only when a modal opens, not when it re-renders
+    modalRoot.innerHTML = `<div class="modal-backdrop${fresh ? ' m-enter' : ''}" data-backdrop><div class="modal ${opts.size || ''} ${opts.cls || ''}" role="dialog" aria-modal="true" style="${opts.style || ''}">${html}</div></div>`;
     modalOnClose = opts.onClose || null;
     const first = modalRoot.querySelector('input, select, button:not(.close-x)');
     if (first && opts.focus !== false) first.focus({ preventScroll: true });
@@ -1356,6 +1357,7 @@
   }
 
   /* ---------------- Render root ---------------- */
+  let lastPageKey = null;
   function render() {
     if (state.view === 'tournament' && !state.T) state.view = 'home';
     const th = state.view === 'tournament' && state.T ? themeOf(state.T.theme) : null;
@@ -1369,6 +1371,12 @@
     else if (state.view === 'teams') renderTeamsPage();
     else if (state.view === 'career') window.RLCareer.render(app);
     else { state.view = 'home'; renderHome(); }
+    // page entrance animation: only when the page (or tournament / stage tab / archive season) changes.
+    // Worked out after rendering (views pick defaults such as the stage tab while they render); the class is
+    // applied before the browser paints, so the new content still animates in.
+    const pageKey = [state.view, state.view === 'tournament' && state.T ? (state.T.title || '') + (state.T.teams || []).length : '', state.ui.stageTab || '', state.ui.archive || '', state.ui.browseSeason || ''].join('|');
+    app.classList.toggle('pg-enter', pageKey !== lastPageKey);
+    lastPageKey = pageKey;
   }
   function persistRender() { save(); render(); }
 

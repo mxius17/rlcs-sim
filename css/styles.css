@@ -1403,3 +1403,61 @@ body.hero-open { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .fc *, .fc *::before, .fc *::after, .fc, .cs *, .cs *::before, .cs *::after, .cs { animation: none !important; transition: none !important; }
 }
+
+/* =========================================================================
+   Site-wide motion — page entrances (only when the page changes: JS adds
+   .pg-enter to #app), modal pop-in, toasts, hover/press feedback, nav underline.
+   ========================================================================= */
+@keyframes pgUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes pgFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pgDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+@keyframes mPop { from { opacity: 0; transform: translateY(18px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes toastIn { from { opacity: 0; transform: translateY(14px) scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes navLine { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* page entrance */
+.pg-enter .page-head, .pg-enter .home-h-row, .pg-enter .home-h { animation: pgDown .4s cubic-bezier(.2,.8,.2,1) both; }
+.pg-enter :is(.tile, .feat-hero, .feat-card, .comp-tile, .sim-card, .group-card, .table-card, .career-banner, .home-banner, .browse-item, .team-chip, .featured) {
+  animation: pgUp .5s cubic-bezier(.2,.8,.2,1) both; }
+.pg-enter :is(.tile, .feat-card, .comp-tile, .sim-card, .group-card, .table-card, .browse-item, .team-chip):nth-child(2) { animation-delay: .04s; }
+.pg-enter :is(.tile, .feat-card, .comp-tile, .sim-card, .group-card, .table-card, .browse-item, .team-chip):nth-child(3) { animation-delay: .08s; }
+.pg-enter :is(.tile, .feat-card, .comp-tile, .sim-card, .group-card, .table-card, .browse-item, .team-chip):nth-child(4) { animation-delay: .12s; }
+.pg-enter :is(.tile, .feat-card, .comp-tile, .sim-card, .group-card, .table-card, .browse-item, .team-chip):nth-child(5) { animation-delay: .16s; }
+.pg-enter :is(.tile, .feat-card, .comp-tile, .sim-card, .group-card, .table-card, .browse-item, .team-chip):nth-child(6) { animation-delay: .2s; }
+.pg-enter :is(.tile, .feat-card, .comp-tile, .sim-card, .group-card, .table-card, .browse-item, .team-chip):nth-child(7) { animation-delay: .24s; }
+.pg-enter :is(.tile, .feat-card, .comp-tile, .sim-card, .group-card, .table-card, .browse-item, .team-chip):nth-child(n+8) { animation-delay: .28s; }
+.pg-enter .feat-hero { animation-duration: .6s; }
+.pg-enter .bracket-scroll, .pg-enter .fixtures-grid, .pg-enter .table-wrap { animation: pgFade .5s .15s both; }
+.pg-enter tbody tr { animation: pgFade .35s both; }
+.pg-enter tbody tr:nth-child(n+2) { animation-delay: .05s; } .pg-enter tbody tr:nth-child(n+4) { animation-delay: .1s; } .pg-enter tbody tr:nth-child(n+8) { animation-delay: .15s; }
+
+/* modals and toasts */
+.modal-backdrop.m-enter { animation: pgFade .22s ease-out both; }
+.modal-backdrop.m-enter .modal { animation: mPop .32s cubic-bezier(.2,.8,.2,1) both; }
+.toast { animation: toastIn .3s cubic-bezier(.2,.8,.2,1) both; }
+
+/* hover / press feedback */
+.btn { transition: background .15s, border-color .15s, color .15s, transform .12s, box-shadow .15s, filter .15s; }
+.btn:not(:disabled):active { transform: scale(.97); }
+.btn.primary:not(:disabled):hover, .btn.orange:not(:disabled):hover { box-shadow: 0 6px 18px rgba(0,0,0,0.25); filter: brightness(1.06); }
+.feat-hero, .feat-card, .comp-tile, .sim-card, .browse-item, .team-chip, .career-banner, .group-card { transition: transform .18s cubic-bezier(.2,.8,.2,1), border-color .18s, box-shadow .18s; }
+.feat-card:hover, .comp-tile:hover, .sim-card:hover, .browse-item:hover, .career-banner:hover { transform: translateY(-3px); box-shadow: 0 10px 26px rgba(0,0,0,0.28); }
+.feat-hero:hover { transform: translateY(-2px); box-shadow: 0 14px 34px rgba(0,0,0,0.3); }
+.feat-arrow { display: inline-block; transition: transform .2s; }
+:is(.feat-hero, .feat-card, .career-banner, .sim-card):hover .feat-arrow { transform: translateX(5px); }
+.comp-ico { transition: transform .25s cubic-bezier(.2,.8,.2,1); }
+.comp-tile:hover .comp-ico { transform: scale(1.08) rotate(-4deg); }
+.badge { transition: transform .2s; }
+.team-chip:hover .badge, .browse-item:hover .badge { transform: scale(1.08); }
+.seg button, .tabs button { transition: background .15s, color .15s, box-shadow .15s; }
+tbody tr { transition: background .12s; }
+/* top nav: the active underline draws in */
+.topnav button { position: relative; }
+.topnav button.active, html:root .topnav button.active { box-shadow: none; }
+.topnav button.active::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--azure); transform-origin: center; animation: navLine .35s cubic-bezier(.2,.8,.2,1) both; }
+.icon-btn { transition: transform .2s, background .15s; }
+.icon-btn:hover { transform: rotate(12deg) scale(1.05); }
+
+@media (prefers-reduced-motion: reduce) {
+  .pg-enter *, .modal-backdrop, .modal, .toast, .btn, .feat-hero, .feat-card, .comp-tile, .sim-card, .browse-item, .team-chip, .career-banner, .topnav button::after, .icon-btn { animation: none !important; transition: none !important; }
+}
