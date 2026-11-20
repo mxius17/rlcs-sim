@@ -14,6 +14,25 @@
   const WORLDS_SLOTS = { EU: 6, NA: 5, SAM: 3, MENA: 3, OCE: 1, APAC: 1, SSA: 1 };
   const CITIES = ['Copenhagen', 'Sydney', 'Riyadh', 'Los Angeles', 'London', 'Rio de Janeiro', 'Berlin', 'Tokyo', 'Dallas', 'Madrid', 'Toronto', 'Stockholm', 'Seoul', 'Mexico City'];
   const WORLDS_CITIES = ['Fort Worth', 'Paris', 'Lyon', 'Boston', 'Riyadh', 'London', 'Sydney', 'Las Vegas'];
+  /* Host-city palettes for career Majors and Worlds: flag / city colours of the host.
+     a = main colour, b = deep second colour, c = highlight; on = text on a. */
+  const HOST_PAL = {
+    'Copenhagen': ['Denmark', '#C8102E', '#1D4E89', '#F4C430'], 'Sydney': ['Australia', '#00843D', '#0057B8', '#FFCD00'],
+    'Riyadh': ['Saudi Arabia', '#006C35', '#0B3D2E', '#C9A227'], 'Los Angeles': ['United States', '#7B2CBF', '#FF7A00', '#FDB927'],
+    'London': ['United Kingdom', '#C8102E', '#012169', '#FFFFFF'], 'Rio de Janeiro': ['Brazil', '#009C3B', '#002776', '#FFDF00'],
+    'Berlin': ['Germany', '#DD0000', '#1A1A1A', '#FFCE00'], 'Tokyo': ['Japan', '#BC002D', '#1B1F3B', '#F5A3B7'],
+    'Dallas': ['United States', '#1747A6', '#BF0A30', '#C0C5CE'], 'Madrid': ['Spain', '#AA151B', '#6B0E12', '#F1BF00'],
+    'Toronto': ['Canada', '#D80621', '#0B3D91', '#FFFFFF'], 'Stockholm': ['Sweden', '#006AA7', '#00395F', '#FECC00'],
+    'Seoul': ['South Korea', '#0F4FA8', '#C60C30', '#E8E8E8'], 'Mexico City': ['Mexico', '#006847', '#CE1126', '#E4B83F'],
+    'Fort Worth': ['United States', '#1747A6', '#BF0A30', '#C0C5CE'], 'Paris': ['France', '#0055A4', '#EF4135', '#FFFFFF'],
+    'Lyon': ['France', '#D6001C', '#1F2A6B', '#F5F5F5'], 'Boston': ['United States', '#1A4E9C', '#C8102E', '#D4B483'],
+    'Las Vegas': ['United States', '#E10098', '#1C0F45', '#FFD100'],
+  };
+  const hostKey = (city) => 'host-' + city.toLowerCase().replace(/[^a-z]+/g, '-');
+  (function registerHostThemes() {
+    const T = (window.RL_EVENT_THEMES = window.RL_EVENT_THEMES || {});
+    Object.keys(HOST_PAL).forEach((city) => { const [country, a, b, c] = HOST_PAL[city]; T[hostKey(city)] = { name: city + ', ' + country, a, b, c, on: '#fff' }; });
+  })();
   const SCHEDULE = [
     { key: 'pre', type: 'window', name: 'Pre-season transfer window', short: 'Window' },
     { key: 'o1', type: 'open', name: 'Open 1', split: 1, short: 'Open 1' },
@@ -219,6 +238,9 @@
   }
   const majorCity = (st) => CITIES[(C.season * 2 + (st.split - 1)) % CITIES.length];
   const worldsCity = () => WORLDS_CITIES[C.season % WORLDS_CITIES.length];
+  const hostCity = (st) => (st.type === 'major' ? majorCity(st) : st.type === 'worlds' ? worldsCity() : null);
+  const hostTheme = (st) => { const c = hostCity(st); return c && HOST_PAL[c] ? window.RL_EVENT_THEMES[hostKey(c)] : null; };
+  const hostVars = (th) => (th ? `--e1:${th.a};--e2:${th.b};--e3:${th.c};--e-on:${th.on}` : '');
 
   /* ---------------- results ---------------- */
   function placements(T) {
@@ -628,7 +650,7 @@
     const tableHtml = `<div class="table-wrap"><table class="st"><thead><tr><th>#</th><th class="l">Team</th><th>OVR</th><th>Split 1</th><th>Split 2</th><th>Season</th></tr></thead><tbody>
       ${table.slice(0, 16).map((id, i) => { const tt = teamObj(id); return `<tr class="${i < slots ? 'q' : ''} ${id === C.user ? 'hl' : ''}"><td class="pos">${i + 1}</td><td class="l"><div class="tcell">${api.badge(tt, 'sm')}<span>${esc(tt.name)}</span></div></td><td>${tt.ovr}</td><td>${C.points[id].s1}</td><td>${C.points[id].s2}</td><td><b>${C.points[id].season}</b></td></tr>`; }).join('')}
       </tbody></table></div>`;
-    const timelineHtml = `<div class="timeline">${SCHEDULE.map((s, i) => { const res = myEventStatus(s); return `<div class="tl ${i < C.step ? 'done' : i === C.step ? 'now' : ''} ${s.type}"><b>${s.short}</b><small>${i < C.step ? (res || (s.type === 'window' ? 'Closed' : '✓')) : i === C.step ? 'Now' : s.type === 'major' ? esc(majorCity(s)) : s.type === 'worlds' ? esc(worldsCity()) : ''}</small></div>`; }).join('')}</div>`;
+    const timelineHtml = `<div class="timeline">${SCHEDULE.map((s, i) => { const res = myEventStatus(s); const hth = hostTheme(s); return `<div class="tl ${i < C.step ? 'done' : i === C.step ? 'now' : ''} ${s.type}${hth ? ' host' : ''}" style="${hostVars(hth)}"><b>${s.short}</b><small>${i < C.step ? (res || (s.type === 'window' ? 'Closed' : '✓')) : i === C.step ? 'Now' : s.type === 'major' ? esc(majorCity(s)) : s.type === 'worlds' ? esc(worldsCity()) : ''}</small></div>`; }).join('')}</div>`;
     const squadHtml = `<div class="leader-list">${roster.map((p, i) => `<div class="leader"><span class="rk">${i < 3 ? 'ST' : 'SUB'}</span><span class="who"><b>${p.flag || ''} ${esc(p.name)}</b><small>Age ${ageLabel(p)} · ${p.contract}y · ${money(p.salary)}/yr${p.stats.gp ? ' · ' + p.stats.g + 'G ' + p.stats.sv + 'Sv' : ''}</small></span><span class="val">${p.rating}</span></div>`).join('')}</div>`;
     const objHtml = C.objectives.map((o) => `<div class="kv"><span>${esc(o.t)}</span><span class="pill">${C.season}</span></div>`).join('');
     const trophyHtml = C.trophies.length ? C.trophies.slice().reverse().slice(0, 8).map((x) => `<div class="kv"><span>🏆 ${esc(x.title)}</span></div>`).join('') : '<p class="muted" style="font-size:13px">No trophies yet.</p>';
@@ -653,7 +675,7 @@
       : feature;
     // ---- next-up side card (all the season actions live here) ----
     const sideCard = `<aside class="fc-side">
-        <div class="fc-side-head"><h2>${esc(st.name)}</h2><small>RLCS ${C.season} · step ${C.step + 1} of ${SCHEDULE.length}</small></div>
+        <div class="fc-side-head"><h2>${esc(st.name)}</h2><small>RLCS ${C.season}${hostCity(st) ? ' · ' + esc(hostCity(st)) + (HOST_PAL[hostCity(st)] ? ', ' + esc(HOST_PAL[hostCity(st)][0]) : '') : ''} · step ${C.step + 1} of ${SCHEDULE.length}</small></div>
         <div class="fc-side-row"><span class="fc-day">${C.step + 1}</span><span><small>${esc(st.type === 'window' ? 'Transfer window' : st.type === 'review' ? 'Season review' : st.type === 'open' ? 'Regional Open' : st.type === 'major' ? 'Major' : 'World Championship')}</small><b>${esc(st.short || st.name)}</b></span><span class="fc-ico" aria-hidden="true">${st.type === 'window' ? '⇄' : st.type === 'review' ? '★' : '🏆'}</span></div>
         <div class="fc-side-mid"><small>${esc(t.name)} · ${regionRankLabel()} in ${esc(api.regions[reg])}</small>
           <div class="fc-rings">${ring(t.ovr - 60, 40, 'Team rating', `<span data-count="${t.ovr}">${t.ovr}</span>`, '◆')}${ring(C.board, 100, 'Board', `<span data-count="${C.board}" data-suf="%">${C.board}%</span>`, '☺')}${ring(C.step + 1, SCHEDULE.length, 'Season', (C.step + 1) + '/' + SCHEDULE.length, '▶')}</div></div>
@@ -676,7 +698,7 @@
     else if (tab === 'history') body = `<section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Career history</h3>${historyHtml}<h3 class="fc-h" style="margin-top:18px">Trophy cabinet <span class="pill gold">${C.trophies.length}</span></h3>${trophyHtml}</div></section>`;
     else body = `<div class="fc-central"><section class="fc-panel fc-main">${mainView}</section>${sideCard}</div>${tiles}`;
     app.innerHTML = `
-      <div class="fc ${enter ? 'fc-enter' : ''} ${tabChanged ? 'fc-tabin' : ''}">
+      <div class="fc ${enter ? 'fc-enter' : ''} ${tabChanged ? 'fc-tabin' : ''}${hostTheme(st) ? ' fc-host' : ''}" style="${hostVars(hostTheme(st))}">
         <div class="fc-top">
           <button class="fc-club" data-action="nav" data-v="home" title="Back to modes">${api.badge(t, 'sm')}<span class="fc-club-name">${esc(t.name)}</span><i class="fc-club-bar" style="--b:${C.board}%"></i><span class="fc-thumb ${C.board >= 60 ? 'good' : C.board >= 35 ? 'mid' : 'bad'}" aria-label="Board ${C.board}%">${C.board >= 60 ? '👍' : C.board >= 35 ? '✋' : '👎'}</span></button>
           <div class="fc-top-r"><button class="fc-chip" data-action="career-view" data-v="news">✉ Inbox <i>${Math.min(99, newsList.length)}</i></button><button class="fc-chip" data-action="career-market">⇄ Market</button><button class="fc-chip" data-action="nav" data-v="home">← Modes</button></div>
@@ -775,7 +797,8 @@
     if (!ev.cfg.teams.includes(C.user)) { save(); api.toast('You did not make it into this event — simulate it instead.'); api.render(); return; }
     ev.cfg.managed = C.user;
     save();
-    api.launch(ev.cfg, eventTitle(st, reg), { career: { season: C.season, step: C.step } });
+    const hc = hostCity(st);
+    api.launch(ev.cfg, eventTitle(st, reg), Object.assign({ career: { season: C.season, step: C.step } }, hc && HOST_PAL[hc] ? { theme: hostKey(hc) } : {}));
   }
   function recordFromT(T) {
     if (!C || !T.career || T.career.recorded || T.career.season !== C.season || T.career.step !== C.step) return;

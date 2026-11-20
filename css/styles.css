@@ -1608,3 +1608,19 @@ tbody tr { transition: background .12s; }
 .cs-item small { color: var(--text-3); }
 .cs-item:hover { border-color: var(--line-strong); }
 .cs-item.on { background: var(--fc-sel); border-color: var(--azure); box-shadow: inset 3px 0 0 var(--vermilion); }
+
+/* Career Majors / Worlds in the host city's colours (vars --e1/--e2/--e3 set per event) */
+.tl.host { border-color: color-mix(in srgb, var(--e1) 55%, var(--line)); background: linear-gradient(135deg, color-mix(in srgb, var(--e1) 26%, transparent), color-mix(in srgb, var(--e2) 14%, transparent) 70%); box-shadow: inset 0 -3px 0 var(--e3); }
+.tl.host b, .tl.major.host b, .tl.worlds.host b { color: #fff; }
+.tl.host small { color: rgba(255,255,255,0.75); }
+.tl.host.now { box-shadow: inset 0 -3px 0 var(--e3), 0 0 0 1px var(--e1); }
+.fc.fc-host::before { background: radial-gradient(640px 280px at 12% 80%, color-mix(in srgb, var(--e1) 22%, transparent), transparent 70%), radial-gradient(460px 240px at 92% 0%, color-mix(in srgb, var(--e2) 22%, transparent), transparent 70%); }
+.fc-host .fc-feature { background: radial-gradient(520px 320px at 30% 40%, color-mix(in srgb, var(--tc) 28%, transparent), transparent 70%), linear-gradient(150deg, color-mix(in srgb, var(--e1) 34%, var(--ink)), color-mix(in srgb, var(--e2) 26%, var(--ink)) 60%, var(--ink)); }
+.fc-host .fc-feature-foot { box-shadow: inset 0 2px 0 var(--e3); }
+.fc-host .fc-tag, .fc-host .fc-link, .fc-host .fc-dot.on { background: var(--e1); color: var(--e-on); }
+.fc-host .fc-headline p { border-left-color: var(--e3); }
+.fc-host .fc-side { border-color: color-mix(in srgb, var(--e1) 45%, var(--line)); background: linear-gradient(180deg, color-mix(in srgb, var(--e1) 20%, var(--ink)), var(--fc-slate) 45%); }
+.fc-host .fc-side-head { box-shadow: inset 0 3px 0 var(--e1); }
+.fc-host .fc-next .action-row .btn.primary { background: var(--e1); border-color: var(--e1); color: var(--e-on); }
+.fc-host .fc-tabs button.on { border-bottom-color: var(--e1); }
+.fc-host .fc-tile.on, .fc-host .fc-tile.on:hover { background: color-mix(in srgb, var(--e1) 22%, var(--ink)); border-color: color-mix(in srgb, var(--e1) 55%, transparent); border-bottom-color: var(--e3); }
