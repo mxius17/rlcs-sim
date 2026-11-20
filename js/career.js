@@ -12,8 +12,11 @@
   const REGIONS = ['EU', 'NA', 'SAM', 'MENA', 'OCE', 'APAC', 'SSA'];
   const MAJOR_SLOTS = { EU: 5, NA: 4, SAM: 2, MENA: 2, OCE: 1, APAC: 1, SSA: 1 };
   const WORLDS_SLOTS = { EU: 6, NA: 5, SAM: 3, MENA: 3, OCE: 1, APAC: 1, SSA: 1 };
-  const CITIES = ['Copenhagen', 'Sydney', 'Riyadh', 'Los Angeles', 'London', 'Rio de Janeiro', 'Berlin', 'Tokyo', 'Dallas', 'Madrid', 'Toronto', 'Stockholm', 'Seoul', 'Mexico City'];
-  const WORLDS_CITIES = ['Fort Worth', 'Paris', 'Lyon', 'Boston', 'Riyadh', 'London', 'Sydney', 'Las Vegas'];
+  const CITIES = ['Copenhagen', 'Sydney', 'Riyadh', 'Los Angeles', 'London', 'Rio de Janeiro', 'Berlin', 'Tokyo', 'Dallas', 'Madrid', 'Toronto', 'Stockholm', 'Seoul', 'Mexico City',
+    'Paris', 'São Paulo', 'Singapore', 'Amsterdam', 'Dubai', 'New York', 'Buenos Aires', 'Melbourne', 'Barcelona', 'Johannesburg', 'Chicago', 'Lisbon', 'Doha', 'Bangkok',
+    'Milan', 'Montréal', 'Istanbul', 'Auckland', 'Warsaw', 'Santiago', 'Atlanta', 'Rotterdam', 'Cairo', 'Hong Kong', 'Vienna', 'Seattle', 'Abu Dhabi', 'Bogotá',
+    'Birmingham', 'Prague', 'Manila', 'Casablanca', 'Orlando', 'Lima', 'Vancouver', 'Cape Town', 'Raleigh', 'Jakarta', 'Munich', 'Lyon'];
+  const WORLDS_CITIES = ['Fort Worth', 'Paris', 'Lyon', 'Boston', 'Riyadh', 'London', 'Sydney', 'Las Vegas', 'Copenhagen', 'Tokyo', 'São Paulo', 'Dubai', 'New York', 'Berlin', 'Singapore', 'Toronto'];
   /* Host-city palettes for career Majors and Worlds: flag / city colours of the host.
      a = main colour, b = deep second colour, c = highlight; on = text on a. */
   const HOST_PAL = {
@@ -27,6 +30,25 @@
     'Fort Worth': ['United States', '#1747A6', '#BF0A30', '#C0C5CE'], 'Paris': ['France', '#0055A4', '#EF4135', '#FFFFFF'],
     'Lyon': ['France', '#D6001C', '#1F2A6B', '#F5F5F5'], 'Boston': ['United States', '#1A4E9C', '#C8102E', '#D4B483'],
     'Las Vegas': ['United States', '#E10098', '#1C0F45', '#FFD100'],
+    'São Paulo': ['Brazil', '#009C3B', '#1B2A4A', '#FFDF00'], 'Singapore': ['Singapore', '#EF3340', '#5B0E16', '#FFFFFF'],
+    'Amsterdam': ['Netherlands', '#FF6A13', '#21468B', '#FFFFFF'], 'Dubai': ['United Arab Emirates', '#00843D', '#1A1A1A', '#C8A951'],
+    'New York': ['United States', '#F2A900', '#0C2340', '#FFFFFF'], 'Buenos Aires': ['Argentina', '#5BA4E6', '#0B2E59', '#F6B40E'],
+    'Melbourne': ['Australia', '#00205B', '#0A7EA4', '#FFCD00'], 'Barcelona': ['Spain', '#A50044', '#004D98', '#EDBB00'],
+    'Johannesburg': ['South Africa', '#007749', '#1A1A1A', '#FFB81C'], 'Chicago': ['United States', '#41B6E6', '#0B2240', '#E4002B'],
+    'Lisbon': ['Portugal', '#046A38', '#B5121B', '#FFD100'], 'Doha': ['Qatar', '#8A1538', '#3A0A18', '#E6D3A3'],
+    'Bangkok': ['Thailand', '#A51931', '#2D2A4A', '#F4C430'], 'Milan': ['Italy', '#009246', '#CE2B37', '#F1F2F1'],
+    'Montréal': ['Canada', '#0055A4', '#C8102E', '#FFFFFF'], 'Istanbul': ['Türkiye', '#E30A17', '#4A0B10', '#FFFFFF'],
+    'Auckland': ['New Zealand', '#1A1A1A', '#00247D', '#CC142B'], 'Warsaw': ['Poland', '#DC143C', '#4A0A16', '#FFFFFF'],
+    'Santiago': ['Chile', '#D52B1E', '#0039A6', '#FFFFFF'], 'Atlanta': ['United States', '#A6192E', '#0B1F3A', '#EAAA00'],
+    'Rotterdam': ['Netherlands', '#00A651', '#0B3B24', '#FF6A13'], 'Cairo': ['Egypt', '#CE1126', '#1A1A1A', '#C09300'],
+    'Hong Kong': ['Hong Kong', '#DE2910', '#3B0B0B', '#FFFFFF'], 'Vienna': ['Austria', '#ED2939', '#5A0E16', '#F5F0E6'],
+    'Seattle': ['United States', '#00704A', '#0B2A3D', '#69BE28'], 'Abu Dhabi': ['United Arab Emirates', '#C8102E', '#00573F', '#F5F0E6'],
+    'Bogotá': ['Colombia', '#FCD116', '#003893', '#CE1126'], 'Birmingham': ['United Kingdom', '#0A3A8F', '#7A1F2B', '#E8C547'],
+    'Prague': ['Czechia', '#11457E', '#D7141A', '#FFFFFF'], 'Manila': ['Philippines', '#0038A8', '#CE1126', '#FCD116'],
+    'Casablanca': ['Morocco', '#C1272D', '#006233', '#F5F0E6'], 'Orlando': ['United States', '#7B2CBF', '#0B3D91', '#FDB927'],
+    'Lima': ['Peru', '#D91023', '#4A0A10', '#FFFFFF'], 'Vancouver': ['Canada', '#00843D', '#0B2E4F', '#FF0000'],
+    'Cape Town': ['South Africa', '#0A6EA8', '#1A1A1A', '#FFB81C'], 'Raleigh': ['United States', '#CC0000', '#1A1A1A', '#FFFFFF'],
+    'Jakarta': ['Indonesia', '#CE1126', '#3F0B10', '#FFFFFF'], 'Munich': ['Germany', '#0066B2', '#1A1A1A', '#FFFFFF'],
   };
   /* Region palettes for the regional Opens (career + Simulators page): colours each region is known for. */
   const REGION_PAL = {
@@ -43,6 +65,7 @@
   (function registerHostThemes() {
     const T = (window.RL_EVENT_THEMES = window.RL_EVENT_THEMES || {});
     Object.keys(HOST_PAL).forEach((city) => { const [country, a, b, c] = HOST_PAL[city]; T[hostKey(city)] = { name: city + ', ' + country, a, b, c, on: '#fff' }; });
+    T['career-worlds'] = { name: 'RLCS World Championship', a: '#1F5BFF', b: '#050505', c: '#D4A017', on: '#fff' }; // Worlds branding: blue, gold, black
     Object.keys(REGION_PAL).forEach((r) => { const [name, a, b, c] = REGION_PAL[r]; T[regionKey(r)] = { name, a, b, c, on: '#fff' }; });
   })();
   const SCHEDULE = [
@@ -251,7 +274,7 @@
   const majorCity = (st) => CITIES[(C.season * 2 + (st.split - 1)) % CITIES.length];
   const worldsCity = () => WORLDS_CITIES[C.season % WORLDS_CITIES.length];
   const hostCity = (st) => (st.type === 'major' ? majorCity(st) : st.type === 'worlds' ? worldsCity() : null);
-  const themeKeyFor = (st) => { if (st.type === 'open') return C && userTeam() ? regionKey(userTeam().region) : null; const c = hostCity(st); return c && HOST_PAL[c] ? hostKey(c) : null; };
+  const themeKeyFor = (st) => { if (st.type === 'open') return C && userTeam() ? regionKey(userTeam().region) : null; if (st.type === 'worlds') return 'career-worlds'; const c = hostCity(st); return c && HOST_PAL[c] ? hostKey(c) : null; };
   const hostTheme = (st) => { const k = themeKeyFor(st); return k ? window.RL_EVENT_THEMES[k] || null : null; };
   const hostVars = (th) => (th ? `--e1:${th.a};--e2:${th.b};--e3:${th.c};--e-on:${th.on}` : '');
 
