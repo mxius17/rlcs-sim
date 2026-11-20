@@ -568,23 +568,26 @@
     const signed = {}, sold = {}, headlines = [];
     let moves = 0;
     // ---- phase A: ambitious clubs chase a marquee upgrade from anywhere in their region (stars also across regions) ----
-    const chance = pre ? [0, 0, 0, 0.3, 0.5, 0.7] : [0, 0, 0, 0.05, 0.08, 0.12];
+    const chance = pre ? [0, 0, 0, 0.15, 0.28, 0.4] : [0, 0, 0, 0.03, 0.05, 0.07];
     for (let pass = 0; pass < 2; pass++) {
       const buyers = ai.filter((id) => (C.teams[id].tier || 1) >= 3 && !signed[id]).sort(() => Math.random() - 0.5).sort((a, b) => (C.teams[b].tier || 1) - (C.teams[a].tier || 1));
       for (const buyer of buyers) {
         const bt = C.teams[buyer], tier = bt.tier || 3;
         // second pass: only clubs that just sold someone and have cash to reinvest
-        if (pass === 1 ? !sold[buyer] : Math.random() > chance[tier]) continue;
+        if (pass === 1 ? !sold[buyer] || Math.random() > 0.4 : Math.random() > chance[tier]) continue; // sellers only sometimes reinvest straight away
         const starters = bt.roster.slice(0, 3).map((id) => C.players[id]).filter(Boolean);
         if (starters.length < 3) continue;
         const weakest = starters.slice().sort((a, b) => a.rating - b.rating)[0];
-        const regs = [bt.region].concat(MIGRATE[bt.region] || []);
+        const abroad = Math.random() < 0.25; // most clubs only shop in their own region
+        const regs = [bt.region].concat(abroad ? MIGRATE[bt.region] || [] : []);
         const priced = [];
         Object.values(C.players).forEach((p) => {
           const st = p.team && C.teams[p.team];
           if (!st || p.team === buyer || p.team === C.user || sold[p.team] || !regs.includes(st.region) || p.joined === C.season) return; // new signings stay for the season
-          if (st.region !== bt.region && p.rating < 86) return; // only stars move across regions
-          if (p.rating < weakest.rating + 2 || minTierFor(p) > tier) return;
+          if (st.region !== bt.region && (p.rating < 90 || Math.random() > 0.3)) return; // only top stars, and rarely, move across regions
+          if (p.rating < weakest.rating + 3 || minTierFor(p) > tier) return;
+          if (p.contract >= 2 && Math.random() > 0.25) return; // players under contract are rarely available
+          if (p.rating >= 90 && st.roster.every((x) => !C.players[x] || C.players[x].rating <= p.rating) && Math.random() > 0.35) return; // franchise stars mostly stay
           const stT = st.tier || 1;
           const best = st.roster.every((x) => !C.players[x] || C.players[x].rating <= p.rating);
           let prem = 1;
@@ -611,7 +614,7 @@
       }
     }
     // ---- phase B: smaller clubs upgrade from free agents and weaker teams nearby ----
-    const target = pre ? 14 : 7;
+    const target = pre ? 9 : 4;
     for (let tries = 0; tries < 260 && moves < target + Object.keys(signed).length; tries++) {
       const buyer = pick(ai);
       if (signed[buyer]) continue;
