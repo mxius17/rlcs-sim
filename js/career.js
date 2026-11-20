@@ -160,7 +160,16 @@
     { name: 'Major', start: 550000, sponsor: 330000 },
     { name: 'Elite', start: 1000000, sponsor: 520000 },
   ];
-  const PRIZE_SHARE = 0.2; // the organisation's cut of prize money
+  const PRIZE_SHARE = 0.2; // the organisation's cut of prize money (Hard)
+  /* Difficulty only changes your own club: start budget, sponsorship, prize share, how forgiving the board is,
+     how much stars ask from a smaller org, and how quickly the club grows. Hard is the original balance. */
+  const DIFF = {
+    relaxed: { name: 'Relaxed', blurb: 'More money, a patient board, stars more open to smaller clubs.', start: 1.6, sponsor: 1.5, prize: 0.35, boardBoth: 22, boardOne: 8, boardNone: -10, gap: 0.35, growEasy: true, growNeed: 1 },
+    normal: { name: 'Normal', blurb: 'A fair challenge: small clubs build up over a few seasons.', start: 1.25, sponsor: 1.3, prize: 0.3, boardBoth: 20, boardOne: 6, boardNone: -15, gap: 0.6, growEasy: true, growNeed: 2 },
+    hard: { name: 'Hard', blurb: 'Tight budgets, a strict board and stars who only want big orgs.', start: 1, sponsor: 1, prize: PRIZE_SHARE, boardBoth: 20, boardOne: 2, boardNone: -25, gap: 0.9, growEasy: false, growNeed: 2 },
+  };
+  const narrow = () => window.matchMedia && window.matchMedia('(max-width: 760px)').matches;
+  const diff = () => DIFF[(C && C.diff) || 'normal'] || DIFF.normal;
   const ELITE_ORGS = ['Team Vitality', 'Team Falcons', 'Karmine Corp', 'NRG', 'FaZe Clan', 'FURIA', 'Gen.G Mobil1 Racing', 'Manchester City Esports', 'Team Heretics', 'Ninjas in Pyjamas', 'MIBR', 'Virtus.pro', 'Twisted Minds', 'Shopify Rebellion', 'Spacestation Gaming', 'Gentle Mates', 'G2 Esports', 'G2 Stride', 'Team BDS', 'Team Liquid', 'OG', 'TSM', 'Complexity Gaming', '100 Thieves', 'Dignitas', 'Moist Esports', 'Guild Esports'];
   const ESTABLISHED_ORGS = ['Geekay Esports', 'Ikkaku', 'BIG', 'Five Fears', 'R8 Esports', 'M80', 'Elevate', 'Kaydop Corp', 'Team Secret', 'Luminosity Gaming', 'Version1', 'Oxygen Esports', 'Rule One', 'Team Singularity', 'Endpoint', 'Sandrock Gaming', 'Team Bliss', 'KRÜ Esports', 'Dplus', 'Detonator', 'PCS Stride', 'NOT', 'DNZ', 'WLT Gaming', 'Ninjas Bros', 'Team Evo'];
   function orgTier(name, partner, strength) {
@@ -283,9 +292,9 @@
   }
 
   /* ---------------- new career ---------------- */
-  function newCareer(teamId) {
+  function newCareer(teamId, level) {
     const lib = api.libraryTeams();
-    C = { v: 1, agesV2: true, econV2: true, hostsV2: true, rep: 0, season: 2027, step: 0, user: 'c:' + teamId, teams: {}, players: {}, nextPid: 1, points: {}, results: {}, news: [], history: [], trophies: [], fa: [], seasonFin: { prize: 0, sponsor: 0, salaries: 0, transfers: 0 }, objectives: [], board: 60, stepNews: [] };
+    C = { v: 1, diff: DIFF[level] ? level : 'normal', agesV2: true, econV2: true, hostsV2: true, rep: 0, season: 2027, step: 0, user: 'c:' + teamId, teams: {}, players: {}, nextPid: 1, points: {}, results: {}, news: [], history: [], trophies: [], fa: [], seasonFin: { prize: 0, sponsor: 0, salaries: 0, transfers: 0 }, objectives: [], board: 60, stepNews: [] };
     lib.forEach((t) => {
       const cid = 'c:' + t.id;
       const roster = t.players.slice(0, 4).map((p, i) => {
@@ -298,6 +307,7 @@
       const base = E.teamStrength(t);
       const tier = orgTier(t.name, !!t.partner, base);
       C.teams[cid] = { id: cid, name: t.name, tag: t.tag, region: t.region, color: t.color, roster, tier, budget: startBudget(tier, base) };
+      if (cid === 'c:' + teamId) C.teams[cid].budget = Math.round((C.teams[cid].budget * diff().start) / 1000) * 1000;
     });
     REGIONS.forEach((r) => { for (let i = 0; i < 6; i++) C.fa.push(makeRookie(r)); });
     seasonHosts(C.season);
@@ -469,7 +479,7 @@
     list.forEach(({ id, place }) => {
       const t = C.teams[id];
       if (!t) return;
-      const prize = Math.round(((PRIZE[kind] || [])[place - 1] || 0) * PRIZE_SHARE);
+      const prize = Math.round(((PRIZE[kind] || [])[place - 1] || 0) * (id === C.user ? diff().prize : PRIZE_SHARE));
       t.budget += prize;
       if (id === C.user) C.seasonFin.prize += prize;
       if (kind !== 'worlds') {
@@ -657,7 +667,7 @@
     const met = (k) => ({ worlds_top4: worlds && worlds.place <= 4, win_event: wonEvent, worlds: !!worlds, majors2: majors >= 2, major1: majors >= 1, open_top4: bestOpen <= 4, open_top8: bestOpen <= 8, region_top12: regRank <= 12 }[k]);
     const objRes = C.objectives.map((o) => ({ t: o.t, ok: !!met(o.k) }));
     const okN = objRes.filter((o) => o.ok).length;
-    C.board = clamp(C.board + (okN === 2 ? 20 : okN === 1 ? 2 : -25), 0, 100);
+    C.board = clamp(C.board + (okN === 2 ? diff().boardBoth : okN === 1 ? diff().boardOne : diff().boardNone), 0, 100);
     if (C.board <= 0) {
       C.sacked = true;
       const myO = ovr(C.user);
@@ -668,14 +678,14 @@
     const myTier = tierOf(C.user);
     const seasonTrophies = C.trophies.filter((t) => t.season === C.season).length;
     const bonus = Math.min(0.24, seasonTrophies * 0.08) + (worlds ? 0.05 : 0) + (okN === 2 ? 0.03 : 0);
-    const sponsor = Math.round((TIERS[myTier].sponsor * (1 + bonus)) / 1000) * 1000;
+    const sponsor = Math.round((TIERS[myTier].sponsor * diff().sponsor * (1 + bonus)) / 1000) * 1000;
     me.budget += sponsor - salaries;
     C.seasonFin.salaries = salaries; C.seasonFin.sponsor = sponsor;
     // club growth: two strong seasons in a row move you up a tier, two poor ones down
-    const strong = (worlds && worlds.place <= 8) || seasonTrophies >= 2;
+    const strong = diff().growEasy ? !!worlds || seasonTrophies >= 1 || regRank <= 3 : (worlds && worlds.place <= 8) || seasonTrophies >= 2;
     const poor = !worlds && majors === 0 && regRank > 10;
     C.rep = strong ? Math.max(0, C.rep || 0) + 1 : poor ? Math.min(0, C.rep || 0) - 1 : 0;
-    if (C.rep >= 2 && myTier < 5) { me.tier = myTier + 1; C.rep = 0; news('career', `Sponsors take notice: <b>${esc(me.name)}</b> grows into ${aTier(me.tier).replace(/(\w+)$/, '<b>$1</b>')} organisation. Sponsorship rises from next season.`); }
+    if (C.rep >= diff().growNeed && myTier < 5) { me.tier = myTier + 1; C.rep = 0; news('career', `Sponsors take notice: <b>${esc(me.name)}</b> grows into ${aTier(me.tier).replace(/(\w+)$/, '<b>$1</b>')} organisation. Sponsorship rises from next season.`); }
     else if (C.rep <= -2 && myTier > 1) { me.tier = myTier - 1; C.rep = 0; news('career', `After two poor seasons, sponsors pull back: <b>${esc(me.name)}</b> drops to ${aTier(me.tier).replace(/(\w+)$/, '<b>$1</b>')} organisation.`); }
     C.seasonFin.tierAfter = tierOf(C.user);
     Object.values(C.teams).forEach((t) => { if (t.id !== C.user) { const tr = t.tier || 2; t.budget = Math.max(Math.round(TIERS[tr].start * 0.3), Math.round(t.budget + TIERS[tr].sponsor * 0.95 - t.roster.reduce((s, id) => s + C.players[id].salary, 0))); } });
@@ -790,7 +800,8 @@
     const big = t.region === 'EU' || t.region === 'NA';
     const tier = rank <= (big ? 2 : 1) ? 1 : rank <= (big ? 5 : 2) ? 2 : rank <= (big ? 10 : 5) ? 3 : 4; // same tiers as the board's objectives
     const tierN = orgTier(t.name, !!t.partner, E.teamStrength(t));
-    const budget = startBudget(tierN, E.teamStrength(t)); // same formula as a new career
+    const dk = DIFF[ui.cdiff] ? ui.cdiff : 'normal';
+    const budget = Math.round((startBudget(tierN, E.teamStrength(t)) * DIFF[dk].start) / 1000) * 1000; // same formula as a new career
     const stars = t.ovr >= 90 ? 5 : t.ovr >= 86 ? 4.5 : t.ovr >= 82 ? 4 : t.ovr >= 78 ? 3.5 : t.ovr >= 74 ? 3 : t.ovr >= 70 ? 2.5 : 2;
     const starHtml = [1, 2, 3, 4, 5].map((n) => `<i class="${stars >= n ? 'f' : stars >= n - 0.5 ? 'h' : ''}">★</i>`).join('');
     const ages = t.players.slice(0, 4).map((p) => { const b = bornOf(p.name, p.country); return b ? ageFromBorn(b) : null; }).filter((a) => a != null);
@@ -831,6 +842,7 @@
             </div>
           </div>
         </div>
+        <div class="cs-diff"><span class="cs-diff-l">Difficulty</span><div class="seg" role="radiogroup" aria-label="Difficulty">${Object.entries(DIFF).map(([k, d]) => `<button role="radio" aria-checked="${k === dk}" class="${k === dk ? 'active' : ''}" data-action="career-diff" data-v="${k}">${d.name}</button>`).join('')}</div><small>${esc(DIFF[dk].blurb)}</small></div>
         <div class="cs-legend"><button class="cs-key" data-action="career-pick" data-id="${esc(t.id)}"><kbd>↵</kbd> Advance</button><button class="cs-key" data-action="nav" data-v="home"><kbd>Esc</kbd> Back</button><span class="cs-key"><kbd>←</kbd><kbd>→</kbd> Swap teams</span><button class="btn primary cs-go" data-action="career-pick" data-id="${esc(t.id)}">Start career with ${esc(t.name)} →</button></div>
         ${list}
       </div>`;
@@ -973,10 +985,11 @@
           <div class="fc-stats"><div><small>Budget</small><b data-count="${me.budget}" data-fmt="money">${money(me.budget)}</b></div><div><small>Salaries / season</small><b data-count="${salaries}" data-fmt="money">${money(salaries)}</b></div>
           <div><small>Prize money this season</small><b>${money(fin.prize || 0)}</b></div><div><small>Spent on transfers</small><b>${money(fin.transfers || 0)}</b></div>
           <div><small>Circuit points</small><b data-count="${C.points[C.user].season}">${C.points[C.user].season}</b><small>Split 1: ${C.points[C.user].s1} · Split 2: ${C.points[C.user].s2}</small></div><div><small>Region rank</small><b>${regionRankLabel()}</b><small>${esc(api.regions[reg])}</small></div>
-          <div class="of-org"><small>Organisation size</small><b>${esc(tierName(tierOf(C.user)))}</b><small>Sponsorship ~${money(TIERS[tierOf(C.user)].sponsor)} a season · the org keeps ${PRIZE_SHARE * 100}% of prize money · ${(C.rep || 0) > 0 ? 'one more strong season to grow' : (C.rep || 0) < 0 ? 'another poor season and sponsors pull back' : 'two strong seasons in a row grow the club'}</small><span class="of-tiers" aria-hidden="true">${[1, 2, 3, 4, 5].map((n) => `<i class="${n <= tierOf(C.user) ? 'f' : ''}"></i>`).join('')}</span></div></div></div></section>
+          <div class="of-org"><small>Organisation size</small><b>${esc(tierName(tierOf(C.user)))}</b><small>Sponsorship ~${money(Math.round(TIERS[tierOf(C.user)].sponsor * diff().sponsor / 1000) * 1000)} a season · the org keeps ${Math.round(diff().prize * 100)}% of prize money · ${(C.rep || 0) > 0 && (C.rep || 0) < diff().growNeed ? 'one more strong season to grow' : (C.rep || 0) < 0 ? 'another poor season and sponsors pull back' : (diff().growNeed === 1 ? 'a strong season grows the club' : 'two strong seasons in a row grow the club')}</small><span class="of-tiers" aria-hidden="true">${[1, 2, 3, 4, 5].map((n) => `<i class="${n <= tierOf(C.user) ? 'f' : ''}"></i>`).join('')}</span></div></div></div></section>
         <section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Board</h3>
           <div class="of-board"><div class="of-meter"><b>${C.board}%</b><small>Confidence</small><div class="progress"><i style="width:${C.board}%"></i></div></div><p>${mood}</p></div>
-          <div class="tile-kicker" style="margin-top:14px">Season objectives</div>${objHtml}</div></section></div>
+          <div class="tile-kicker" style="margin-top:14px">Season objectives</div>${objHtml}
+          <div class="tile-kicker" style="margin-top:14px">Difficulty</div><div class="seg of-diff" role="radiogroup" aria-label="Difficulty">${Object.entries(DIFF).map(([k, d]) => `<button role="radio" aria-checked="${d === diff()}" class="${d === diff() ? 'active' : ''}" data-action="career-setdiff" data-v="${k}">${d.name}</button>`).join('')}</div><p class="help">${esc(diff().blurb)}</p></div></section></div>
         <section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Season ${C.season} results</h3>
           <div class="table-wrap"><table class="st"><thead><tr><th class="l">Event</th><th class="l">Where</th><th>Your result</th></tr></thead><tbody>${evRows}</tbody></table></div>
           <div class="action-row"><button class="btn danger" data-action="career-quit">End career</button></div></div></section>`;
@@ -996,7 +1009,7 @@
           <button class="fc-club" data-action="nav" data-v="home" title="Back to modes">${api.badge(t, 'sm')}<span class="fc-club-name">${esc(t.name)}</span><i class="fc-club-bar" style="--b:${C.board}%"></i><span class="fc-thumb ${C.board >= 60 ? 'good' : C.board >= 35 ? 'mid' : 'bad'}" aria-label="Board ${C.board}%">${C.board >= 60 ? '👍' : C.board >= 35 ? '✋' : '👎'}</span></button>
           <div class="fc-top-r"><button class="fc-chip" data-action="career-view" data-v="news" aria-label="Inbox${unread ? ', ' + unread + ' unread' : ''}">✉ Inbox${unread ? ` <i>${Math.min(99, unread)}</i>` : ''}</button><button class="fc-chip" data-action="career-market">⇄ Market</button><button class="fc-chip" data-action="nav" data-v="home">← Modes</button></div>
         </div>
-        <div class="fc-tabs" role="tablist"><span class="fc-key" aria-hidden="true">Q</span>${TABS.map(([k, l]) => `<button role="tab" aria-selected="${k === tab}" class="${k === tab ? 'on' : ''}" data-action="career-tab" data-v="${k}">${l}</button>`).join('')}<span class="fc-key" aria-hidden="true">E</span></div>
+        <div class="fc-tabs" role="tablist"><span class="fc-key" aria-hidden="true">Q</span>${TABS.map(([k, l]) => `<button role="tab" aria-selected="${k === tab}" class="${k === tab ? 'on' : ''}" data-action="career-tab" data-v="${k}"><span class="fc-tab-ico" aria-hidden="true">${{ central: '⌂', squad: '☷', transfers: '⇄', teams: '◫', office: '▤', history: '★' }[k]}</span><span class="fc-tab-l">${l}</span></button>`).join('')}<span class="fc-key" aria-hidden="true">E</span></div>
         ${body}
         <div class="fc-legend"><span><kbd>Q</kbd><kbd>E</kbd> Switch tabs</span><span><kbd>1</kbd>–<kbd>5</kbd> Hub tiles</span><span class="fc-legend-r">${esc(api.regions[reg])} · ${esc(st.name)}</span></div>
       </div>`;
@@ -1125,7 +1138,8 @@
     const rank = {};
     REGIONS.forEach((r) => regionTeams(r).sort((a, b) => pts(b) - pts(a) || ovr(b) - ovr(a)).forEach((id, i) => { rank[id] = i + 1; }));
     const fromOf = (p) => { const d = (C.deals || []).find((x) => x.pid === p.id && x.toId === p.team && x.season === C.season); return d ? d.from : null; };
-    const cards = ids.map((id) => {
+    const LIMIT = 24, more = !ui.tmAll && !q && ids.length > LIMIT ? ids.length - LIMIT : 0;
+    const cards = ids.slice(0, more ? LIMIT : ids.length).map((id) => {
       const tm = C.teams[id], to = teamObj(id), mine = id === C.user;
       const ps = tm.roster.map((pid) => C.players[pid]).filter(Boolean);
       const rows = ps.map((p, i) => { const fresh = p.joined === C.season, fr = fresh ? fromOf(p) : null; const q2 = q && p.name.toLowerCase().includes(q);
@@ -1142,7 +1156,7 @@
           <div class="search"><input class="input" id="tmQ" placeholder="Search a team or player" value="${esc(ui.tmQ || '')}" aria-label="Search teams and players" /></div>
           <label class="th-sort">Sort <select class="select" id="tmSort">${[['ovr', 'Team rating'], ['pts', 'Circuit points'], ['value', 'Squad value'], ['name', 'Name']].map(([k, l]) => `<option value="${k}" ${k === sort ? 'selected' : ''}>${l}</option>`).join('')}</select></label>${regBar}</div>
         <p class="help">Current rosters across the circuit. Players marked New joined this season; click a player to scout them in the transfer hub.</p>
-        ${ids.length ? `<div class="tm-grid">${cards}</div>` : '<p class="muted">No team or player matches that search.</p>'}
+        ${ids.length ? `<div class="tm-grid">${cards}</div>${more ? `<div class="tm-more"><button class="btn" data-action="career-teams-all">Show all ${ids.length} teams (${more} more)</button></div>` : ''}` : '<p class="muted">No team or player matches that search.</p>'}
       </div></section>`;
   }
   function transferHub(st, me, roster, salaries) {
@@ -1217,7 +1231,7 @@
       if (mine) acts = `${idx >= 3 ? `<button class="btn" data-action="mk-promote" data-id="${p.id}">Make starter</button>` : ''}${open ? `<button class="btn" data-action="mk-extend" data-id="${p.id}">Extend contract</button><button class="btn" data-action="mk-sell" data-id="${p.id}">Find a buyer</button><button class="btn danger" data-action="mk-release" data-id="${p.id}">Release</button>` : ''}`;
       else acts = `<button class="btn primary" data-action="mk-offer" data-id="${p.id}" ${open && roster.length < 4 ? '' : 'disabled'}>${club ? 'Make a bid' : 'Offer a contract'}</button><button class="btn" data-action="th-star" data-id="${p.id}">${sl.has(p.id) ? '★ Shortlisted' : '☆ Shortlist'}</button>`;
       const why = !mine && !open ? `Deals reopen at the ${esc(nextWindowLabel())}.` : !mine && roster.length >= 4 ? 'Your roster is full: sell or release a player first.' : mine && !open ? 'Contracts, sales and releases open in the next transfer window.' : '';
-      detail = `<div class="th-dhead" style="--tc:${(tobj && tobj.color) || 'var(--azure)'}">
+      detail = `<button class="th-back" data-action="th-top">↑ Back to the list</button><div class="th-dhead" style="--tc:${(tobj && tobj.color) || 'var(--azure)'}">
           <div class="th-dname"><small>${club ? esc(club.name) : 'Free agent'}</small><b>${esc(p.name)}</b><span>${p.flag || ''} ${esc(p.country || '')} · Age ${ageLabel(p)}${mine ? ' · ' + (idx < 3 ? 'Starter' : 'Substitute') : ''}</span></div>
           <div class="th-dovr"><small>OVR</small><b>${p.rating}</b></div>
           <div class="th-dphoto">${ph ? `<img src="${esc(ph)}" alt="${esc(p.name)}" onerror="this.remove()">` : ''}<span>${esc(initialsOf(p.name))}</span></div>
@@ -1275,7 +1289,7 @@
       if (fee < need) { api.toast(`${seller.name} rejected ${money(fee)}.`); return; }
     }
     const gap = minTierFor(p) - tierOf(C.user);
-    const reluctance = (p.rating >= 85 && ovr(C.user) < (p.team ? ovr(p.team) : 80) - 8 ? 1.5 : 1) * (gap > 0 ? 1 + gap * 0.9 : 1);
+    const reluctance = (p.rating >= 85 && ovr(C.user) < (p.team ? ovr(p.team) : 80) - 8 ? 1.5 : 1) * (gap > 0 ? 1 + gap * diff().gap : 1);
     if (sal < ask * 0.92 * reluctance) { api.toast(gap > 0 ? `${p.name} wants a bigger club than ${aTier(tierOf(C.user))} org. It would take about ${money(Math.round(ask * reluctance / 1000) * 1000)} a season.` : `${p.name} turned down ${money(sal)} a season.`); return; }
     const from = p.team;
     me.budget -= fee; C.seasonFin.transfers += fee;
@@ -1321,7 +1335,9 @@
     const id = el.dataset.id, v = el.dataset.v;
     if (['career-play', 'career-sim', 'career-close-window', 'career-next-season'].includes(a) && C && userTeam().roster.length < 3) { api.toast('You need at least three players. Sign someone in the transfer market.'); return true; }
     switch (a) {
-      case 'career-pick': newCareer(id); api.go('career'); return true;
+      case 'career-pick': newCareer(id, api.state.ui.cdiff || 'normal'); api.go('career'); return true;
+      case 'career-diff': api.state.ui.cdiff = v; api.render(); return true;
+      case 'career-setdiff': if (C && DIFF[v]) { C.diff = v; save(); api.toast('Difficulty set to ' + DIFF[v].name + '. It applies from now on.'); api.render(); } return true;
       case 'career-reg': api.state.ui.careerReg = v; api.render(); return true;
       case 'career-preview': api.state.ui.cpick = id; api.render(); return true;
       case 'career-quit':
@@ -1339,14 +1355,16 @@
         news('career', `After leaving ${esc(old)}, you take over <b>${esc(C.teams[id].name)}</b>.`); save(); api.render(); window.scrollTo({ top: 0 }); return true;
       }
       case 'career-resign': { const p = C.players[id]; const sal = salaryFor(p.rating); if (userTeam().budget < sal) { api.toast('Not enough budget.'); return true; } p.contract = 2; p.salary = sal; news('transfer', `${esc(p.name)} signs a new two-season deal.`); save(); api.render(); return true; }
-      case 'career-tab': api.state.ui.ctab = v; api.render(); return true;
-      case 'career-teams-reg': api.state.ui.tmReg = v; api.render(); return true;
+      case 'career-tab': api.state.ui.ctab = v; api.render(); if (narrow()) window.scrollTo({ top: 0 }); return true;
+      case 'career-teams-reg': api.state.ui.tmReg = v; api.state.ui.tmAll = false; api.render(); return true;
       case 'career-teams-pl': { const ui = api.state.ui, p = C.players[id]; ui.ctab = 'transfers'; if (p && p.team === C.user) ui.thTab = 'squad'; else { ui.thTab = 'scout'; ui.thReg = 'all'; } ui.thQ = ''; ui.thSel = id; api.render(); window.scrollTo({ top: 0 }); return true; }
       case 'career-view': api.state.ui.ctab = 'central'; api.state.ui.cview = v; api.render(); return true;
       case 'career-news': api.state.ui.cnews = +v; api.state.ui.cview = 'next'; api.render(); return true;
       case 'career-market': openMarket(); return true;
       case 'th-tab': api.state.ui.ctab = 'transfers'; api.state.ui.thTab = v; api.state.ui.thSel = null; api.render(); return true;
-      case 'th-sel': api.state.ui.thSel = id; api.render(); return true;
+      case 'th-sel': api.state.ui.thSel = id; api.render(); if (narrow()) { const d = document.querySelector('.th-detail'); if (d) d.scrollIntoView({ behavior: 'smooth', block: 'start' }); } return true;
+      case 'th-top': { const l = document.querySelector('.th-list .th-row.on, .th-list'); if (l) l.scrollIntoView({ behavior: 'smooth', block: 'center' }); return true; }
+      case 'career-teams-all': api.state.ui.tmAll = true; api.render(); return true;
       case 'th-pick': api.state.ui.ctab = 'transfers'; api.state.ui.thTab = v; api.state.ui.thSel = id; api.render(); window.scrollTo({ top: 0 }); return true;
       case 'th-reg': api.state.ui.thReg = v; api.state.ui.thSel = null; api.render(); return true;
       case 'th-star': { C.shortlist = C.shortlist || []; C.shortlist = C.shortlist.includes(id) ? C.shortlist.filter((x) => x !== id) : C.shortlist.concat(id); save(); api.render(); return true; }
