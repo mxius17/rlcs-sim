@@ -469,25 +469,82 @@
     return `<div class="team-chip">${api.badge(t)}<div class="meta"><div class="name">${esc(t.name)}</div><div class="sub">${extra || 'OVR ' + t.ovr}</div></div></div>`;
   }
 
+  // club selection: console-style "choose your club" card (design only — same teams, same start)
+  const REG_COL = { EU: '#1F8BFF', NA: '#F2542D', SAM: '#2fbf71', MENA: '#d4a017', OCE: '#22b8cf', APAC: '#e11d48', SSA: '#a855f7' };
+  const LEVELS = [null, ['Critical', 'crit'], ['Very high', 'vhigh'], ['High', 'high'], ['Medium', 'med'], ['Low', 'low'], ['Very low', 'vlow']];
+  function previewObjectives(rank, reg) {
+    const big = reg === 'EU' || reg === 'NA';
+    if (rank <= (big ? 2 : 1)) return ['Finish top 4 at Worlds', 'Win an Open or a Major'];
+    if (rank <= (big ? 5 : 2)) return ['Qualify for the World Championship', 'Qualify for both Majors'];
+    if (rank <= (big ? 10 : 5)) return ['Qualify for at least one Major', 'Reach an Open top 4'];
+    return ['Reach an Open top 8', 'Finish top 12 in ' + api.regions[reg] + ' points'];
+  }
   function renderStart(app) {
-    const q = (api.state.ui.careerQ || '').toLowerCase();
-    const reg = api.state.ui.careerReg || 'all';
-    const lib = api.libraryTeams().sort((a, b) => b.ovr - a.ovr).filter((t) => (reg === 'all' || t.region === reg) && (!q || t.name.toLowerCase().includes(q)));
-    app.innerHTML = `
-      <div class="page-head"><button class="btn sm" data-action="nav" data-v="home">← Back to modes</button><h1>Career mode</h1></div>
-      <div class="bento">
-        <section class="tile c-8 career-hero"><div class="tile-kicker">New career · ${2027} season</div><h2 class="career-hero-title">Build a dynasty on the RLCS circuit</h2>
-          <p>Pick an organisation and run it season after season. Play six regional Opens, two Majors and the World Championship. Earn circuit points and prize money, sign players in two transfer windows, manage contracts and a budget, and watch your roster develop, age and retire.</p>
-          <div class="career-steps">${SCHEDULE.slice(0, 11).map((s) => `<span class="pill ${s.type === 'major' ? 'gold' : s.type === 'worlds' ? 'good' : ''}">${s.short}</span>`).join('')}</div>
-        </section>
-        <section class="tile c-4 stat-tile accent-orange" style="justify-content:flex-start;gap:12px"><div class="tile-kicker">How you win</div><div class="sub" style="font-size:14px;line-height:1.55">Top 12 in your region's points go straight into each Open; the rest fight through a qualifier. ${Object.entries(MAJOR_SLOTS).map(([k, v]) => k + ' ' + v).join(' · ')} teams reach each Major. The season's best ${Object.values(WORLDS_SLOTS).reduce((a, b) => a + b, 0)} go to Worlds.</div></section>
-        <section class="tile c-12">
-          <div class="tile-head"><div><h2>Choose your team</h2><p>Stronger teams start with bigger budgets and bigger expectations.</p></div>
-            <div class="toolbar"><div class="search"><input class="input" id="careerQ" placeholder="Search teams" value="${esc(api.state.ui.careerQ || '')}" aria-label="Search teams" /></div></div></div>
-          <div class="seg" style="margin-bottom:12px">${[['all', 'All'], ...REGIONS.map((k) => [k, k])].map(([k, v]) => `<button class="${k === reg ? 'active' : ''}" data-action="career-reg" data-v="${k}">${v}</button>`).join('')}</div>
-          <div class="browse-list">${lib.slice(0, 120).map((t) => `<button class="browse-item" data-action="career-pick" data-id="${esc(t.id)}">${api.badge(t)}<span class="meta"><b>${esc(t.name)}</b><small>${esc(api.regions[t.region])} · ${esc(t.players.slice(0, 3).map((p) => p.name).join(' · '))}</small></span><span class="rt">${t.ovr}</span></button>`).join('')}</div>
-        </section>
+    const ui = api.state.ui;
+    const q = (ui.careerQ || '').toLowerCase();
+    const reg = ui.careerReg || 'all';
+    const all = api.libraryTeams();
+    const lib = all.slice().sort((a, b) => b.ovr - a.ovr).filter((t) => (reg === 'all' || t.region === reg) && (!q || t.name.toLowerCase().includes(q)));
+    let t = lib.find((x) => x.id === ui.cpick) || lib[0];
+    const list = `<div class="cs-browse">
+        <div class="cs-filters"><div class="seg">${[['all', 'All'], ...REGIONS.map((k) => [k, k])].map(([k, v]) => `<button class="${k === reg ? 'active' : ''}" data-action="career-reg" data-v="${k}">${v}</button>`).join('')}</div>
+          <div class="search"><input class="input" id="careerQ" placeholder="Search teams" value="${esc(ui.careerQ || '')}" aria-label="Search teams" /></div></div>
+        <div class="cs-list">${lib.slice(0, 120).map((x) => `<button class="cs-item ${t && x.id === t.id ? 'on' : ''}" data-action="career-preview" data-id="${esc(x.id)}">${api.badge(x, 'sm')}<span><b>${esc(x.name)}</b><small>${esc(x.region)} · ${x.ovr}</small></span></button>`).join('') || '<p class="muted">No teams match.</p>'}</div>
       </div>`;
+    if (!t) { app.innerHTML = `<div class="cs"><div class="cs-title"><button class="btn sm" data-action="nav" data-v="home">← Back to modes</button><h1>Choose your club</h1></div>${list}</div>`; bindQ(app); return; }
+    const idx = lib.indexOf(t);
+    const prev = lib[(idx - 1 + lib.length) % lib.length], next = lib[(idx + 1) % lib.length];
+    const regTeams = all.filter((x) => x.region === t.region).sort((a, b) => b.ovr - a.ovr);
+    const rank = regTeams.findIndex((x) => x.id === t.id) + 1;
+    const big = t.region === 'EU' || t.region === 'NA';
+    const tier = rank <= (big ? 2 : 1) ? 1 : rank <= (big ? 5 : 2) ? 2 : rank <= (big ? 10 : 5) ? 3 : 4; // same tiers as the board's objectives
+    const budget = Math.round((120000 + Math.max(0, E.teamStrength(t) - 60) * 14000) / 1000) * 1000; // same formula as a new career
+    const stars = t.ovr >= 90 ? 5 : t.ovr >= 86 ? 4.5 : t.ovr >= 82 ? 4 : t.ovr >= 78 ? 3.5 : t.ovr >= 74 ? 3 : t.ovr >= 70 ? 2.5 : 2;
+    const starHtml = [1, 2, 3, 4, 5].map((n) => `<i class="${stars >= n ? 'f' : stars >= n - 0.5 ? 'h' : ''}">★</i>`).join('');
+    const ages = t.players.slice(0, 4).map((p) => { const b = bornOf(p.name, p.country); return b ? ageFromBorn(b) : null; }).filter((a) => a != null);
+    const avgAge = ages.length ? ages.reduce((a, b) => a + b, 0) / ages.length : 21;
+    const exp = [
+      ['Regional success', tier === 1 ? 1 : tier === 2 ? 2 : tier === 3 ? 3 : 4],
+      ['International success', tier === 1 ? 1 : tier === 2 ? 2 : tier === 3 ? 4 : 6],
+      ['Brand exposure', t.ovr >= 88 ? 2 : t.ovr >= 82 ? 3 : t.ovr >= 76 ? 4 : 5],
+      ['Financial', budget >= 400000 ? 5 : budget >= 250000 ? 4 : 3],
+      ['Youth development', avgAge < 20 ? 2 : avgAge < 22 ? 4 : 5],
+    ];
+    const lineup = t.players.slice(0, 4);
+    const desc = `${esc(t.name)} ${rank === 1 ? 'are the highest-rated team' : 'are ranked ' + E.ordinal(rank) + ' of ' + regTeams.length} in ${esc(api.regions[t.region])} going into the 2027 RLCS season, with a team rating of ${t.ovr}. The roster is led by ${esc(lineup.slice().sort((a, b) => b.rating - a.rating)[0].name)} (${lineup.slice().sort((a, b) => b.rating - a.rating)[0].rating})${lineup.length > 3 ? `, with ${esc(lineup[3].name)} as the substitute` : ''}.`;
+    app.innerHTML = `
+      <div class="cs">
+        <div class="cs-title"><button class="btn sm" data-action="nav" data-v="home">← Back to modes</button><h1>Choose your club</h1><span class="muted">${lib.length} teams · RLCS 2027</span></div>
+        <div class="cs-card">
+          <div class="cs-left">
+            <div class="cs-box"><b>${esc(api.regions[t.region])}</b><span class="cs-region" style="--rc:${REG_COL[t.region] || 'var(--azure)'}">${esc(t.region)}</span></div>
+            <div class="cs-club">
+              <h2>${esc(t.name)}</h2>
+              <div class="cs-crest"><button class="cs-nav" data-action="career-preview" data-id="${esc(prev.id)}" aria-label="Previous club">◀</button>${api.badge(t, 'xl')}<button class="cs-nav" data-action="career-preview" data-id="${esc(next.id)}" aria-label="Next club">▶</button></div>
+              <div class="cs-stars" aria-label="${stars} stars">${starHtml}</div>
+            </div>
+            <div class="cs-box"><b>RLCS 2027</b><span class="cs-league">Club Championship</span></div>
+          </div>
+          <div class="cs-mid">
+            <h3>Board<br>expectations</h3>
+            ${exp.map(([l, n]) => `<div class="cs-exp"><b>${l}</b><span class="lv ${LEVELS[Math.min(6, n)][1]}"><i>${Math.min(6, n)}</i>${LEVELS[Math.min(6, n)][0]}</span></div>`).join('')}
+            <div class="cs-obj"><small>Season objectives</small>${previewObjectives(rank, t.region).map((o) => `<span>${esc(o)}</span>`).join('')}</div>
+          </div>
+          <div class="cs-right">
+            <div class="cs-about"><small>${esc(t.name)}</small><b>RLCS ${esc(t.region)} · ${E.ordinal(rank)} seed</b><p>${desc}</p></div>
+            <div class="cs-money"><div><small>Transfer budget</small><b>${money(budget)}</b></div><span class="cs-coin" aria-hidden="true">$</span><div><small>Team rating</small><b>${t.ovr} OVR</b></div></div>
+            <div class="cs-bottom">
+              <div class="cs-lineup">${lineup.map((p, k) => `<div class="cs-player"><span class="cs-shirt" style="--tc:${t.color || 'var(--azure)'}">${p.rating}</span><b>${p.flag || ''} ${esc(p.name)}</b><small>${k < 3 ? 'Starter' : 'Sub'}</small></div>`).join('')}</div>
+              <div class="cs-home"><span class="cs-arena" aria-hidden="true"></span><small>Home region</small><b>${esc(api.regions[t.region])}</b></div>
+            </div>
+          </div>
+        </div>
+        <div class="cs-legend"><button class="cs-key" data-action="career-pick" data-id="${esc(t.id)}"><kbd>↵</kbd> Advance</button><button class="cs-key" data-action="nav" data-v="home"><kbd>Esc</kbd> Back</button><span class="cs-key"><kbd>←</kbd><kbd>→</kbd> Swap teams</span><button class="btn primary cs-go" data-action="career-pick" data-id="${esc(t.id)}">Start career with ${esc(t.name)} →</button></div>
+        ${list}
+      </div>`;
+    bindQ(app);
+  }
+  function bindQ(app) {
     const inp = app.querySelector('#careerQ');
     if (inp) inp.addEventListener('input', () => { api.state.ui.careerQ = inp.value; const pos = inp.selectionStart; renderStart(app); const n = app.querySelector('#careerQ'); n.focus(); n.setSelectionRange(pos, pos); });
   }
@@ -720,6 +777,7 @@
     switch (a) {
       case 'career-pick': newCareer(id); api.go('career'); return true;
       case 'career-reg': api.state.ui.careerReg = v; api.render(); return true;
+      case 'career-preview': api.state.ui.cpick = id; api.render(); return true;
       case 'career-quit':
         api.openModal(`${api.modalHead('End this career?', 'Your save for this career will be deleted. This cannot be undone.')}<div class="modal-foot"><button class="btn" data-action="close-modal">Cancel</button><button class="btn danger" data-action="career-quit-confirm">End career</button></div>`, { size: 'sm' });
         return true;
@@ -768,7 +826,15 @@
     init(a) {
       api = a; E = a.E; load();
       document.addEventListener('keydown', (ev) => {
-        if (!C || api.state.view !== 'career' || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+        if (api.state.view !== 'career' || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+        if (!C) {
+          if (document.querySelector('#modalRoot .modal') || /input|select|textarea/i.test((ev.target && ev.target.tagName) || '')) return;
+          const nav = (d) => { const b = document.querySelectorAll('.cs-nav')[d > 0 ? 1 : 0]; if (b) { ev.preventDefault(); b.click(); } };
+          if (ev.key === 'ArrowLeft') nav(-1); else if (ev.key === 'ArrowRight') nav(1);
+          else if (ev.key === 'Enter' && !(ev.target && ev.target.closest && ev.target.closest('button'))) { const b = document.querySelector('.cs-go'); if (b) b.click(); }
+          else if (ev.key === 'Escape') api.go('home');
+          return;
+        }
         if (document.querySelector('#modalRoot .modal') || /input|select|textarea/i.test((ev.target && ev.target.tagName) || '')) return;
         const TABS = ['central', 'squad', 'transfers', 'office', 'history'], VIEWS = ['next', 'standings', 'schedule', 'objectives', 'news'];
         const ui = api.state.ui, k = ev.key.toLowerCase();
