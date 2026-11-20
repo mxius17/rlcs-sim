@@ -1423,7 +1423,7 @@
         <section class="tp-sec"><div class="tp-sec-head"><h2>Roster</h2><button class="btn sm" data-action="edit-team" data-id="${esc(t.id)}">Edit team</button></div>
           <div class="tp-roster">${players.map(({ p, i, photo, page, age }) => `
             <article class="tp-player ${i >= 3 ? 'sub' : ''}">
-              <div class="tp-photo">${photo ? `<img src="${photo}" alt="${esc(p.name)}" loading="lazy" decoding="async">` : `<span class="tp-initials" aria-hidden="true">${initials(p.name)}</span>`}<span class="tp-rating">${p.rating}</span></div>
+              <div class="tp-photo"><span class="tp-initials" aria-hidden="true">${initials(p.name)}</span>${photo ? `<img src="${esc(photo)}" alt="${esc(p.name)}" loading="lazy" decoding="async" onerror="this.remove()">` : ''}<span class="tp-rating">${p.rating}</span></div>
               <div class="tp-pinfo"><b>${esc(p.name)}</b><small>${p.flag || ''} ${esc(p.country || 'Unknown')}</small>
                 <small>${i >= 3 ? 'Substitute' : 'Starter'}${age ? ' · ' + (age.approx ? '~' : '') + age.age + ' years old' : ''}</small>
                 ${page ? `<a class="tp-lp" href="https://liquipedia.net/rocketleague/${encodeURIComponent(page.replace(/ /g, '_'))}" target="_blank" rel="noopener">Liquipedia ↗</a>` : ''}</div>

@@ -1498,7 +1498,7 @@ tbody tr { transition: background .12s; }
 .tp-player:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(0,0,0,0.3); }
 .tp-player.sub { opacity: .88; }
 .tp-photo { position: relative; aspect-ratio: 4 / 5; background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--tc) 35%, #1b2540), #0e1528 75%); display: grid; place-items: center; overflow: hidden; }
-.tp-photo img { width: 100%; height: 100%; object-fit: cover; }
+.tp-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 20%; }
 .tp-initials { font: 700 44px var(--display); color: rgba(255,255,255,0.75); }
 .tp-rating { position: absolute; top: 10px; left: 10px; min-width: 42px; padding: 4px 8px; border-radius: 10px; background: rgba(10,15,30,0.82); border: 1px solid rgba(255,255,255,0.2); font: 700 18px var(--display); text-align: center; }
 .tp-pinfo { padding: 10px 12px 6px; display: flex; flex-direction: column; gap: 2px; }
