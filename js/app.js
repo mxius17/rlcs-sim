@@ -1063,8 +1063,51 @@
       <div class="modal-foot">${T.career ? '<button class="btn" data-action="career-out-sim">Simulate the rest</button><button class="btn primary" data-action="continue-neutral">Keep watching</button>' : '<button class="btn" data-action="replay-team">Replay this team</button><button class="btn primary" data-action="continue-neutral">Continue neutrally</button>'}</div>`, { size: 'sm' });
   }
 
-  function openChampion() {
-    const T = state.T; const t = getTeam(T.champion);
+  /** Everything the ceremony shows: the MVP, the goal of the tournament and the champions. */
+  function ceremonyData(T) {
+    const t = getTeam(T.champion), th = themeOf(T.theme), single = !!(T.cfg && T.cfg.custom);
+    const P = window.RL_PHOTOS || {};
+    const info = (name, team) => { const p = (team.players || []).find((x) => x.name === name) || {}; return { name, flag: p.flag || '', photo: P[name + '|' + (p.country || '')] || null }; };
+    const rows = Object.values(T.stats).filter((s) => s && s.name);
+    const ms = rows.filter((s) => s.team === T.champion).sort((a, b) => b.score - a.score)[0];
+    const played = T.order.map((id) => T.matches[id]).filter((m) => m && m.result && !m.result.bye && m.result.games);
+    const finalM = played.filter((m) => [m.a, m.b].includes(T.champion) && (!T.runnerUp || [m.a, m.b].includes(T.runnerUp))).pop();
+    let best = null;
+    played.forEach((m) => {
+      const ko = /final|semi|quarter|upper|lower|playoff|round of/i.test(m.roundName || m.label || '');
+      m.result.games.forEach((g, gi) => {
+        const goals = g.events.filter((e) => e.type === 'goal');
+        goals.forEach((e, k) => {
+          // fast shots, overtime winners, late goals, the final and solo goals rate highest
+          let v = e.speed + (e.ot ? 45 : 0) + (m === finalM ? 30 : ko ? 10 : 0) + (!e.ot && e.t >= 285 ? 18 : 0) + (e.assist ? 0 : 6) + Math.random() * 10;
+          if (gi === m.result.games.length - 1 && k === goals.length - 1) v += 8; // the series winner
+          if (!best || v > best.v) best = { v, e, m, gi };
+        });
+      });
+    });
+    const out = { title: T.title || E.FORMATS[T.format].name, kicker: single ? 'Full time' : 'Tournament complete',
+      vars: `--c1:${th ? th.a : t.color || '#1f8bff'};--c2:${th ? th.b : '#121A2E'};--c3:${th ? th.c : '#d4a017'}`,
+      labels: single ? { mvp: 'Match MVP', goal: 'Goal of the match', champ: 'Winners' } : { mvp: 'Tournament MVP', goal: 'Goal of the tournament', champ: 'Champions' } };
+    if (ms) out.mvp = Object.assign(info(ms.name, t), { team: t.name, color: t.color, badge: badge(t, 'md'), stats: [['Goals', ms.g], ['Assists', ms.a], ['Saves', ms.sv], ['Score', ms.score]] });
+    if (best) {
+      const A = getTeam(best.m.a), B = getTeam(best.m.b), e = best.e;
+      out.goal = { event: e, A, B, theme: th, label: (best.m.label || best.m.roundName || 'Match') + ' · Game ' + (best.gi + 1), clock: e.ot ? fmtClock(e.t - 300, true) + ' OT' : fmtClock(300 - e.t) + ' left' };
+    }
+    const ru = T.runnerUp && getTeam(T.runnerUp);
+    const fr = finalM && finalM.result, w = fr ? Math.max(fr.sa, fr.sb) : 0, l = fr ? Math.min(fr.sa, fr.sb) : 0;
+    out.champ = { name: t.name, color: t.color, color2: th ? th.c : '#ffffff', badge: badge(t, 'xl'), line: ru ? `Beat ${ru.name} ${w}–${l}${finalM && finalM.roundName && !single ? ' in the ' + finalM.roundName.toLowerCase() : ''}` : '', players: t.players.slice(0, 3).map((p) => info(p.name, t)) };
+    return out;
+  }
+  function playCeremony(T, done) {
+    ensurePhotos();
+    const go = () => window.RLCeremony.play(ceremonyData(T), done);
+    if (window.RL_PHOTOS) return go();
+    let n = 0; const iv = setInterval(() => { if (window.RL_PHOTOS || ++n > 15) { clearInterval(iv); go(); } }, 100);
+  }
+  function openChampion(skipCeremony) {
+    const T = state.T;
+    if (!skipCeremony && !T.ceremonyShown && window.RLCeremony) { T.ceremonyShown = true; save(); closeModal(); playCeremony(T, () => { if (state.T === T) openChampion(true); }); return; }
+    const t = getTeam(T.champion);
     const rows = Object.values(T.stats).filter((s) => s && s.name);
     const mvp = rows.filter((s) => s.team === T.champion).sort((a, b) => b.score - a.score)[0];
     const topG = rows.slice().sort((a, b) => b.g - a.g || b.score - a.score)[0];
@@ -1075,7 +1118,7 @@
     openModal(`${modalHead(T.cfg && T.cfg.custom ? 'Match winner' : 'Champions', esc(T.title || E.FORMATS[T.format].name) + ' · ' + T.teams.length + ' teams')}
       <div class="modal-body"><div class="champion"><div class="trophy">🏆</div>${badge(t, 'xl')}<h3>${esc(t.name)}</h3><p class="muted">${t.players.slice(0, 3).map((p) => (p.flag || '') + ' ' + esc(p.name)).join(' · ')}</p><p>${wins} series wins from ${ms.length}${T.runnerUp ? ' · beat ' + esc(getTeam(T.runnerUp).name) + ' in the final' : ''}.</p></div>
         <div class="award-grid">${award('Tournament MVP', mvp, mvp && mvp.score + ' pts')}${award('Top scorer', topG, topG && topG.g + ' goals')}${award('Wall award', topSv, topSv && topSv.sv + ' saves')}</div></div>
-      <div class="modal-foot"><button class="btn" data-action="export-results">Save tournament</button><button class="btn" data-action="champ-fixtures">View team fixtures</button>${T.career ? '<button class="btn primary" data-action="nav" data-v="career">Back to career →</button>' : '<button class="btn primary" data-action="run-it-back">Run it back ↻</button>'}</div>`, { size: 'md' });
+      <div class="modal-foot"><button class="btn" data-action="replay-ceremony">▶ Replay ceremony</button><button class="btn" data-action="export-results">Save tournament</button><button class="btn" data-action="champ-fixtures">View team fixtures</button>${T.career ? '<button class="btn primary" data-action="nav" data-v="career">Back to career →</button>' : '<button class="btn primary" data-action="run-it-back">Run it back ↻</button>'}</div>`, { size: 'md' });
   }
 
   /* ---------------- Settings & guide ---------------- */
@@ -1583,6 +1626,7 @@
       case 'format': s.title = null; s.format = v; if (v === 'major') s.size = 16; snapSize(); s.overrides = {}; if (s.teams.length) s.teams = s.quickFill === 'random' ? s.teams : arrangeForFormat(s.teams); persistRender(); break;
       case 'brand-open': openBrand(); break;
       case 'brand-pick': s.theme = v || null; closeModal(); persistRender(); break;
+      case 'replay-ceremony': closeModal(); if (state.T && state.T.champion) playCeremony(state.T, () => openChampion(true)); break;
       case 'format-info': { const f = E.FORMATS[v]; openModal(`${modalHead(f.name, f.short)}<div class="modal-body"><p>${esc(f.desc)}</p><p class="help">Field sizes: ${E.validSizes(v, s).join(', ')} teams.</p></div><div class="modal-foot"><button class="btn primary" data-action="format" data-v="${v}" onclick="">Use this format</button></div>`, { size: 'sm' }); break; }
       case 'browse': openBrowse(); break;
       case 'browse-region': state.ui.browseRegion = v; openBrowse(); break;
