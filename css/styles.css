@@ -2225,3 +2225,5 @@ html.cer-open, html.cer-open body { overflow: hidden; }
   .cer-board { font-size: 16px; } .cer-rp-clock { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .cer *, .cer { animation-duration: .01s !important; animation-delay: 0s !important; transition: none !important; } }
+.vw-end { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; }
+.vw-end .help { margin: 4px 0 0; }
