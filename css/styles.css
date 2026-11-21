@@ -2227,3 +2227,13 @@ html.cer-open, html.cer-open body { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { .cer *, .cer { animation-duration: .01s !important; animation-delay: 0s !important; transition: none !important; } }
 .vw-end { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; }
 .vw-end .help { margin: 4px 0 0; }
+/* home: career panel with Continue / Start new */
+.career-banner { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 24px; cursor: default; }
+.career-banner:hover { transform: none !important; box-shadow: none !important; }
+.cb-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1 1 320px; }
+.cb-text b { font-family: var(--display); font-size: clamp(22px, 2.6vw, 30px); }
+.cb-text > span:not(.eyebrow) { font-size: 13px; color: var(--text-2); }
+.cb-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.cb-actions .btn { min-height: 44px; padding: 0 20px; font-weight: 700; }
+.cb-actions .btn:disabled { opacity: .45; cursor: not-allowed; }
+@media (max-width: 600px) { .cb-actions { width: 100%; } .cb-actions .btn { flex: 1; } }

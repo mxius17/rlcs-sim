@@ -1291,7 +1291,8 @@
 
       <div class="home-h-row"><span></span><div class="search"><input class="input" id="compQuery" placeholder="Search competitions…" value="${esc(state.ui.compQuery || '')}" aria-label="Search competitions" /></div></div>
 
-      <button class="career-banner" data-action="nav" data-v="career"><span class="eyebrow">New · Career mode</span><b>${window.RLCareer.has() ? 'Continue your career' : 'Run an RLCS organisation'}</b><span>${(() => { const c = window.RLCareer.summary(); return c ? esc(c.team.name) + ' · RLCS ' + c.season + ' · ' + esc(c.step) : 'Seasons, Opens, Majors, Worlds, transfers, contracts and player development.'; })()}</span><span class="feat-arrow">→</span></button>
+      ${(() => { const has = window.RLCareer.has(), c = window.RLCareer.summary(); return `<div class="career-banner"><div class="cb-text"><span class="eyebrow">Career mode</span><b>${has ? 'Your career' : 'Run an RLCS organisation'}</b><span>${c ? esc(c.team.name) + ' · RLCS ' + c.season + ' · ' + esc(c.step) : 'Seasons, Opens, Majors, Worlds, transfers, contracts and player development. Manage a club or follow it all as a neutral viewer.'}</span></div>
+        <div class="cb-actions"><button class="btn primary cb-go" data-action="nav" data-v="career" ${has ? '' : 'disabled title="No career to continue yet"'}>▶ Continue career</button><button class="btn cb-new" data-action="home-career-new">+ Start new career</button></div></div>`; })()}
 
       ${HAS27 ? (() => {
         const ko = comps.find((c) => c.id === 'k27');
@@ -1626,6 +1627,13 @@
       case 'format': s.title = null; s.format = v; if (v === 'major') s.size = 16; snapSize(); s.overrides = {}; if (s.teams.length) s.teams = s.quickFill === 'random' ? s.teams : arrangeForFormat(s.teams); persistRender(); break;
       case 'brand-open': openBrand(); break;
       case 'brand-pick': s.theme = v || null; closeModal(); persistRender(); break;
+      case 'home-career-new': {
+        if (!window.RLCareer.has()) { go('career'); break; }
+        const c = window.RLCareer.summary();
+        openModal(`${modalHead('Start a new career?', 'Your current career will be deleted. This cannot be undone.')}<div class="modal-body"><p>${esc(c.team.name)} · RLCS ${c.season} · ${esc(c.step)}</p></div><div class="modal-foot"><button class="btn" data-action="close-modal">Keep my career</button><button class="btn danger" data-action="home-career-new-ok">Delete and start new</button></div>`, { size: 'sm' });
+        break;
+      }
+      case 'home-career-new-ok': window.RLCareer.end(); closeModal(); toast('Career ended. Choose how to start your new one.'); go('career'); break;
       case 'replay-ceremony': closeModal(); if (state.T && state.T.champion) playCeremony(state.T, () => openChampion(true)); break;
       case 'format-info': { const f = E.FORMATS[v]; openModal(`${modalHead(f.name, f.short)}<div class="modal-body"><p>${esc(f.desc)}</p><p class="help">Field sizes: ${E.validSizes(v, s).join(', ')} teams.</p></div><div class="modal-foot"><button class="btn primary" data-action="format" data-v="${v}" onclick="">Use this format</button></div>`, { size: 'sm' }); break; }
       case 'browse': openBrowse(); break;

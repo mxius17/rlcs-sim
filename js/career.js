@@ -1637,6 +1637,8 @@
     },
     render, onAction, recordFromT, simRest,
     has: () => !!C,
+    /** Delete the current career (home screen "Start new career"). */
+    end: () => { C = null; save(); const ui = api.state.ui; ui.ctab = 'central'; ui.cview = 'next'; ui.cnews = 0; },
     teamObj: (id) => (C ? teamObj(id) : null),
     summary: () => (C ? { team: V() ? { name: 'Neutral viewer' } : teamObj(C.user), season: C.season, step: SCHEDULE[C.step].name } : null),
     canAdvance: canAdvanceCheck,
