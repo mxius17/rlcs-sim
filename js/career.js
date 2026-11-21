@@ -266,6 +266,9 @@
   }
   const ovr = (cid) => (teamObj(cid) ? teamObj(cid).ovr : 0);
   const userTeam = () => C.teams[C.user];
+  /** Neutral viewer: a career with no club of your own. You follow one region for the Opens and standings. */
+  const V = () => !!(C && C.viewer);
+  const homeReg = () => (V() ? C.vreg || 'EU' : userTeam().region);
   const regionTeams = (reg) => Object.keys(C.teams).filter((id) => C.teams[id].region === reg);
   const step = () => SCHEDULE[C.step];
   const isWindow = () => step().type === 'window';
@@ -397,9 +400,9 @@
   }
 
   /* ---------------- new career ---------------- */
-  function newCareer(teamId, level) {
+  function newCareer(teamId, level, vreg) {
     const lib = api.libraryTeams();
-    C = { v: 1, diff: DIFF[level] ? level : 'normal', agesV2: true, econV2: true, hostsV2: true, rep: 0, season: 2027, step: 0, user: 'c:' + teamId, teams: {}, players: {}, nextPid: 1, points: {}, results: {}, news: [], history: [], trophies: [], fa: [], seasonFin: { prize: 0, sponsor: 0, salaries: 0, transfers: 0 }, objectives: [], board: 60, stepNews: [] };
+    C = { v: 1, viewer: !teamId || undefined, vreg: teamId ? undefined : vreg || 'EU', diff: DIFF[level] ? level : 'normal', agesV2: true, econV2: true, hostsV2: true, rep: 0, season: 2027, step: 0, user: teamId ? 'c:' + teamId : null, teams: {}, players: {}, nextPid: 1, points: {}, results: {}, news: [], history: [], trophies: [], fa: [], seasonFin: { prize: 0, sponsor: 0, salaries: 0, transfers: 0 }, objectives: [], board: 60, stepNews: [] };
     lib.forEach((t) => {
       const cid = 'c:' + t.id;
       const roster = t.players.slice(0, 4).map((p, i) => {
@@ -412,7 +415,7 @@
       const base = E.teamStrength(t);
       const tier = orgTier(t.name, !!t.partner, base);
       C.teams[cid] = { id: cid, name: t.name, tag: t.tag, region: t.region, color: t.color, roster, tier, budget: startBudget(tier, base) };
-      if (cid === 'c:' + teamId) C.teams[cid].budget = Math.round((C.teams[cid].budget * diff().start) / 1000) * 1000;
+      if (teamId && cid === 'c:' + teamId) C.teams[cid].budget = Math.round((C.teams[cid].budget * diff().start) / 1000) * 1000;
     });
     REGIONS.forEach((r) => { for (let i = 0; i < 6; i++) C.fa.push(makeRookie(r)); });
     seasonHosts(C.season);
@@ -420,7 +423,7 @@
     resetPoints();
     bump();
     setObjectives();
-    news('career', `You take charge of <b>${esc(userTeam().name)}</b> for the ${C.season} RLCS season.`);
+    news('career', V() ? `You follow the ${C.season} RLCS season as a neutral viewer, with ${esc(api.regions[C.vreg])} as your home region.` : `You take charge of <b>${esc(userTeam().name)}</b> for the ${C.season} RLCS season.`);
     save();
   }
   function resetPoints() { C.points = {}; Object.keys(C.teams).forEach((id) => (C.points[id] = { s1: 0, s2: 0, season: 0 })); C.results = {}; C.seasonFin = { prize: 0, sponsor: 0, salaries: 0, transfers: 0 }; Object.values(C.players).forEach((p) => (p.stats = { gp: 0, g: 0, a: 0, sv: 0, score: 0 })); }
@@ -449,10 +452,12 @@
   function avatar(p, cls) { const ph = photoOf(p); return `<span class="pav ${cls || ''}"><span>${esc(initialsOf(p.name))}</span>${ph ? `<img src="${esc(ph)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}</span>`; }
 
   function regionRankOfUser() {
+    if (V()) return 0;
     const reg = userTeam().region;
     return regionTeams(reg).sort((a, b) => ovr(b) - ovr(a)).indexOf(C.user) + 1;
   }
   function setObjectives() {
+    if (V()) { C.objectives = []; return; }
     const r = regionRankOfUser();
     const reg = userTeam().region;
     const big = reg === 'EU' || reg === 'NA';
@@ -535,7 +540,7 @@
   const majorCity = (st) => seasonHosts(C.season)[st.split === 2 ? 'm2' : 'm1'];
   const worldsCity = () => seasonHosts(C.season).w;
   const hostCity = (st) => (st.type === 'major' ? majorCity(st) : st.type === 'worlds' ? worldsCity() : null);
-  const themeKeyFor = (st) => { if (st.type === 'open') return C && userTeam() ? regionKey(userTeam().region) : null; if (st.type === 'worlds') return 'career-worlds'; const c = hostCity(st); return c && HOST_PAL[c] ? hostKey(c) : null; };
+  const themeKeyFor = (st) => { if (st.type === 'open') return C && (V() || userTeam()) ? regionKey(homeReg()) : null; if (st.type === 'worlds') return 'career-worlds'; const c = hostCity(st); return c && HOST_PAL[c] ? hostKey(c) : null; };
   const hostTheme = (st) => { const k = themeKeyFor(st); return k ? window.RL_EVENT_THEMES[k] || null : null; };
   const hostVars = (th) => (th ? `--e1:${th.a};--e2:${th.b};--e3:${th.c};--e-on:${th.on}` : '');
 
@@ -607,12 +612,12 @@
     if (kind === 'open') { C.results[st.key] = C.results[st.key] || {}; C.results[st.key][region] = entry; }
     else C.results[st.key] = entry;
     if (champ === C.user) { C.trophies.push({ season: C.season, title }); news('trophy', `🏆 <b>${esc(userTeam().name)}</b> win the ${esc(title)}!`, { ev: st.key, region, champ, place: 1 }); }
-    else if (kind !== 'open' || region === userTeam().region) news('result', `<b>${esc(C.teams[champ].name)}</b> win the ${esc(title)}${me ? ` · you finished <b>${placeLabel(me.place, list)}</b>` : ''}.`, { ev: st.key, region, champ, mine: me ? placeLabel(me.place, list) : null });
+    else if (kind !== 'open' || region === homeReg()) news('result', `<b>${esc(C.teams[champ].name)}</b> win the ${esc(title)}${me ? ` · you finished <b>${placeLabel(me.place, list)}</b>` : ''}.`, { ev: st.key, region, champ, mine: me ? placeLabel(me.place, list) : null });
   }
 
   function runStep(userT) {
     const st = step();
-    const myReg = userTeam().region;
+    const myReg = homeReg();
     if (st.type === 'open') {
       REGIONS.forEach((r) => {
         const title = eventTitle(st, r);
@@ -624,11 +629,12 @@
     } else {
       const title = eventTitle(st);
       if (userT) applyEvent(userT, st, null, title);
-      else { const ev = eventCfg(st); if (!ev.cfg.teams.includes(C.user)) news('info', `${esc(userTeam().name)} did not qualify for the ${esc(title)}.`); applyEvent(simInstant(ev.cfg), st, null, title); }
+      else { const ev = eventCfg(st); if (!V() && !ev.cfg.teams.includes(C.user)) news('info', `${esc(userTeam().name)} did not qualify for the ${esc(title)}.`); applyEvent(simInstant(ev.cfg), st, null, title); }
     }
     advance();
   }
   function noteQualifier(ev, title) {
+    if (V()) return;
     const q = ev.qualifier.find((x) => x[0] === C.user || x[1] === C.user);
     if (!q) return;
     if (ev.cfg.teams.includes(C.user)) news('info', `${esc(userTeam().name)} came through the qualifier for the ${esc(title)}.`);
@@ -763,15 +769,16 @@
   /* ---------------- season review ---------------- */
   function seasonReview() {
     const me = userTeam();
-    const lines = [];
+    let majors = 0, worlds = null, bestOpen = 99, regRank = 0, objRes = [], salaries = 0, sponsor = 0, upkeep = 0;
+    if (!V()) {
     // objectives
-    const majors = ['m1', 'm2'].filter((k) => C.results[k] && C.results[k].me).length;
-    const worlds = C.results.w && C.results.w.me;
-    const bestOpen = Math.min(...['o1', 'o2', 'o3', 'o4', 'o5', 'o6'].map((k) => (C.results[k] && C.results[k][me.region] && C.results[k][me.region].me ? C.results[k][me.region].me.place : 99)));
+    majors = ['m1', 'm2'].filter((k) => C.results[k] && C.results[k].me).length;
+    worlds = C.results.w && C.results.w.me;
+    bestOpen = Math.min(...['o1', 'o2', 'o3', 'o4', 'o5', 'o6'].map((k) => (C.results[k] && C.results[k][me.region] && C.results[k][me.region].me ? C.results[k][me.region].me.place : 99)));
     const wonEvent = C.trophies.some((t) => t.season === C.season);
-    const regRank = standings(me.region, 'season').indexOf(C.user) + 1;
+    regRank = standings(me.region, 'season').indexOf(C.user) + 1;
     const met = (k) => ({ worlds_top4: worlds && worlds.place <= 4, win_event: wonEvent, worlds: !!worlds, majors2: majors >= 2, major1: majors >= 1, open_top4: bestOpen <= 4, open_top8: bestOpen <= 8, region_top12: regRank <= 12 }[k]);
-    const objRes = C.objectives.map((o) => ({ t: o.t, ok: !!met(o.k) }));
+    objRes = C.objectives.map((o) => ({ t: o.t, ok: !!met(o.k) }));
     const okN = objRes.filter((o) => o.ok).length;
     C.board = clamp(C.board + (okN === 2 ? diff().boardBoth : okN === 1 ? diff().boardOne : diff().boardNone), 0, 100);
     if (C.board <= 0) {
@@ -780,12 +787,12 @@
       C.jobs = Object.keys(C.teams).filter((id) => id !== C.user && ovr(id) <= myO + 3 && ovr(id) >= myO - 12).sort(() => Math.random() - 0.5).slice(0, 3);
     }
     // finances: salaries out, sponsorship in
-    const salaries = me.roster.reduce((s, id) => s + C.players[id].salary, 0);
+    salaries = me.roster.reduce((s, id) => s + C.players[id].salary, 0);
     const myTier = tierOf(C.user);
     const seasonTrophies = C.trophies.filter((t) => t.season === C.season).length;
     const bonus = Math.min(0.24, seasonTrophies * 0.08) + (worlds ? 0.05 : 0) + (okN === 2 ? 0.03 : 0);
-    const sponsor = Math.round((TIERS[myTier].sponsor * diff().sponsor * (1 + bonus)) / 1000) * 1000;
-    const upkeep = (C.acLevel || 1) * AC_UPKEEP;
+    sponsor = Math.round((TIERS[myTier].sponsor * diff().sponsor * (1 + bonus)) / 1000) * 1000;
+    upkeep = (C.acLevel || 1) * AC_UPKEEP;
     me.budget += sponsor - salaries - upkeep;
     C.seasonFin.salaries = salaries; C.seasonFin.sponsor = sponsor; C.seasonFin.academy = upkeep;
     // club growth: two strong seasons in a row move you up a tier, two poor ones down
@@ -795,6 +802,7 @@
     if (C.rep >= diff().growNeed && myTier < 5) { me.tier = myTier + 1; C.rep = 0; news('career', `Sponsors take notice: <b>${esc(me.name)}</b> grows into ${aTier(me.tier).replace(/(\w+)$/, '<b>$1</b>')} organisation. Sponsorship rises from next season.`); }
     else if (C.rep <= -2 && myTier > 1) { me.tier = myTier - 1; C.rep = 0; news('career', `After two poor seasons, sponsors pull back: <b>${esc(me.name)}</b> drops to ${aTier(me.tier).replace(/(\w+)$/, '<b>$1</b>')} organisation.`); }
     C.seasonFin.tierAfter = tierOf(C.user);
+    }
     Object.values(C.teams).forEach((t) => { if (t.id !== C.user) { const tr = t.tier || 2; t.budget = Math.max(Math.round(TIERS[tr].start * 0.3), Math.round(t.budget + TIERS[tr].sponsor * 0.95 - t.roster.reduce((s, id) => s + C.players[id].salary, 0))); } });
     // awards
     const all = Object.values(C.players).filter((p) => p.team && p.stats.gp > 20);
@@ -833,7 +841,9 @@
     C.fa = C.fa.filter((id) => C.players[id]);
     Object.keys(C.teams).forEach((id) => { if (id !== C.user) aiFill(id); });
     const champion = C.results.w && C.results.w.champion;
-    C.history.unshift({ season: C.season, worlds: worlds ? worlds.label : 'DNQ', majors, bestOpen: bestOpen < 99 ? E.ordinal(bestOpen) : '—', regRank, objectives: objRes, champion: champion && C.teams[champion] ? C.teams[champion].name : '—', mvp: mvp ? mvp.name : '—', points: C.points[C.user].season });
+    const evWin = (k) => (C.results[k] && C.results[k].champion && C.teams[C.results[k].champion] ? C.teams[C.results[k].champion].name : '—');
+    if (V()) C.history.unshift({ season: C.season, viewer: true, champion: evWin('w'), runnerUp: C.results.w && C.teams[C.results.w.runnerUp] ? C.teams[C.results.w.runnerUp].name : '—', m1: evWin('m1'), m2: evWin('m2'), m1c: majorCity({ split: 1 }), m2c: majorCity({ split: 2 }), wc: worldsCity(), mvp: mvp ? mvp.name : '—', topG: topG ? topG.name + ' (' + topG.stats.g + ')' : '—', leader: (() => { const id = standings(homeReg(), 'season')[0]; return id ? C.teams[id].name : '—'; })() });
+    else C.history.unshift({ season: C.season, worlds: worlds ? worlds.label : 'DNQ', majors, bestOpen: bestOpen < 99 ? E.ordinal(bestOpen) : '—', regRank, objectives: objRes, champion: champion && C.teams[champion] ? C.teams[champion].name : '—', mvp: mvp ? mvp.name : '—', points: C.points[C.user].season, m1: evWin('m1'), m2: evWin('m2') });
     C.review = { acLines, upkeep, objRes, salaries, sponsor, mvp: mvp && { name: mvp.name, team: mvp.team }, topG: topG && { name: topG.name, g: topG.stats.g }, devLines, retired: retired.filter((p) => p.team === C.user || p.rating >= 80).map((p) => p.name), expiring, champion, regRank };
     bump();
   }
@@ -887,6 +897,11 @@
     if (rank <= (big ? 10 : 5)) return ['Qualify for at least one Major', 'Reach an Open top 4'];
     return ['Reach an Open top 8', 'Finish top 12 in ' + api.regions[reg] + ' points'];
   }
+  function viewerCard() {
+    const vr = api.state.ui.vreg || 'EU';
+    return `<div class="cs-viewer"><span class="vw-eye" aria-hidden="true">◉</span><div class="cs-viewer-t"><b>Just want to watch?</b><small>Follow the whole circuit as a neutral viewer: no club, no board, no budget. Simulate or watch every Open, Major and Worlds while the clubs make their own transfers.</small></div>
+      <div class="cs-viewer-r"><div class="seg" aria-label="Home region">${REGIONS.map((k) => `<button class="${k === vr ? 'active' : ''}" data-action="career-vpick" data-v="${k}" title="${esc(api.regions[k])}">${k}</button>`).join('')}</div><button class="btn" data-action="career-viewer" data-v="${vr}">Start as neutral viewer →</button></div></div>`;
+  }
   function renderStart(app) {
     const ui = api.state.ui;
     const q = (ui.careerQ || '').toLowerCase();
@@ -927,6 +942,7 @@
     app.innerHTML = `
       <div class="cs ${motion}">
         <div class="cs-title"><button class="btn sm" data-action="nav" data-v="home">← Back to modes</button><h1>Choose your club</h1><span class="muted">${lib.length} teams · RLCS 2027</span></div>
+        ${viewerCard()}
         <div class="cs-card">
           <div class="cs-left">
             <div class="cs-box"><b>${esc(api.regions[t.region])}</b><span class="cs-region" style="--rc:${REG_COL[t.region] || 'var(--azure)'}">${esc(t.region)}</span></div>
@@ -964,6 +980,7 @@
   }
 
   function myEventStatus(st) {
+    if (V()) { const r = st.type === 'open' ? C.results[st.key] && C.results[st.key][homeReg()] : C.results[st.key]; const w = r && C.teams[r.champion]; return w ? '🏆 ' + (w.tag || w.name) : null; }
     const reg = userTeam().region;
     if (st.type === 'open') { const r = C.results[st.key] && C.results[st.key][reg]; return r ? (r.me ? r.me.label : 'DNQ') : null; }
     const r = C.results[st.key];
@@ -972,8 +989,9 @@
 
   function renderHub(app) {
     const st = step();
-    const me = userTeam();
-    const t = teamObj(C.user);
+    const viewer = V();
+    const me = viewer ? { name: 'Neutral viewer', region: homeReg(), roster: [], budget: 0 } : userTeam();
+    const t = viewer ? { id: 'viewer', name: 'Neutral viewer', tag: 'RLCS', color: '#1F8BFF', ovr: ovr(standings(homeReg(), 'season')[0]) || 0, players: [], region: homeReg() } : teamObj(C.user);
     const reg = me.region;
     const splitKey = st.split ? 's' + st.split : (C.step <= 5 ? 's1' : 's2');
     const table = standings(reg, st.type === 'worlds' || st.type === 'review' ? 'season' : splitKey);
@@ -981,7 +999,28 @@
     const T = api.state.T;
     const activeEvent = T && T.career && T.career.season === C.season && T.career.step === C.step && !T.career.recorded;
     let next = '';
-    if (st.type === 'window') {
+    const regPick = viewer ? `<div class="vw-reg"><small>Home region</small><div class="seg">${REGIONS.map((k) => `<button class="${k === reg ? 'active' : ''}" data-action="career-vreg" data-v="${k}" title="${esc(api.regions[k])}">${k}</button>`).join('')}</div></div>` : '';
+    if (viewer && st.type === 'window') {
+      next = `<p>The transfer window is open. Clubs make their moves when you close it: follow the deals in the Transfers tab.</p>
+        <div class="action-row"><button class="btn" data-action="career-vmarket">Transfer news</button><button class="btn primary" data-action="career-close-window">Close window →</button></div>${regPick}`;
+    } else if (viewer && st.type === 'review') {
+      if (!C.review) { seasonReview(); save(); }
+      const R = C.review, H = C.history[0] || {};
+      next = `<p>Season ${C.season} is over. ${R.champion ? `<b>${esc(C.teams[R.champion].name)}</b> are world champions.` : ''}</p>
+        <div class="kv"><span>${esc(H.m1c || 'Major 1')} Major</span><b>${esc(H.m1 || '—')}</b></div><div class="kv"><span>${esc(H.m2c || 'Major 2')} Major</span><b>${esc(H.m2 || '—')}</b></div>
+        <div class="kv"><span>Worlds · ${esc(H.wc || '')}</span><b>${esc(H.champion || '—')}</b></div>
+        <div class="kv"><span>Season MVP</span><span>${R.mvp ? esc(R.mvp.name) + ' · ' + esc(C.teams[R.mvp.team] ? C.teams[R.mvp.team].name : '') : '—'}</span></div>
+        <div class="kv"><span>Top scorer</span><span>${R.topG ? esc(R.topG.name) + ' · ' + R.topG.g + ' goals' : '—'}</span></div>
+        ${(R.retired || []).length ? `<div class="tile-kicker" style="margin-top:12px">Retirements</div><p class="help">${R.retired.slice(0, 8).map(esc).join(' · ')}</p>` : ''}
+        <div class="action-row"><button class="btn primary" data-action="career-next-season">Start ${C.season + 1} season →</button></div>`;
+    } else if (viewer) {
+      const title = eventTitle(st, reg);
+      next = `<p><b>${esc(title)}</b> · ${st.type === 'open' ? '16 teams · Swiss stage, then an eight-team playoff' : st.type === 'major' ? '16 teams · groups, then the Final Eight' : '20 teams · four groups of five, then an eight-team knockout'}.</p>
+        <p class="help">${st.type === 'open' ? 'You watch the Open in your home region; the other six regions play theirs at the same time.' : 'Watch it match by match, or simulate it and read the results.'}</p>
+        <div class="action-row">
+          ${activeEvent ? `<button class="btn primary" data-action="resume">Resume event →</button><button class="btn" data-action="career-sim-rest">Simulate the rest</button>` : `<button class="btn primary" data-action="career-play">▶ Watch event</button><button class="btn" data-action="career-sim">Simulate event</button>`}
+        </div>${st.type === 'open' && !activeEvent ? regPick : ''}`;
+    } else if (st.type === 'window') {
       next = `<p>The transfer window is open. Sign players, extend contracts or sell, then close the window to start ${C.step === 0 ? 'Open 1' : 'Open 4'}. AI teams make their moves when the window closes.</p>
         <div class="action-row"><button class="btn primary" data-action="career-market">Open transfer market</button><button class="btn" data-action="career-close-window">Close window →</button></div>`;
     } else if (st.type === 'review') {
@@ -1012,7 +1051,8 @@
     const roster = me.roster.map((id) => C.players[id]);
     const salaries = roster.reduce((s, p) => s + p.salary, 0);
     const ui = api.state.ui;
-    const tab = ui.ctab || 'central', view = ui.cview || 'next';
+    let tab = ui.ctab || 'central'; const view = ui.cview || 'next';
+    if (viewer && (tab === 'squad' || tab === 'office')) tab = ui.ctab = 'central';
     const hubKey = [tab, view, C.season, C.step, ui.cnews || 0].join('|'), enter = hubKey !== lastHubKey;
     const tabChanged = !lastHubKey || lastHubKey.split('|')[0] !== tab;
     lastHubKey = hubKey; lastPick = null;
@@ -1035,7 +1075,7 @@
     const objHtml = C.objectives.map((o) => `<div class="kv"><span>${esc(o.t)}</span><span class="pill">${C.season}</span></div>`).join('');
     const trophyHtml = C.trophies.length ? C.trophies.slice().reverse().slice(0, 8).map((x) => `<div class="kv"><span>🏆 ${esc(x.title)}</span></div>`).join('') : '<p class="muted" style="font-size:13px">No trophies yet.</p>';
     const newsHtml = `<div class="pulse">${newsList.map((n, i) => `<div class="story ${n.kind === 'trophy' ? 'win' : n.kind === 'transfer' ? 'upset' : ''}${i < fresh ? ' fresh' : ''}"><small>${i < fresh ? '<span class="new-tag">New</span>' : ''}${esc(n.when)}</small>${n.html}</div>`).join('')}</div>`;
-    const historyHtml = C.history.length ? `<div class="table-wrap"><table class="st"><thead><tr><th class="l">Season</th><th>Points</th><th>Region</th><th>Best Open</th><th>Majors</th><th>Worlds</th><th class="l">World champion</th><th class="l">Objectives</th></tr></thead><tbody>
+    const historyHtml = viewer ? '' : C.history.length ? `<div class="table-wrap"><table class="st"><thead><tr><th class="l">Season</th><th>Points</th><th>Region</th><th>Best Open</th><th>Majors</th><th>Worlds</th><th class="l">World champion</th><th class="l">Objectives</th></tr></thead><tbody>
       ${C.history.map((h) => `<tr><td class="l">${h.season}</td><td>${h.points}</td><td>${E.ordinal(h.regRank)}</td><td>${h.bestOpen}</td><td>${h.majors}/2</td><td>${esc(h.worlds)}</td><td class="l">${esc(h.champion)}</td><td class="l">${h.objectives.map((o) => (o.ok ? '✓ ' : '✗ ') + esc(o.t)).join(' · ')}</td></tr>`).join('')}
       </tbody></table></div>` : '<p class="muted" style="font-size:13px">Your finished seasons will appear here.</p>';
     // ---- feature panel (news carousel) ----
@@ -1050,9 +1090,10 @@
         <div class="fc-feature-foot"><button class="fc-link" data-action="career-view" data-v="news">Go to News</button>
           <span class="fc-dots">${nS > 1 ? `<button class="fc-arrow" data-action="career-news" data-v="${(ni - 1 + nS) % nS}" aria-label="Previous slide">‹</button>` : ''}${slides.map((_, k) => `<button class="fc-dot ${k === ni ? 'on' : ''}" data-action="career-news" data-v="${k}" aria-label="Slide ${k + 1}"></button>`).join('')}${nS > 1 ? `<button class="fc-arrow" data-action="career-news" data-v="${(ni + 1) % nS}" aria-label="Next slide">›</button>` : ''}</span></div>
       </div>`;
-    const VIEWS = [['next', 'Next up', st.name], ['standings', 'Standings', api.regions[reg]], ['schedule', 'Season schedule', 'RLCS ' + C.season], ['objectives', 'Objectives', C.objectives.length + (C.objectives.length === 1 ? ' goal' : ' goals')], ['news', 'News', newsList.length + (newsList.length === 1 ? ' story' : ' stories')]];
+    const VIEWS = [['next', 'Next up', st.name], ['standings', 'Standings', api.regions[reg]], ['schedule', 'Season schedule', 'RLCS ' + C.season], viewer ? ['objectives', 'Power rankings', 'Top 16 worldwide'] : ['objectives', 'Objectives', C.objectives.length + (C.objectives.length === 1 ? ' goal' : ' goals')], ['news', 'News', newsList.length + (newsList.length === 1 ? ' story' : ' stories')]];
     const mainView = view === 'standings' ? `<div class="fc-panel-body"><h3 class="fc-h">${esc(api.regions[reg])} standings</h3><p class="help">${st.type === 'worlds' || st.type === 'review' ? 'Season points · top ' + slots + ' reach Worlds' : 'Split ' + (splitKey === 's1' ? 1 : 2) + ' points · top ' + slots + ' reach the Major'}</p>${tableHtml}</div>`
       : view === 'schedule' ? `<div class="fc-panel-body"><h3 class="fc-h">Season ${C.season}</h3>${timelineHtml}</div>`
+      : view === 'objectives' && viewer ? `<div class="fc-panel-body"><h3 class="fc-h">Power rankings</h3><p class="help">The 16 strongest teams in the world by team rating, with this season's circuit points.</p>${powerHtml()}</div>`
       : view === 'objectives' ? `<div class="fc-panel-body"><h3 class="fc-h">Board objectives</h3>${objHtml}<h3 class="fc-h" style="margin-top:18px">Trophy cabinet <span class="pill gold">${C.trophies.length}</span></h3>${trophyHtml}</div>`
       : view === 'news' ? `<div class="fc-panel-body"><h3 class="fc-h">News</h3>${newsHtml}</div>`
       : feature;
@@ -1060,13 +1101,13 @@
     const sideCard = `<aside class="fc-side">
         <div class="fc-side-head"><h2>${esc(st.name)}</h2><small>RLCS ${C.season}${hostCity(st) ? ' · ' + esc(hostCity(st)) + (HOST_PAL[hostCity(st)] ? ', ' + esc(HOST_PAL[hostCity(st)][0]) : '') : ''} · step ${C.step + 1} of ${SCHEDULE.length}</small></div>
         <div class="fc-side-row"><span class="fc-day">${C.step + 1}</span><span><small>${esc(st.type === 'window' ? 'Transfer window' : st.type === 'review' ? 'Season review' : st.type === 'open' ? 'Regional Open' : st.type === 'major' ? 'Major' : 'World Championship')}</small><b>${esc(st.short || st.name)}</b></span><span class="fc-ico" aria-hidden="true">${st.type === 'window' ? '⇄' : st.type === 'review' ? '★' : '🏆'}</span></div>
-        <div class="fc-side-mid"><small>${esc(t.name)} · ${regionRankLabel()} in ${esc(api.regions[reg])}</small>
-          <div class="fc-rings">${ring(t.ovr - 60, 40, 'Team rating', `<span data-count="${t.ovr}">${t.ovr}</span>`, '◆')}${ring(C.board, 100, 'Board', `<span data-count="${C.board}" data-suf="%">${C.board}%</span>`, '☺')}${ring(C.step + 1, SCHEDULE.length, 'Season', (C.step + 1) + '/' + SCHEDULE.length, '▶')}</div></div>
+        <div class="fc-side-mid"><small>${viewer ? 'Neutral viewer · home region ' + esc(api.regions[reg]) : esc(t.name) + ' · ' + regionRankLabel() + ' in ' + esc(api.regions[reg])}</small>
+          <div class="fc-rings">${viewer ? (() => { const n88 = Object.values(C.players).filter((p) => p.team && p.rating >= 88).length, base = (C.base || talentBase()).n88; return ring(t.ovr - 60, 40, 'Region leader', `<span data-count="${t.ovr}">${t.ovr}</span>`, '◆') + ring(n88, Math.round(base * 1.5), 'Stars 88+', `<span data-count="${n88}">${n88}</span>`, '★'); })() : ring(t.ovr - 60, 40, 'Team rating', `<span data-count="${t.ovr}">${t.ovr}</span>`, '◆')}${viewer ? '' : ring(C.board, 100, 'Board', `<span data-count="${C.board}" data-suf="%">${C.board}%</span>`, '☺')}${ring(C.step + 1, SCHEDULE.length, 'Season', (C.step + 1) + '/' + SCHEDULE.length, '▶')}</div></div>
         <div class="fc-next">${next}</div>
       </aside>`;
     const tiles = `<nav class="fc-tiles" aria-label="Career hub">${VIEWS.map(([k, l, sub]) => `<button class="fc-tile ${k === view && tab === 'central' ? 'on' : ''}" data-action="career-view" data-v="${k}"><b>${l}</b><small>${esc(sub)}</small><span class="fc-tile-ico" aria-hidden="true">${{ next: '▶', standings: '☰', schedule: '▦', objectives: '✔', news: '▤' }[k]}</span></button>`).join('')}</nav>`;
     // ---- tabs ----
-    const TABS = [['central', 'Central'], ['squad', 'Squad'], ['transfers', 'Transfers'], ['teams', 'Teams'], ['office', 'Office'], ['history', 'History']];
+    const TABS = [['central', 'Central'], ['squad', 'Squad'], ['transfers', 'Transfers'], ['teams', 'Teams'], ['office', 'Office'], ['history', 'History']].filter(([k]) => !viewer || !['squad', 'office'].includes(k));
     let body;
     const avgAge = roster.length ? (roster.reduce((x, p) => x + p.age, 0) / roster.length).toFixed(1) : '—';
     const fin = C.seasonFin || { prize: 0, sponsor: 0, salaries: 0, transfers: 0 };
@@ -1118,6 +1159,7 @@
         <section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Season ${C.season} results</h3>
           <div class="table-wrap"><table class="st"><thead><tr><th class="l">Event</th><th class="l">Where</th><th>Your result</th></tr></thead><tbody>${evRows}</tbody></table></div>
           <div class="action-row"><button class="btn danger" data-action="career-quit">End career</button></div></div></section>`;
+    } else if (tab === 'history' && viewer) { body = viewerHistory();
     } else if (tab === 'history') {
       const H = C.history;
       const bestW = H.map((h) => h.worlds).filter((w) => w && w !== 'DNQ');
@@ -1131,10 +1173,10 @@
     app.innerHTML = `
       <div class="fc ${enter ? 'fc-enter' : ''} ${tabChanged ? 'fc-tabin' : ''}${hostTheme(st) ? ' fc-host' : ''}" style="${hostVars(hostTheme(st))}">
         <div class="fc-top">
-          <button class="fc-club" data-action="nav" data-v="home" title="Back to modes">${api.badge(t, 'sm')}<span class="fc-club-name">${esc(t.name)}</span><i class="fc-club-bar" style="--b:${C.board}%"></i><span class="fc-thumb ${C.board >= 60 ? 'good' : C.board >= 35 ? 'mid' : 'bad'}" aria-label="Board ${C.board}%">${C.board >= 60 ? '👍' : C.board >= 35 ? '✋' : '👎'}</span></button>
-          <div class="fc-top-r"><button class="fc-chip" data-action="career-view" data-v="news" aria-label="Inbox${unread ? ', ' + unread + ' unread' : ''}">✉ Inbox${unread ? ` <i>${Math.min(99, unread)}</i>` : ''}</button><button class="fc-chip" data-action="career-market">⇄ Market</button><button class="fc-chip" data-action="nav" data-v="home">← Modes</button></div>
+          ${viewer ? `<button class="fc-club vw-club" data-action="nav" data-v="home" title="Back to modes"><span class="vw-eye" aria-hidden="true">◉</span><span class="fc-club-name">Neutral viewer</span><span class="vw-sub">${esc(reg)}</span></button>` : ''}<button class="fc-club${viewer ? ' hidden' : ''}" data-action="nav" data-v="home" title="Back to modes">${api.badge(t, 'sm')}<span class="fc-club-name">${esc(t.name)}</span><i class="fc-club-bar" style="--b:${C.board}%"></i><span class="fc-thumb ${C.board >= 60 ? 'good' : C.board >= 35 ? 'mid' : 'bad'}" aria-label="Board ${C.board}%">${C.board >= 60 ? '👍' : C.board >= 35 ? '✋' : '👎'}</span></button>
+          <div class="fc-top-r"><button class="fc-chip" data-action="career-view" data-v="news" aria-label="Inbox${unread ? ', ' + unread + ' unread' : ''}">✉ Inbox${unread ? ` <i>${Math.min(99, unread)}</i>` : ''}</button><button class="fc-chip" data-action="${viewer ? 'career-vmarket' : 'career-market'}">⇄ ${viewer ? 'Transfers' : 'Market'}</button><button class="fc-chip" data-action="nav" data-v="home">← Modes</button></div>
         </div>
-        <div class="fc-tabs" role="tablist"><span class="fc-key" aria-hidden="true">Q</span>${TABS.map(([k, l]) => `<button role="tab" aria-selected="${k === tab}" class="${k === tab ? 'on' : ''}" data-action="career-tab" data-v="${k}"><span class="fc-tab-ico" aria-hidden="true">${{ central: '⌂', squad: '☷', transfers: '⇄', teams: '◫', office: '▤', history: '★' }[k]}</span><span class="fc-tab-l">${l}</span></button>`).join('')}<span class="fc-key" aria-hidden="true">E</span></div>
+        <div class="fc-tabs" role="tablist" style="--tabs:${TABS.length}"><span class="fc-key" aria-hidden="true">Q</span>${TABS.map(([k, l]) => `<button role="tab" aria-selected="${k === tab}" class="${k === tab ? 'on' : ''}" data-action="career-tab" data-v="${k}"><span class="fc-tab-ico" aria-hidden="true">${{ central: '⌂', squad: '☷', transfers: '⇄', teams: '◫', office: '▤', history: '★' }[k]}</span><span class="fc-tab-l">${l}</span></button>`).join('')}<span class="fc-key" aria-hidden="true">E</span></div>
         ${body}
         <div class="fc-legend"><span><kbd>Q</kbd><kbd>E</kbd> Switch tabs</span><span><kbd>1</kbd>–<kbd>5</kbd> Hub tiles</span><span class="fc-legend-r">${esc(api.regions[reg])} · ${esc(st.name)}</span></div>
       </div>`;
@@ -1147,6 +1189,27 @@
     if (ms) ms.addEventListener('change', () => { ui.tmSort = ms.value; api.render(); });
     const ts = app.querySelector('#thSort');
     if (ts) ts.addEventListener('change', () => { ui.thSort = ts.value; ui.thSel = null; api.render(); });
+  }
+  /** Viewer: the 16 strongest teams worldwide. */
+  function powerHtml() {
+    const ids = Object.keys(C.teams).sort((a, b) => ovr(b) - ovr(a)).slice(0, 16);
+    return `<div class="table-wrap"><table class="st"><thead><tr><th>#</th><th class="l">Team</th><th>Region</th><th>OVR</th><th>Points</th><th class="l">Best player</th></tr></thead><tbody>${ids.map((id, i) => { const tt = teamObj(id), best = C.teams[id].roster.map((x) => C.players[x]).filter(Boolean).sort((a, b) => b.rating - a.rating)[0];
+      return `<tr><td class="pos">${i + 1}</td><td class="l"><div class="tcell">${api.badge(tt, 'sm')}<span>${esc(tt.name)}</span></div></td><td>${esc(tt.region)}</td><td><b>${tt.ovr}</b></td><td>${C.points[id] ? C.points[id].season : 0}</td><td class="l">${best ? esc(best.name) + ' <span class="muted">' + best.rating + '</span>' : '—'}</td></tr>`; }).join('')}</tbody></table></div>`;
+  }
+  /** Viewer: champions of every season, and the clubs with the most titles. */
+  function viewerHistory() {
+    const H = C.history.filter((h) => h.viewer || h.m1);
+    const rows = H.map((h) => `<tr><td class="l"><b>${h.season}</b></td><td class="l">🏆 ${esc(h.champion || '—')}${h.wc ? ` <span class="muted">· ${esc(h.wc)}</span>` : ''}</td><td class="l">${esc(h.runnerUp || '—')}</td><td class="l">${esc(h.m1 || '—')}${h.m1c ? ` <span class="muted">· ${esc(h.m1c)}</span>` : ''}</td><td class="l">${esc(h.m2 || '—')}${h.m2c ? ` <span class="muted">· ${esc(h.m2c)}</span>` : ''}</td><td class="l">${esc(h.mvp || '—')}</td><td class="l">${esc(h.topG || '—')}</td></tr>`).join('');
+    const count = {};
+    H.forEach((h) => { [['w', h.champion], ['m', h.m1], ['m', h.m2]].forEach(([k, n]) => { if (!n || n === '—') return; count[n] = count[n] || { w: 0, m: 0 }; count[n][k]++; }); });
+    const fame = Object.entries(count).sort((a, b) => b[1].w - a[1].w || b[1].m - a[1].m).slice(0, 10);
+    const stars = Object.values(C.players).filter((p) => p.team).sort((a, b) => b.rating - a.rating).slice(0, 8);
+    return `<section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Champions</h3>
+        ${H.length ? `<div class="table-wrap"><table class="st"><thead><tr><th class="l">Season</th><th class="l">World champion</th><th class="l">Runner-up</th><th class="l">Major 1</th><th class="l">Major 2</th><th class="l">MVP</th><th class="l">Top scorer</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="muted" style="font-size:13px">Finished seasons and their champions will appear here.</p>'}</div></section>
+      <div class="fc-grid2"><section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Most titles</h3>
+          ${fame.length ? `<div class="leader-list">${fame.map(([n, c], i) => `<div class="leader"><span class="rk">${i + 1}</span><span class="who"><b>${esc(n)}</b><small>${c.w} World title${c.w === 1 ? '' : 's'} · ${c.m} Major${c.m === 1 ? '' : 's'}</small></span><span class="val">${c.w + c.m}</span></div>`).join('')}</div>` : '<p class="muted" style="font-size:13px">No titles awarded yet.</p>'}</div></section>
+        <section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Best players right now</h3>
+          <div class="leader-list">${stars.map((p, i) => `<div class="leader"><span class="rk">${i + 1}</span><span class="who"><b>${p.flag || ''} ${esc(p.name)}</b><small>${esc(C.teams[p.team].name)} · age ${ageLabel(p)}</small></span><span class="val">${p.rating}</span></div>`).join('')}</div></div></section></div>`;
   }
   /** Carousel slides: recent stories with artwork matched to the story, mixed with spotlights from the career. */
   function buildSlides(st, me, t, reg, newsList) {
@@ -1161,12 +1224,12 @@
       nextUp = { kind: 'next', tag: 'Transfer window', html: `The <b>${esc(st.name.toLowerCase())}</b> is open. Clubs make their moves when you close it.`, meta: { window: true, where: 'Transfer window', label: SCHEDULE[C.step + 1] ? 'Then ' + SCHEDULE[C.step + 1].name : '' } };
     }
     // spotlight: your star player
-    const roster = me.roster.map((id) => C.players[id]).filter(Boolean);
+    const roster = V() ? Object.values(C.players).filter((p) => p.team && C.teams[p.team].region === reg) : me.roster.map((id) => C.players[id]).filter(Boolean);
     const star = roster.slice().sort((a, b) => (b.stats.g + b.stats.a + b.stats.sv) - (a.stats.g + a.stats.a + a.stats.sv) || b.rating - a.rating)[0];
-    const spot = star && { kind: 'star', tag: 'Spotlight', html: star.stats.gp ? `<b>${esc(star.name)}</b> leads ${esc(me.name)} this season: ${star.stats.g} goals, ${star.stats.a} assists and ${star.stats.sv} saves in ${star.stats.gp} games.` : `<b>${esc(star.name)}</b> (${star.rating}) is the player to watch at ${esc(me.name)} this season.`, meta: { pid: star.id } };
+    const spot = star && { kind: 'star', tag: 'Spotlight', html: star.stats.gp ? `<b>${esc(star.name)}</b> leads ${esc(V() ? C.teams[star.team].name : me.name)} this season: ${star.stats.g} goals, ${star.stats.a} assists and ${star.stats.sv} saves in ${star.stats.gp} games.` : `<b>${esc(star.name)}</b> (${star.rating}) is the player to watch at ${esc(me.name)} this season.`, meta: { pid: star.id } };
     // spotlight: region race (once points are on the board)
     const table = standings(reg, 'season');
-    const race = C.points[table[0]] && C.points[table[0]].season > 0 ? { kind: 'race', tag: 'Standings', html: `<b>${esc(C.teams[table[0]].name)}</b> lead ${esc(api.regions[reg])} on ${C.points[table[0]].season} points. ${table[0] === C.user ? 'You are top of the region.' : `You are ${E.ordinal(table.indexOf(C.user) + 1)} with ${C.points[C.user].season}.`}`, meta: { top: table.slice(0, 3) } } : null;
+    const race = C.points[table[0]] && C.points[table[0]].season > 0 ? { kind: 'race', tag: 'Standings', html: `<b>${esc(C.teams[table[0]].name)}</b> lead ${esc(api.regions[reg])} on ${C.points[table[0]].season} points. ${V() ? (table[1] ? `${esc(C.teams[table[1]].name)} are second on ${C.points[table[1]].season}.` : '') : table[0] === C.user ? 'You are top of the region.' : `You are ${E.ordinal(table.indexOf(C.user) + 1)} with ${C.points[C.user].season}.`}`, meta: { top: table.slice(0, 3) } } : null;
     // up to four recent stories, at most two of the same kind, so the carousel stays varied
     const picked = [], kinds = {};
     for (const n of C.news.slice(0, 14)) { const k = n.kind === 'info' || n.kind === 'career' ? 'club' : n.kind; if ((kinds[k] || 0) >= 2) continue; kinds[k] = (kinds[k] || 0) + 1; picked.push(n); if (picked.length === 4) break; }
@@ -1204,7 +1267,7 @@
     }
     if (sl.kind === 'trophy' || sl.kind === 'result') {
       const stp = SCHEDULE.find((x) => x.key === m.ev);
-      const th = stp ? (stp.type === 'open' ? window.RL_EVENT_THEMES[regionKey(m.region || userTeam().region)] : hostTheme(stp)) : null;
+      const th = stp ? (stp.type === 'open' ? window.RL_EVENT_THEMES[regionKey(m.region || homeReg())] : hostTheme(stp)) : null;
       const champ = m.champ || storySubjects(sl).teams[0];
       const ct = champ && teamObj(champ);
       const vars = th ? `--s1:${th.a};--s2:${th.b};--s3:${th.c}` : '';
@@ -1226,8 +1289,9 @@
       return { tc: t.color, cls: 'fs-race', html: `<div class="fs-podium">${step(b, 2, 'p2')}${step(a, 1, 'p1')}${step(c, 3, 'p3')}</div>` };
     }
     // club news: your starting line-up
-    const line = userTeam().roster.slice(0, 3).map((id) => C.players[id]).filter(Boolean);
-    return { tc: t.color, cls: 'fs-squad', html: `<div class="fs-line">${line.map((p) => photoBox(p, 'tall')).join('')}</div>${api.badge(t, 'md')}` };
+    const fid = V() ? regionTeams(homeReg()).sort((a, b) => ovr(b) - ovr(a))[0] : C.user, ft = teamObj(fid) || t;
+    const line = (C.teams[fid] ? C.teams[fid].roster : []).slice(0, 3).map((id) => C.players[id]).filter(Boolean);
+    return { tc: ft.color || t.color, cls: 'fs-squad', html: `<div class="fs-line">${line.map((p) => photoBox(p, 'tall')).join('')}</div>${api.badge(ft, 'md')}` };
   }
   function regionRankLabel() { return E.ordinal(regionRankOfUser()); }
 
@@ -1240,6 +1304,7 @@
     return k > 0 ? SCHEDULE[k].name.toLowerCase() : 'the next pre-season';
   }
   function scoutNote(p) {
+    if (V()) { const club = p.team && C.teams[p.team]; return `${club ? esc(club.name) + ' value' : 'As a free agent,'} <b>${esc(p.name)}</b> ${club ? 'at about <b>' + money(valueFor(p)) + '</b>' : 'would cost no fee'}. ${p.pot - p.rating >= 5 ? `Scouts expect growth towards ~${p.pot}.` : p.age >= 27 ? 'At this age, decline is closer than growth.' : 'Close to the expected peak.'}${p.wonder ? ' One of the wonderkids of this generation.' : ''}${club && p.contract <= 1 ? ' The contract ends this season.' : ''}`; }
     const ask = askingSalary(p, C.user);
     if (p.team === C.user) {
       return `${esc(p.name)} is valued at <b>${money(valueFor(p))}</b>. ${p.contract <= 1 ? 'The contract ends this season, so extend it or the player can leave for free.' : `A club in your region would pay around ${money(Math.round(valueFor(p) * 0.95 / 1000) * 1000)}.`}`;
@@ -1317,12 +1382,13 @@
     const moves = C.news.filter((n) => n.kind === 'transfer');
     const stats = `<div class="th-stats">
         <div class="th-stat ${open ? 'live' : ''}"><small>Transfer window</small><b>${open ? 'Open' : 'Closed'}</b><span>${open ? 'Closes when you continue to ' + esc(SCHEDULE[C.step + 1] ? SCHEDULE[C.step + 1].name : 'the next event') : 'Reopens at the ' + esc(nextWindowLabel())}</span></div>
-        <div class="th-stat"><small>Transfer budget</small><b>${money(me.budget)}</b><span>${esc(tierName(tierOf(C.user)))} org · ${money(spent)} spent</span></div>
+        ${V() ? (() => { const ds = (C.deals || []).filter((d) => d.season === C.season), top = ds.slice().sort((a, b) => b.fee - a.fee)[0], wk = C.fa.map((id) => C.players[id]).filter((p) => p && p.wonder).length;
+          return `<div class="th-stat"><small>Paid deals ${C.season}</small><b>${ds.length}</b><span>${ds.filter((d) => d.rating >= 88).length} involving 88+ players</span></div><div class="th-stat"><small>Record fee ${C.season}</small><b>${top ? money(top.fee) : '—'}</b><span>${top ? esc(top.name) + ' → ' + esc(top.to) : 'No paid deals yet'}</span></div><div class="th-stat"><small>Free agents</small><b>${C.fa.length}</b><span>${wk} wonderkid${wk === 1 ? '' : 's'} available</span></div>`; })() : `<div class="th-stat"><small>Transfer budget</small><b>${money(me.budget)}</b><span>${esc(tierName(tierOf(C.user)))} org · ${money(spent)} spent</span></div>
         <div class="th-stat"><small>Wage bill</small><b>${money(salaries)}</b><span>per season · ${roster.length} player${roster.length === 1 ? '' : 's'}</span></div>
-        <div class="th-stat"><small>Roster</small><b>${roster.length}/4</b><span class="th-slots" aria-hidden="true">${[0, 1, 2, 3].map((i) => `<i class="${i < roster.length ? 'f' : ''}${i === 3 ? ' sub' : ''}"></i>`).join('')}</span></div>
-        <div class="th-stat"><small>Shortlist</small><b>${C.shortlist.length}</b><span>players tracked</span></div>
+        <div class="th-stat"><small>Roster</small><b>${roster.length}/4</b><span class="th-slots" aria-hidden="true">${[0, 1, 2, 3].map((i) => `<i class="${i < roster.length ? 'f' : ''}${i === 3 ? ' sub' : ''}"></i>`).join('')}</span></div>`}
+        <div class="th-stat"><small>${V() ? 'Watchlist' : 'Shortlist'}</small><b>${C.shortlist.length}</b><span>players tracked</span></div>
       </div>`;
-    const TT = [['scout', 'Scout players'], ['fa', 'Free agents · ' + C.fa.length], ['shortlist', 'Shortlist · ' + C.shortlist.length], ['squad', 'My squad'], ['activity', 'Activity']];
+    const TT = [['scout', 'Scout players'], ['fa', 'Free agents · ' + C.fa.length], ['shortlist', (V() ? 'Watchlist · ' : 'Shortlist · ') + C.shortlist.length], ['squad', 'My squad'], ['activity', V() ? 'Transfer news' : 'Activity']].filter(([k]) => !V() || k !== 'squad');
     const tabs = `<div class="th-tabs" role="tablist">${TT.map(([k, l]) => `<button role="tab" aria-selected="${k === tab}" class="${k === tab ? 'on' : ''}" data-action="th-tab" data-v="${k}">${esc(l)}</button>`).join('')}</div>`;
     const tools = tab === 'squad' || tab === 'activity' ? '' : `<div class="th-tools">
         <div class="search"><input class="input" id="thQ" placeholder="Search players or teams" value="${esc(ui.thQ || '')}" aria-label="Search players or teams" /></div>
@@ -1349,9 +1415,9 @@
     if (tab === 'activity') {
       const mine = moves.filter((n) => n.html.includes(esc(me.name)));
       detail = `<div class="th-dbody"><h3 class="fc-h">Window summary</h3>
-          <div class="th-grid"><div><small>Moves this career</small><b>${moves.length}</b></div><div><small>Involving you</small><b>${mine.length}</b></div><div><small>Spent this season</small><b>${money(spent)}</b></div><div><small>Budget left</small><b>${money(me.budget)}</b></div></div>
+          <div class="th-grid"><div><small>Moves this career</small><b>${moves.length}</b></div>${V() ? `<div><small>Paid deals this season</small><b>${(C.deals || []).filter((d) => d.season === C.season).length}</b></div>` : `<div><small>Involving you</small><b>${mine.length}</b></div>`}${V() ? '' : `<div><small>Spent this season</small><b>${money(spent)}</b></div><div><small>Budget left</small><b>${money(me.budget)}</b></div>`}</div>
           ${(() => { const big = (C.deals || []).filter((d) => d.season === C.season).sort((a, b) => b.fee - a.fee).slice(0, 6); return `<div class="tile-kicker" style="margin-top:4px">Biggest deals of ${C.season}</div>${big.length ? `<div class="th-deals">${big.map((d, k) => `<div class="th-deal"><span class="th-deal-rk">${k + 1}</span><span class="th-deal-who"><b>${d.flag} ${esc(d.name)} <i>${d.rating}</i></b><small>${esc(d.from)} → ${esc(d.to)}</small></span><b class="th-deal-fee">${money(d.fee)}</b></div>`).join('')}</div>` : '<p class="muted" style="font-size:13px;margin:0">No paid transfers yet this season. Clubs make their moves when the window closes.</p>'}`; })()}
-          <div class="th-note">${open ? 'The window is open. AI clubs make their moves when you close it, so the best free agents can go quickly.' : `The window is closed. You can still scout and shortlist players; deals reopen at the ${esc(nextWindowLabel())}.`}</div></div>`;
+          <div class="th-note">${V() ? (open ? 'The window is open. Clubs make their moves when you close it on the Central tab.' : `The window is closed. It reopens at the ${esc(nextWindowLabel())}.`) : open ? 'The window is open. AI clubs make their moves when you close it, so the best free agents can go quickly.' : `The window is closed. You can still scout and shortlist players; deals reopen at the ${esc(nextWindowLabel())}.`}</div></div>`;
     } else if (!sel) {
       detail = `<div class="th-dbody th-dempty"><span class="th-big-ico" aria-hidden="true">⇄</span><p>Select a player to see their scouting report.</p></div>`;
     } else {
@@ -1359,9 +1425,10 @@
       const ph = photoOf(p);
       const idx = me.roster.indexOf(p.id);
       let acts = '';
-      if (mine) acts = `${idx >= 3 ? `<button class="btn" data-action="mk-promote" data-id="${p.id}">Make starter</button>` : ''}${open ? `<button class="btn" data-action="mk-extend" data-id="${p.id}">Extend contract</button><button class="btn" data-action="mk-sell" data-id="${p.id}">Find a buyer</button><button class="btn danger" data-action="mk-release" data-id="${p.id}">Release</button>` : ''}`;
+      if (V()) acts = `<button class="btn" data-action="th-star" data-id="${p.id}">${sl.has(p.id) ? '★ On your watchlist' : '☆ Watch this player'}</button>`;
+      else if (mine) acts = `${idx >= 3 ? `<button class="btn" data-action="mk-promote" data-id="${p.id}">Make starter</button>` : ''}${open ? `<button class="btn" data-action="mk-extend" data-id="${p.id}">Extend contract</button><button class="btn" data-action="mk-sell" data-id="${p.id}">Find a buyer</button><button class="btn danger" data-action="mk-release" data-id="${p.id}">Release</button>` : ''}`;
       else acts = `<button class="btn primary" data-action="mk-offer" data-id="${p.id}" ${open && roster.length < 4 ? '' : 'disabled'}>${club ? 'Make a bid' : 'Offer a contract'}</button><button class="btn" data-action="th-star" data-id="${p.id}">${sl.has(p.id) ? '★ Shortlisted' : '☆ Shortlist'}</button>`;
-      const why = !mine && !open ? `Deals reopen at the ${esc(nextWindowLabel())}.` : !mine && roster.length >= 4 ? 'Your roster is full: sell or release a player first.' : mine && !open ? 'Contracts, sales and releases open in the next transfer window.' : '';
+      const why = V() ? '' : !mine && !open ? `Deals reopen at the ${esc(nextWindowLabel())}.` : !mine && roster.length >= 4 ? 'Your roster is full: sell or release a player first.' : mine && !open ? 'Contracts, sales and releases open in the next transfer window.' : '';
       detail = `<button class="th-back" data-action="th-top">↑ Back to the list</button><div class="th-dhead" style="--tc:${(tobj && tobj.color) || 'var(--azure)'}">
           <div class="th-dname"><small>${club ? esc(club.name) : 'Free agent'}</small><b>${esc(p.name)}</b><span>${p.flag || ''} ${esc(p.country || '')} · Age ${ageLabel(p)}${mine ? ' · ' + (idx < 3 ? 'Starter' : 'Substitute') : ''}</span></div>
           <div class="th-dovr"><small>OVR</small><b>${p.rating}</b></div>
@@ -1438,11 +1505,11 @@
   /* ---------------- event flow ---------------- */
   function playEvent() {
     const st = step();
-    const reg = userTeam().region;
+    const reg = homeReg();
     const ev = eventCfg(st, reg);
     if (st.type === 'open') noteQualifier(ev, eventTitle(st, reg));
-    if (!ev.cfg.teams.includes(C.user)) { save(); api.toast('You did not make it into this event — simulate it instead.'); api.render(); return; }
-    ev.cfg.managed = C.user;
+    if (!V() && !ev.cfg.teams.includes(C.user)) { save(); api.toast('You did not make it into this event — simulate it instead.'); api.render(); return; }
+    ev.cfg.managed = V() ? null : C.user;
     save();
     const tk = themeKeyFor(st);
     api.launch(ev.cfg, eventTitle(st, reg), Object.assign({ career: { season: C.season, step: C.step } }, tk ? { theme: tk } : {}));
@@ -1464,9 +1531,13 @@
 
   function onAction(a, el) {
     const id = el.dataset.id, v = el.dataset.v;
-    if (['career-play', 'career-sim', 'career-close-window', 'career-next-season'].includes(a) && C && userTeam().roster.length < 3) { api.toast('You need at least three players. Sign someone in the transfer market.'); return true; }
+    if (['career-play', 'career-sim', 'career-close-window', 'career-next-season'].includes(a) && C && !V() && userTeam().roster.length < 3) { api.toast('You need at least three players. Sign someone in the transfer market.'); return true; }
     switch (a) {
       case 'career-pick': newCareer(id, api.state.ui.cdiff || 'normal'); api.go('career'); return true;
+      case 'career-viewer': newCareer(null, 'normal', v || 'EU'); api.state.ui.ctab = 'central'; api.state.ui.cview = 'next'; api.go('career'); return true;
+      case 'career-vpick': api.state.ui.vreg = v; api.render(); return true;
+      case 'career-vmarket': api.state.ui.ctab = 'transfers'; api.state.ui.thTab = 'activity'; api.state.ui.thSel = null; api.render(); window.scrollTo({ top: 0 }); return true;
+      case 'career-vreg': if (C && V() && REGIONS.includes(v)) { C.vreg = v; bump(); save(); api.render(); } return true;
       case 'career-diff': api.state.ui.cdiff = v; api.render(); return true;
       case 'career-setdiff': if (C && DIFF[v]) { C.diff = v; save(); api.toast('Difficulty set to ' + DIFF[v].name + '. It applies from now on.'); api.render(); } return true;
       case 'career-reg': api.state.ui.careerReg = v; api.render(); return true;
@@ -1540,7 +1611,7 @@
   function render(app) {
     if (!C) renderStart(app); else renderHub(app);
   }
-  function canAdvanceCheck() { return !C || userTeam().roster.length >= 3; }
+  function canAdvanceCheck() { return !C || V() || userTeam().roster.length >= 3; }
 
   global.RLCareer = {
     theme() { try { return C && api && api.state.view === 'career' ? hostTheme(step()) : null; } catch (e) { return null; } },
@@ -1557,7 +1628,7 @@
           return;
         }
         if (document.querySelector('#modalRoot .modal') || /input|select|textarea/i.test((ev.target && ev.target.tagName) || '')) return;
-        const TABS = ['central', 'squad', 'transfers', 'teams', 'office', 'history'], VIEWS = ['next', 'standings', 'schedule', 'objectives', 'news'];
+        const TABS = (C && C.viewer ? ['central', 'transfers', 'teams', 'history'] : ['central', 'squad', 'transfers', 'teams', 'office', 'history']), VIEWS = ['next', 'standings', 'schedule', 'objectives', 'news'];
         const ui = api.state.ui, k = ev.key.toLowerCase();
         if (k === 'q' || k === 'e') { const i = TABS.indexOf(ui.ctab || 'central'); ui.ctab = TABS[(i + (k === 'e' ? 1 : TABS.length - 1)) % TABS.length]; api.render(); }
         else if (/^[1-5]$/.test(k)) { ui.ctab = 'central'; ui.cview = VIEWS[+k - 1]; api.render(); }
@@ -1566,7 +1637,7 @@
     render, onAction, recordFromT, simRest,
     has: () => !!C,
     teamObj: (id) => (C ? teamObj(id) : null),
-    summary: () => (C ? { team: teamObj(C.user), season: C.season, step: SCHEDULE[C.step].name } : null),
+    summary: () => (C ? { team: V() ? { name: 'Neutral viewer' } : teamObj(C.user), season: C.season, step: SCHEDULE[C.step].name } : null),
     canAdvance: canAdvanceCheck,
     money,
   };

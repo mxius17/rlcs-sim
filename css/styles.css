@@ -2033,7 +2033,7 @@ html.ev .th-note-i { background: var(--e3-on, #0b1022); color: var(--e3); }
 }
 @media (max-width: 760px) {
   body:has(.fc) { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
-  .fc-tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); overflow: visible;
+  .fc-tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; display: grid; grid-template-columns: repeat(var(--tabs, 6), minmax(0, 1fr)); overflow: visible;
     padding: 4px 4px calc(4px + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--ink, #121A2E) 94%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-top: 1px solid var(--line); border-bottom: 0; box-shadow: 0 -8px 24px rgba(0,0,0,0.35); }
   html.ev .fc-tabs { background: color-mix(in srgb, var(--e1) 22%, #070a14 92%); }
   .fc-tabs .fc-key { display: none; }
@@ -2100,3 +2100,17 @@ html.ev .th-note-i { background: var(--e3-on, #0b1022); color: var(--e3); }
 .fs-academy .badge.lg { position: absolute; left: calc(10% + 112px); top: calc(50% + 34px); width: 56px; height: 56px; z-index: 2; }
 @media (max-width: 760px) { .ac-grid { grid-template-columns: 1fr; } .fs-kid { width: 96px; height: 96px; font-size: 34px; left: 6%; } .fs-academy .badge.lg { left: calc(6% + 70px); top: calc(50% + 20px); width: 40px; height: 40px; } .fs-academy .fs-stats { right: 4%; } }
 @media (min-width: 981px) { .fs-kid { width: clamp(150px, 43.48cqh, 240px); height: clamp(150px, 43.48cqh, 240px); font-size: clamp(54px, 15.65cqh, 86px); } }
+/* career: neutral viewer */
+.cs-viewer { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; padding: 14px 18px; border: 1px solid var(--line); border-radius: 8px; background: linear-gradient(100deg, rgba(31,139,255,0.12), rgba(255,255,255,0.02) 60%); }
+.cs-viewer-t { flex: 1 1 320px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cs-viewer-t b { font: 700 17px var(--display); text-transform: uppercase; }
+.cs-viewer-t small { color: var(--text-2); font-size: 13px; line-height: 1.45; }
+.cs-viewer-r { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.vw-eye { display: inline-grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: 10px; background: rgba(31,139,255,0.18); color: #6fb6ff; font-size: 20px; }
+.fc-club.vw-club { gap: 10px; }
+.vw-club .vw-eye { width: 28px; height: 28px; border-radius: 7px; font-size: 15px; }
+.vw-sub { margin-left: auto; padding: 2px 8px; border-radius: 6px; background: rgba(255,255,255,0.08); font: 700 12px var(--display); letter-spacing: .06em; }
+.vw-reg { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.vw-reg small { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-3); }
+.vw-reg .seg button { padding: 5px 8px; }
+@media (max-width: 760px) { .cs-viewer { order: 0; } .cs-viewer-r, .cs-viewer-r .btn { width: 100%; } .cs-viewer-r .seg { width: 100%; } .cs-viewer-r .seg button { flex: 1; } }
