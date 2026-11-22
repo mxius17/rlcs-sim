@@ -114,13 +114,13 @@
   function openSide(n) {
     const M = SIDE[n], se = curSeason(), res = sideStore(se, n);
     const wf = sideWorlds(n, se);
-    const th = themeOf('worlds-2026') || themeOf('career-worlds');
+    const th = themeOf('side-' + n + 'v' + n + '-wc') || themeOf('career-worlds'), brand = themeOf('side-' + n + 'v' + n);
     const champ = res.W && getTeam(res.W);
     const row = (r) => {
       const ids = sideField(n, r, se), w = res[r] && getTeam(res[r]);
       return `<div class="side-row" style="${themeVars(themeOf('region-' + r.toLowerCase()))}"><span class="side-reg">${esc(r)}</span><div class="side-mid"><b>${esc(REGIONS[r])} ${M.name} Open</b><small>${w && w.name !== 'Unknown' ? '🏆 Won by <b>' + esc(w.name) + '</b>' : 'Top seeds: ' + ids.slice(0, 3).map((id) => esc(getTeam(id).name)).join(', ')}</small></div><button class="btn sm${w ? '' : ' primary'}" data-action="side-start" data-v="${n}|${r}" ${ids.length < 4 ? 'disabled' : ''}>${w ? 'Replay' : 'Play'} →</button></div>`;
     };
-    openModal(`${modalHead(M.full, 'RLCS format: regional Opens after Major 2. The four winners meet at Worlds.')}
+    openModal(`${brand ? `<div class="event-banner has-art" style="${themeVars(brand)};background-image:linear-gradient(180deg, rgba(11,18,38,0.05), rgba(11,18,38,0.45)),url(${brand.art});background-position:center" role="img" aria-label="${esc(brand.name)} key art"><span class="event-swatches"><i style="background:${brand.a}"></i><i style="background:${brand.b}"></i><i style="background:${brand.c}"></i></span></div>` : ''}${modalHead(M.full, 'RLCS format: regional Opens after Major 2. The four winners meet at Worlds.')}
       <div class="modal-body">
         <p class="help" style="margin-top:0">${seasonLabel(se)} rosters. Each Open is a 16-${n === 1 ? 'player' : 'duo'} single-elimination bracket (Bo5, Bo7 from the quarter-finals). ${n === 2 ? 'Duos are the two best starters of each club. ' : ''}The winners of North America, Europe, South America and MENA qualify for the ${M.full.replace('Championship', 'World Championship')} (${M.prize}).</p>
         <div class="field-label" style="margin:12px 0 8px">Regional Opens</div>
@@ -132,7 +132,15 @@
           <button class="btn primary" data-action="side-start" data-v="${n}|W" ${wf.length < 4 ? 'disabled' : ''}>Play the World Championship →</button>
         </div>
       </div>
-      <div class="modal-foot"><button class="btn" data-action="side-reset" data-v="${n}">Clear results</button><button class="btn" data-action="side-mode" data-v="${n === 1 ? 2 : 1}">${SIDE[n === 1 ? 2 : 1].full} →</button></div>`, { size: 'md' });
+      <div class="modal-foot"><button class="btn" data-action="side-intro" data-v="${n}">▶ Watch the intro</button><button class="btn" data-action="side-reset" data-v="${n}">Clear results</button><button class="btn" data-action="side-mode" data-v="${n === 1 ? 2 : 1}">${SIDE[n === 1 ? 2 : 1].full} →</button></div>`, { size: 'md', cls: brand ? 'event-themed' : '', style: themeVars(brand) });
+  }
+  /** The mode's own intro (js/sidebrand.js) with the event's field, then `done`. */
+  function sideIntro(n, reg, se, teams, done) {
+    if (!window.RLSideIntro) { done(); return; }
+    const W = reg === 'W', M = SIDE[n];
+    const field = teams.map((id) => { const t = getTeam(id); return { name: t.name, players: t.players.map((p) => ({ name: p.name, flag: p.flag })), club: t.club, ovr: t.ovr, region: t.region, badge: badge(t, 'md') }; });
+    window.RLSideIntro.play({ mode: n, worlds: W, kicker: seasonLabel(se) + ' · ' + (W ? 'Worlds week' : REGIONS[reg]), title: M.name + (W ? ' World Championship' : ' Open'), tagline: window.RLSideIntro.tagline(n, W), field,
+      note: W ? 'The four regional Open winners. Semi-finals and final are best of seven.' : '16 ' + M.unit + ' · single elimination · the winner goes to Worlds.' }, done);
   }
   function startSide(v) {
     const [nS, reg] = v.split('|'), n = +nS, se = curSeason(), M = SIDE[n];
@@ -140,8 +148,9 @@
     const teams = W ? sideWorlds(n, se).map((x) => x.id).sort((a, b) => getTeam(b).ovr - getTeam(a).ovr) : sideField(n, reg, se);
     const cfg = Object.assign(defaultSetup(), { format: 'knockout', size: W ? 4 : 16, teams, simStyle: state.setup.simStyle, goalLevel: state.setup.goalLevel });
     const title = W ? seasonLabel(se) + ' ' + M.name + ' World Championship' : seasonLabel(se) + ' · ' + REGIONS[reg] + ' ' + M.name + ' Open';
-    const theme = W ? (themeOf('worlds-2026') ? 'worlds-2026' : 'career-worlds') : 'region-' + reg.toLowerCase();
-    launch(cfg, title, { theme, side: { n, reg, season: se } });
+    const theme = 'side-' + n + 'v' + n + (W ? '-wc' : '');
+    closeModal();
+    sideIntro(n, reg, se, teams, () => launch(cfg, title, { theme, side: { n, reg, season: se } }));
   }
   function recordSide(T) {
     if (!T.side || T.side.recorded || !T.finished || !T.champion) return;
@@ -154,7 +163,8 @@
     return `<div class="side-grid">${[1, 2].map((n) => {
       const M = SIDE[n], res = sideStore(se, n), done = SIDE_REGIONS.filter((r) => res[r]).length;
       const champ = res.W && getTeam(res.W);
-      return `<button class="side-card" data-action="side-mode" data-v="${n}"><span class="side-mono">${M.name}</span><span class="side-txt"><b>${M.full}</b><small>4 regional Opens → World Championship · ${M.prize}</small>
+      const br = themeOf('side-' + n + 'v' + n);
+      return `<button class="side-card" data-action="side-mode" data-v="${n}" style="${themeVars(br)}${br ? `;--art:url(${br.art})` : ''}"><span class="side-mono">${M.name}</span><span class="side-txt"><b>${M.full}</b><small>4 regional Opens → World Championship · ${M.prize}</small>
         <span class="side-prog">${SIDE_REGIONS.map((r) => `<i class="${res[r] ? 'on' : ''}" title="${esc(REGIONS[r])}">${r}</i>`).join('')}<i class="w ${champ ? 'on' : ''}" title="World Championship">WC</i></span>
         <small>${champ && champ.name !== 'Unknown' ? '🏆 World champion' + (n === 2 ? 's' : '') + ': ' + esc(champ.name) : done + ' of 4 Opens played'}</small></span></button>`;
     }).join('')}</div>`;
@@ -341,6 +351,7 @@
       ['Official RLCS events', real.filter((k) => !/^worlds-/.test(k))],
       ['World Championships', ['career-worlds'].concat(real.filter((k) => /^worlds-/.test(k))).filter((k) => THEMES[k])],
       ['Host cities', by(/^host-/).sort((a, b) => THEMES[a].name.localeCompare(THEMES[b].name))],
+      ['1v1 & 2v2 Championships', by(/^side-/)],
       ['Regions', by(/^region-/)],
     ].filter((g) => g[1].length);
   }
@@ -1711,6 +1722,7 @@
       case 'custom-match': openCustomMatch(); break;
       case 'side-mode': openSide(+v); break;
       case 'side-start': startSide(v); break;
+      case 'side-intro': { const n = +v, se = curSeason(); sideIntro(n, 'EU', se, sideField(n, 'EU', se), () => {}); break; }
       case 'side-reset': { const S = state.settings.side || {}; if (S[curSeason()]) delete S[curSeason()][v]; save(); openSide(+v); render(); break; }
       case 'custom-match-start': {
         const A = $('#cmA').value, B = $('#cmB').value;

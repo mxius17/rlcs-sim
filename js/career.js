@@ -689,7 +689,7 @@
   const majorCity = (st) => seasonHosts(C.season)[st.split === 2 ? 'm2' : 'm1'];
   const worldsCity = () => seasonHosts(C.season).w;
   const hostCity = (st) => (st.type === 'major' ? majorCity(st) : st.type === 'worlds' || st.type === 'sidew' ? worldsCity() : null);
-  const themeKeyFor = (st) => { if (st.type === 'open') return C && (V() || userTeam()) ? regionKey(homeReg()) : null; if (st.type === 'side') return C && sideHome() ? regionKey(sideHome()) : null; if (st.type === 'worlds' || st.type === 'sidew') return 'career-worlds'; const c = hostCity(st); return c && HOST_PAL[c] ? hostKey(c) : null; };
+  const themeKeyFor = (st) => { if (st.type === 'open') return C && (V() || userTeam()) ? regionKey(homeReg()) : null; if (st.type === 'side' || st.type === 'sidew') return 'side-' + st.mode + 'v' + st.mode + (st.type === 'sidew' ? '-wc' : ''); if (st.type === 'worlds') return 'career-worlds'; const c = hostCity(st); return c && HOST_PAL[c] ? hostKey(c) : null; };
   const hostTheme = (st) => { const k = themeKeyFor(st); return k ? window.RL_EVENT_THEMES[k] || null : null; };
   const hostVars = (th) => (th ? `--e1:${th.a};--e2:${th.b};--e3:${th.c};--e-on:${th.on}` : '');
 
@@ -1196,7 +1196,7 @@
     const field = ids.length ? `<div class="sf-grid">${ids.map((id, i) => { const o = sideObj(id); if (!o) return ''; const me = sideClub(id) === C.user; return `<span class="sf-chip${me ? ' me' : ''}"><i>${W ? esc(o.region) : i + 1}</i><span><b>${o.players.map((p) => p.flag || '').join('')} ${esc(o.name)}</b><small>${esc(o.club)} · ${o.ovr}</small></span></span>`; }).join('')}</div>` : '';
     return `<p><b>${esc(title)}</b> · ${desc}.</p><p class="help">${help}</p>${mineTxt}${field}
       <div class="action-row">${activeEvent ? `<button class="btn primary" data-action="resume">Resume event →</button><button class="btn" data-action="career-sim-rest">Simulate the rest</button>`
-        : `${ids.length ? `<button class="btn primary" data-action="career-play">▶ ${mine.length ? 'Play' : 'Watch'} event</button>` : ''}<button class="btn ${ids.length ? '' : 'primary'}" data-action="career-sim">Simulate event${W ? '' : 's'}</button>`}</div>`;
+        : `${ids.length ? `<button class="btn primary" data-action="career-play">▶ ${mine.length ? 'Play' : 'Watch'} event</button>` : ''}<button class="btn ${ids.length ? '' : 'primary'}" data-action="career-sim">Simulate event${W ? '' : 's'}</button>`}</div>${ids.length && window.RLSideIntro ? `<button class="fc-intro" data-action="career-intro">▶ Watch the ${mode} ${W ? 'World Championship' : 'Open'} intro</button>` : ''}`;
   }
   function renderHub(app) {
     const st = step();
@@ -1409,6 +1409,25 @@
       C.cutSeen = (C.cutSeen || []).concat(cutKey).slice(-40); save();
       setTimeout(() => playMajorIntro(st), 350);
     }
+    if ((st.type === 'side' || st.type === 'sidew') && tab === 'central' && !activeEvent && window.RLSideIntro && !(C.cutSeen || []).includes(cutKey) && sideIntroField(st).length) {
+      C.cutSeen = (C.cutSeen || []).concat(cutKey).slice(-40); save();
+      setTimeout(() => playSideIntro(st), 350);
+    }
+  }
+  /** 1v1/2v2 intro (js/sidebrand.js): the home region's Open field, or the four World Championship qualifiers. */
+  function sideIntroField(st) {
+    const W = st.type === 'sidew', reg = W ? null : sideHome();
+    if (!W && !reg) return [];
+    return eventCfg(st, reg).cfg.teams.map((id) => { const o = sideObj(id); return o ? { name: o.name, players: o.players.map((p) => ({ name: p.name, flag: p.flag })), club: o.club, ovr: o.ovr, region: o.region, badge: api.badge(o, 'md'), mine: !V() && sideClub(id) === C.user } : null; }).filter(Boolean);
+  }
+  function playSideIntro(st) {
+    if (!window.RLSideIntro || !C) return;
+    const W = st.type === 'sidew', n = st.mode, field = sideIntroField(st);
+    if (!field.length) return;
+    const mine = field.filter((e) => e.mine);
+    const note = V() ? (W ? 'The four regional Open winners meet in ' + worldsCity() + '.' : 'You follow the ' + api.regions[sideHome()] + ' Open.')
+      : mine.length ? 'Your entr' + (mine.length === 1 ? 'y' : 'ies') + ': ' + mine.map((e) => e.name).join(', ') + '.' : 'None of your players made the ' + (W ? 'World Championship' : 'field') + '.';
+    window.RLSideIntro.play({ mode: n, worlds: W, kicker: 'RLCS ' + C.season + ' · ' + (W ? 'Worlds week · ' + worldsCity() : api.regions[sideHome()]), title: n + 'v' + n + (W ? ' World Championship' : ' Open'), tagline: window.RLSideIntro.tagline(n, W), field, note });
   }
   /** The host city's intro for a Major (js/cutscene.js), with the 16 qualified teams. */
   function playMajorIntro(st) {
@@ -1785,7 +1804,7 @@
     switch (a) {
       case 'career-pick': newCareer(id, api.state.ui.cdiff || 'normal'); api.go('career'); return true;
       case 'career-viewer': newCareer(null, 'normal', v || 'EU'); api.state.ui.ctab = 'central'; api.state.ui.cview = 'next'; api.go('career'); return true;
-      case 'career-intro': { const st = step(); if (st.type === 'major' || st.type === 'worlds') playMajorIntro(st); return true; }
+      case 'career-intro': { const st = step(); if (st.type === 'major' || st.type === 'worlds') playMajorIntro(st); else if (st.type === 'side' || st.type === 'sidew') playSideIntro(st); return true; }
       case 'career-vpick': api.state.ui.vreg = v; api.render(); return true;
       case 'career-vmarket': api.state.ui.ctab = 'transfers'; api.state.ui.thTab = 'activity'; api.state.ui.thSel = null; api.render(); window.scrollTo({ top: 0 }); return true;
       case 'career-vreg': if (C && V() && REGIONS.includes(v)) { C.vreg = v; bump(); save(); api.render(); } return true;
