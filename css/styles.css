@@ -2761,36 +2761,49 @@ html.cer-open, html.cer-open body { overflow: hidden; }
 .cfx-petals i { position: absolute; top: -5vh; width: var(--z); height: calc(var(--z) * .7); border-radius: 60% 0 60% 0; background: linear-gradient(135deg, #ffd1e0, #ff8fb4); opacity: .9; animation: cfxPetal var(--s) var(--d) linear infinite; }
 @keyframes cfxPetal { 0% { transform: translate(0, 0) rotate(var(--r)); } 50% { transform: translate(calc(var(--w) * -0.5), 55vh) rotate(calc(var(--r) + 200deg)); } 100% { transform: translate(var(--w), 112vh) rotate(calc(var(--r) + 420deg)); } }
 
-/* skies per mood (the event palette still tints each one) */
-.mood-neon .cut-sky { background: radial-gradient(900px 500px at 20% 80%, color-mix(in srgb, var(--a) 45%, transparent), transparent 70%), radial-gradient(800px 500px at 85% 70%, color-mix(in srgb, var(--c) 35%, transparent), transparent 70%), linear-gradient(180deg, #05010f 0%, #160733 60%, #2a0b45 100%); }
+/* skies per mood: built only from the event's branding (--a primary, --b secondary, --c accent);
+   the mood decides light and weather, never the colours */
+.mood-neon .cut-sky { background: radial-gradient(900px 500px at 20% 80%, color-mix(in srgb, var(--a) 55%, transparent), transparent 70%), radial-gradient(800px 500px at 85% 70%, color-mix(in srgb, var(--c) 30%, transparent), transparent 70%), linear-gradient(180deg, color-mix(in srgb, var(--b) 25%, #020005) 0%, color-mix(in srgb, var(--b) 60%, #05020c) 60%, color-mix(in srgb, var(--a) 40%, var(--b)) 100%); }
 .mood-neon .cut-sun { display: none; }
 .mood-neon .cut-win rect:nth-child(odd) { fill: var(--a); } .mood-neon .cut-win rect:nth-child(even) { fill: var(--c); }
 .mood-neon .cut-win rect { animation-name: cfxNeonWin; }
 @keyframes cfxNeonWin { 0%, 100% { opacity: .15; } 50% { opacity: 1; } }
 .mood-neon .cut-lm { filter: drop-shadow(0 0 14px var(--a)) drop-shadow(0 0 30px var(--c)); }
-.mood-aurora .cut-sky { background: linear-gradient(180deg, #01040b 0%, #04142a 55%, #0b2540 100%); }
+.mood-aurora .cut-sky { background: linear-gradient(180deg, color-mix(in srgb, var(--b) 20%, #010208) 0%, color-mix(in srgb, var(--b) 50%, #02050d) 60%, color-mix(in srgb, var(--b) 75%, #0a0f1d) 100%); }
 .mood-aurora .cut-sun { display: none; }
-.mood-desert .cut-sky { background: radial-gradient(1000px 600px at 70% 80%, color-mix(in srgb, var(--a) 30%, transparent), transparent 70%), linear-gradient(180deg, #2b0c22 0%, #8c3220 40%, #e07a35 70%, #f6c06a 100%); }
-.mood-desert .cut-sun { top: 74%; width: 46vmin; height: 46vmin; margin: -23vmin 0 0 -23vmin; background: radial-gradient(circle, #fff1c4, #ff9a3d 45%, rgba(255,120,40,0.25) 65%, transparent 72%); }
-.mood-golden .cut-sky { background: radial-gradient(1100px 600px at 70% 70%, color-mix(in srgb, var(--a) 28%, transparent), transparent 70%), linear-gradient(180deg, #1c2a55 0%, #6f4a6b 35%, #d1784a 70%, #f6c56b 100%); }
-.mood-golden .cut-sun { background: radial-gradient(circle, #fff6d8, #ffc766 40%, rgba(255,180,80,0.2) 65%, transparent 72%); }
-.mood-fog .cut-sky { background: linear-gradient(180deg, #1d2633 0%, #44505f 55%, #6d7784 100%); }
-.mood-fog .cut-sun { opacity: .35 !important; filter: blur(14px); background: radial-gradient(circle, #f3f6fa, transparent 65%); }
-.mood-fog .cut-back { fill: #2a3240; }
-.mood-tropic .cut-sky { background: radial-gradient(900px 500px at 30% 70%, color-mix(in srgb, var(--a) 30%, transparent), transparent 70%), linear-gradient(180deg, #23164a 0%, #8b3f7a 35%, #f06e6e 62%, #ffb86b 85%, #ffd99a 100%); }
-.mood-tropic .cut-sun { top: 70%; background: radial-gradient(circle, #fff3d1, #ffb05c 45%, rgba(255,140,90,0.25) 65%, transparent 72%); animation: cfxSunrise 4s .4s cubic-bezier(.2,.8,.2,1) both; }
+.cfx-aurora i:nth-child(1) { background: linear-gradient(90deg, transparent, var(--a), color-mix(in srgb, var(--a) 50%, var(--c)), transparent) !important; }
+.cfx-aurora i:nth-child(2) { background: linear-gradient(90deg, transparent, var(--c), color-mix(in srgb, var(--c) 50%, var(--a)), transparent) !important; }
+.cfx-aurora i:nth-child(3) { background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--a) 60%, #fff), transparent) !important; }
+.mood-desert .cut-sky { background: linear-gradient(180deg, color-mix(in srgb, var(--b) 55%, #000) 0%, var(--b) 35%, color-mix(in srgb, var(--a) 80%, var(--b)) 68%, color-mix(in srgb, var(--a) 60%, var(--c)) 100%); }
+.mood-desert .cut-sun { top: 74%; width: 46vmin; height: 46vmin; margin: -23vmin 0 0 -23vmin; background: radial-gradient(circle, color-mix(in srgb, var(--c) 40%, #fff), var(--c) 45%, color-mix(in srgb, var(--c) 25%, transparent) 65%, transparent 72%); }
+.cfx-sand i { background: color-mix(in srgb, var(--c) 70%, transparent) !important; }
+.cfx-haze { background: linear-gradient(0deg, color-mix(in srgb, var(--a) 35%, transparent), transparent) !important; }
+.mood-golden .cut-sky { background: linear-gradient(180deg, color-mix(in srgb, var(--b) 60%, #000) 0%, var(--b) 30%, color-mix(in srgb, var(--a) 70%, var(--b)) 60%, color-mix(in srgb, var(--a) 50%, var(--c)) 88%, color-mix(in srgb, var(--c) 70%, #fff) 100%); }
+.mood-golden .cut-sun { background: radial-gradient(circle, color-mix(in srgb, var(--c) 30%, #fff), var(--c) 40%, color-mix(in srgb, var(--c) 20%, transparent) 65%, transparent 72%); }
+.cfx-flare { background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--c) 60%, #fff), transparent) !important; }
+.mood-fog .cut-sky { background: radial-gradient(1000px 420px at 68% 92%, color-mix(in srgb, var(--a) 38%, transparent), transparent 70%), linear-gradient(180deg, color-mix(in srgb, var(--b) 70%, #1a1f28) 0%, color-mix(in srgb, var(--b) 45%, #5b6370) 55%, color-mix(in srgb, var(--a) 30%, #7d8591) 100%); }
+.mood-fog .cut-sun { opacity: .35 !important; filter: blur(14px); background: radial-gradient(circle, color-mix(in srgb, var(--c) 50%, #fff), transparent 65%); }
+.mood-fog .cut-back { fill: color-mix(in srgb, var(--b) 55%, #2a3240); }
+.cfx-fog i { background: color-mix(in srgb, var(--c) 15%, rgba(205,212,224,0.3)) !important; }
+.mood-tropic .cut-sky { background: linear-gradient(180deg, color-mix(in srgb, var(--b) 70%, #000) 0%, var(--b) 30%, color-mix(in srgb, var(--a) 65%, var(--b)) 62%, color-mix(in srgb, var(--a) 45%, var(--c)) 85%, color-mix(in srgb, var(--c) 75%, #fff) 100%); }
+.mood-tropic .cut-sun { top: 70%; background: radial-gradient(circle, color-mix(in srgb, var(--c) 35%, #fff), var(--c) 45%, color-mix(in srgb, var(--c) 22%, transparent) 65%, transparent 72%); animation: cfxSunrise 4s .4s cubic-bezier(.2,.8,.2,1) both; }
 @keyframes cfxSunrise { from { transform: translateY(22vh); opacity: .4; } to { transform: none; opacity: 1; } }
-.mood-fireworks .cut-sky { background: radial-gradient(900px 500px at 50% 100%, color-mix(in srgb, var(--a) 30%, transparent), transparent 70%), linear-gradient(180deg, #01020a 0%, #070d2a 70%, #10183d 100%); }
+.cfx-water { background: linear-gradient(180deg, color-mix(in srgb, var(--a) 40%, var(--b)), color-mix(in srgb, var(--b) 60%, #000)) !important; }
+.mood-fireworks .cut-sky { background: radial-gradient(900px 500px at 50% 100%, color-mix(in srgb, var(--a) 40%, transparent), transparent 70%), linear-gradient(180deg, color-mix(in srgb, var(--b) 20%, #010208) 0%, color-mix(in srgb, var(--b) 55%, #03050f) 70%, color-mix(in srgb, var(--b) 80%, #0a0f1d) 100%); }
 .mood-fireworks .cut-sun { display: none; }
-.mood-storm .cut-sky { background: linear-gradient(180deg, #07090f 0%, #1a212d 55%, #2b3441 100%); }
+.mood-storm .cut-sky { background: radial-gradient(800px 400px at 70% 85%, color-mix(in srgb, var(--a) 25%, transparent), transparent 70%), linear-gradient(180deg, color-mix(in srgb, var(--b) 25%, #05070b) 0%, color-mix(in srgb, var(--b) 45%, #161c27) 55%, color-mix(in srgb, var(--b) 60%, #2b3441) 100%); }
 .mood-storm .cut-sun { display: none; }
-.mood-storm .cut-back { fill: #161c27; }
-.mood-blossom .cut-sky { background: radial-gradient(900px 500px at 70% 70%, color-mix(in srgb, var(--a) 22%, transparent), transparent 70%), linear-gradient(180deg, #2f2650 0%, #8a5a8c 45%, #e39ab4 78%, #f8c9d4 100%); }
-.mood-blossom .cut-sun { background: radial-gradient(circle, #fff, #ffd6e2 45%, transparent 70%); opacity: .8; }
-.mood-snow .cut-sky { background: linear-gradient(180deg, #0b1830 0%, #2d4c78 55%, #9db8da 100%); }
-.mood-snow .cut-sun { width: 18vmin; height: 18vmin; margin: -9vmin 0 0 -9vmin; top: 30%; background: radial-gradient(circle, #ffffff, rgba(220,235,255,0.4) 50%, transparent 70%); }
-.mood-snow .cut-ground, .mood-aurora .cut-ground { fill: #dfe8f3; }
-.mood-blossom .cut-text, .mood-snow .cut-text, .mood-golden .cut-text, .mood-tropic .cut-text, .mood-desert .cut-text { text-shadow: 0 2px 18px rgba(0,0,0,0.55); }
+.mood-storm .cut-back { fill: color-mix(in srgb, var(--b) 40%, #121722); }
+.cfx-clouds i { background: color-mix(in srgb, var(--b) 35%, rgba(14,18,26,0.88)) !important; }
+.mood-blossom .cut-sky { background: linear-gradient(180deg, color-mix(in srgb, var(--b) 65%, #000) 0%, var(--b) 32%, color-mix(in srgb, var(--a) 60%, var(--b)) 64%, color-mix(in srgb, var(--a) 45%, #fff) 88%, color-mix(in srgb, var(--c) 40%, #fff) 100%); }
+.mood-blossom .cut-sun { background: radial-gradient(circle, #fff, color-mix(in srgb, var(--c) 50%, #fff) 45%, transparent 70%); opacity: .8; }
+.cfx-petals i { background: linear-gradient(135deg, color-mix(in srgb, var(--c) 45%, #fff), color-mix(in srgb, var(--a) 75%, #fff)) !important; }
+.mood-snow .cut-sky { background: linear-gradient(180deg, color-mix(in srgb, var(--b) 55%, #02040a) 0%, color-mix(in srgb, var(--b) 75%, #1c2a40) 50%, color-mix(in srgb, var(--a) 35%, #9fb2c8) 88%, color-mix(in srgb, var(--c) 30%, #e4ecf5) 100%); }
+.mood-snow .cut-sun { width: 18vmin; height: 18vmin; margin: -9vmin 0 0 -9vmin; top: 30%; background: radial-gradient(circle, #ffffff, color-mix(in srgb, var(--c) 40%, rgba(220,235,255,0.4)) 50%, transparent 70%); }
+.mood-snow .cut-ground, .mood-aurora .cut-ground { fill: color-mix(in srgb, var(--c) 18%, #e3eaf3); }
+.cfx-wet { background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--a) 40%, transparent)) !important; }
+.mood-blossom .cut-text, .mood-snow .cut-text, .mood-golden .cut-text, .mood-tropic .cut-text, .mood-desert .cut-text { text-shadow: 0 2px 18px rgba(0,0,0,0.6); }
+.mood-blossom .cut-kicker, .mood-snow .cut-kicker, .mood-golden .cut-kicker, .mood-tropic .cut-kicker, .mood-desert .cut-kicker, .mood-fog .cut-kicker { text-shadow: 0 1px 8px rgba(0,0,0,0.6); }
 
 /* camera openings: how the city is revealed */
 .cut:not(.open-bands):not(.cut-worlds) .cut-bands { display: none; }
@@ -2813,7 +2826,7 @@ html.cer-open, html.cer-open body { overflow: hidden; }
 @keyframes cutStamp { from { transform: scale(2.6); opacity: 0; filter: blur(4px); } to { transform: none; opacity: 1; filter: none; } }
 .title-type .cut-name i { animation: cutType .01s calc(1.6s + var(--i) * 0.09s) both; }
 @keyframes cutType { from { opacity: 0; } to { opacity: 1; } }
-.title-type .cut-name::after { content: ''; display: inline-block; width: .08em; height: .8em; margin-left: .06em; background: var(--c); vertical-align: baseline; animation: cutCaret .8s steps(2) infinite; }
+.title-type .cut-name .cut-w:last-child i:last-child::after { content: ''; display: inline-block; width: .08em; height: .8em; margin-left: .06em; background: var(--c); vertical-align: baseline; animation: cutCaret .8s steps(2) infinite; }
 @keyframes cutCaret { 50% { opacity: 0; } }
 .title-wave .cut-name i { animation: cerLetter .5s calc(1.6s + var(--i) * 0.05s) cubic-bezier(.2,.8,.2,1) both, cutWave 2.4s calc(2.4s + var(--i) * 0.12s) ease-in-out infinite; }
 @keyframes cutWave { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-0.08em); } }
