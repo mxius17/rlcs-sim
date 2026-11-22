@@ -184,7 +184,16 @@
   const startBudget = (tier, strength) => Math.round((TIERS[tier].start * (0.9 + Math.max(0, Math.min(1, (strength - 70) / 25)) * 0.2)) / 1000) * 1000;
   /** Lowest tier a player will join without a big overpay. */
   const minTierFor = (p) => (p.rating >= 92 ? 4 : p.rating >= 88 ? 3 : p.rating >= 82 ? 2 : 1);
-  const ROOKIE_COUNTRIES = { EU: ['France', 'Spain', 'England', 'Germany', 'Netherlands', 'Belgium', 'Denmark', 'Poland', 'Portugal', 'Italy'], NA: ['United States', 'Canada', 'Mexico'], SAM: ['Brazil', 'Argentina', 'Chile', 'Uruguay'], MENA: ['Saudi Arabia', 'Morocco', 'Kuwait', 'Egypt', 'United Arab Emirates'], OCE: ['Australia', 'New Zealand'], APAC: ['Japan', 'South Korea', 'Thailand', 'Singapore', 'Malaysia'], SSA: ['South Africa', 'Namibia'] };
+  /* Rookie nationalities, weighted roughly like the real scenes (a country listed twice is twice as likely). */
+  const ROOKIE_COUNTRIES = {
+    EU: ['France', 'France', 'France', 'Spain', 'Spain', 'England', 'England', 'Germany', 'Germany', 'Netherlands', 'Netherlands', 'Belgium', 'Denmark', 'Poland', 'Portugal', 'Italy', 'Sweden', 'Norway', 'Finland', 'Switzerland', 'Austria', 'Czechia', 'Ukraine', 'Turkey', 'Scotland', 'Wales', 'Ireland', 'Greece', 'Romania', 'Croatia', 'Serbia', 'Hungary', 'Lithuania', 'Estonia', 'Slovakia', 'Bulgaria'],
+    NA: ['United States', 'United States', 'United States', 'United States', 'Canada', 'Canada', 'Mexico', 'Puerto Rico', 'Costa Rica', 'Guatemala'],
+    SAM: ['Brazil', 'Brazil', 'Brazil', 'Brazil', 'Argentina', 'Argentina', 'Chile', 'Chile', 'Uruguay', 'Peru', 'Colombia', 'Paraguay', 'Ecuador', 'Bolivia', 'Venezuela'],
+    MENA: ['Saudi Arabia', 'Saudi Arabia', 'Saudi Arabia', 'Morocco', 'Morocco', 'Kuwait', 'Egypt', 'United Arab Emirates', 'Qatar', 'Bahrain', 'Oman', 'Jordan', 'Tunisia', 'Algeria', 'Lebanon', 'Iraq'],
+    OCE: ['Australia', 'Australia', 'Australia', 'Australia', 'New Zealand', 'New Zealand', 'Fiji'],
+    APAC: ['Japan', 'Japan', 'Japan', 'South Korea', 'South Korea', 'Thailand', 'Singapore', 'Malaysia', 'Philippines', 'Indonesia', 'Vietnam', 'China', 'Taiwan', 'Hong Kong', 'India'],
+    SSA: ['South Africa', 'South Africa', 'South Africa', 'Namibia', 'Kenya', 'Nigeria', 'Zimbabwe', 'Botswana', 'Mauritius'],
+  };
   const SYL1 = ['Ze', 'Ka', 'Vo', 'Ry', 'Ni', 'Lu', 'Ax', 'Bre', 'Ce', 'Da', 'Fi', 'Jo', 'Ky', 'Mi', 'No', 'Py', 'Sa', 'Ty', 'Va', 'Xe', 'Ko', 'Ar', 'El', 'Gu', 'Ha', 'Ji', 'Re', 'Sk', 'Tr', 'Wy'];
   const SYL2 = ['r', 'n', 'l', 'x', 'z', 'k', 'v', 'th', 'sh', '', 'dr', 'mm', 'ss'];
   const SYL3 = ['o', 'a', 'ix', 'en', 'ar', 'us', 'yn', 'ie', 'eo', 'an', 'ex', 'y', 'i', 'el', 'ox'];
@@ -273,13 +282,91 @@
   const step = () => SCHEDULE[C.step];
   const isWindow = () => step().type === 'window';
 
-  function newName() {
-    for (let i = 0; i < 50; i++) {
-      const n = pick(SYL1) + pick(SYL2) + pick(SYL3);
-      if (!Object.values(C.players).some((p) => p.name.toLowerCase() === n.toLowerCase())) return n;
-    }
-    return 'Rookie' + ri(10, 99);
+  /* ---------- gamer tags ----------
+     Several styles, like real scene names: plain words ("Frost"), compounds ("NightOwl"), words with numbers
+     or a trailing dot ("nova7", "kaze."), clipped first names from the player's culture ("Raysn", "Haru"),
+     and the old syllable style. Names used in earlier careers on this device are avoided for a while. */
+  const TAG_WORDS = ('frost blaze nova comet echo pixel vortex drift zephyr ember onyx rogue viper falcon raven lynx fox wolf otter panda koala mango cobalt neon atlas orbit lunar solar storm thunder rain mist ash cinder spark flare glitch byte cipher vector quantum prism nimbus aero turbo nitro jet rocket boost apex zenith pulse rift shade ghost spectre phantom wraith ronin samurai ninja kaiju titan golem goblin sprite pixie jinx hex rune myth fable saga quest hero vandal bandit outlaw maverick rebel wildcard joker ace king duke baron knight squire rook pawn bishop crown jewel ruby jade amber opal pearl topaz flint granite basalt quartz cactus maple cedar willow aspen birch pine oak ivy fern lotus orchid tulip daisy clover sage basil pepper ginger cocoa mocha latte espresso waffle pancake noodle ramen sushi taco nacho churro biscuit cookie muffin donut pretzel bagel crumb toast jelly honey sugar caramel candy mint lemon lime cherry berry plum peach melon kiwi papaya coconut banana apple acorn pebble boulder canyon summit ridge valley delta tundra savanna dune oasis harbor anchor compass sextant voyager drifter nomad pilgrim ranger scout sniper archer lancer gunner pilot captain major sergeant cadet rookie veteran legend icon idol oracle prophet wizard warlock druid shaman monk sensei master chef baker tailor smith miner digger skater surfer gamer glider rider racer runner sprinter jumper diver swimmer climber hunter keeper striker winger sweeper anchor pivot hook spin twist flip loop dash zoom zap bolt volt watt ohm amp lumen photon proton neutron atom ion mercury venus mars jupiter saturn neptune pluto vega sirius rigel orion draco hydra cetus lyra nyx eos helios kronos ares hermes apollo athena loki odin thor freya fenrir yeti sasquatch kraken siren selkie banshee pixel').split(' ');
+  const TAG_PRE = ['x', 'mr', 'lil', 'its', 'not', 'dr', 'sir', 'el', 'le', 'yo', 'just'];
+  const TAG_SUF = ['y', 'ie', 'z', 'zz', 'x', 'o', 'io', 'ey', 'ix'];
+  const FIRST = {
+    fr: 'lucas hugo theo nathan enzo louis jules gabriel arthur leo raphael noah adam maxime antoine baptiste quentin clement mathis romain axel kylian yanis bastien florian'.split(' '),
+    es: 'pablo hugo alvaro diego mario javier sergio adrian daniel marcos ivan raul alejandro carlos jorge ruben iker unai pol nil oriol'.split(' '),
+    de: 'lukas finn jonas leon felix paul niklas tim jan moritz max tobias lennard malte timo fabian kai nils ole'.split(' '),
+    en: 'jack harry oliver charlie george alfie archie freddie jake liam connor callum kieran ryan owen ethan josh ben sam tom alex'.split(' '),
+    nl: 'daan sem bram luuk jesse milan thijs ruben stijn niels joep gijs koen wout'.split(' '),
+    nordic: 'emil oskar elias william liam axel isak magnus sindre jonas viktor anton rasmus mikkel'.split(' '),
+    pl: 'jakub kacper szymon filip mateusz bartek wiktor igor oskar dawid kamil'.split(' '),
+    it: 'leonardo francesco lorenzo mattia tommaso riccardo edoardo giulio pietro marco'.split(' '),
+    pt: 'joao rodrigo tiago diogo goncalo duarte afonso tomas martim rafael'.split(' '),
+    us: 'jayden mason logan ethan aiden caleb hunter tyler austin brandon colton chase blake dylan landon carter bryce gavin trevor'.split(' '),
+    mx: 'santiago mateo emiliano diego leonardo sebastian rodrigo alonso emilio angel'.split(' '),
+    br: 'gabriel arthur davi bernardo heitor theo miguel enzo pedro joao lucas guilherme rafael vinicius caio thiago felipe matheus kaique'.split(' '),
+    ar: 'mateo benjamin bautista thiago santino joaquin lautaro tomas valentin franco agustin nicolas'.split(' '),
+    arab: 'faisal rayan abdullah omar khalid saud nawaf turki yazeed fahad hamad salman majed ziad yousef karim anas bader meshal amir'.split(' '),
+    maghreb: 'yassine amine mehdi ayoub hamza ilyas anas karim nassim walid sofiane'.split(' '),
+    jp: 'haruto sota yuto riku hinata kaito ren minato yuma hayato kenta daiki takumi ryo shun'.split(' '),
+    kr: 'minjun seojun doyun jiho junwoo hyunwoo jihun taeyang seungmin dohyun'.split(' '),
+    sea: 'arif farhan danish haziq nattapong kittisak somchai minh khoa duc rizky bayu andre paolo marco'.split(' '),
+    cn: 'hao yu jun wei ming lei kai chen bo tian'.split(' '),
+    oce: 'cooper hudson lachlan jack riley mitchell harrison flynn beau archer tane nikau'.split(' '),
+    ssa: 'thabo sipho lwazi kagiso tumelo neo musa jabu kwame tendai chinedu tunde themba'.split(' '),
+  };
+  const CULTURE = { France: 'fr', Belgium: 'fr', Switzerland: 'fr', Spain: 'es', England: 'en', Scotland: 'en', Wales: 'en', Ireland: 'en', Germany: 'de', Austria: 'de', Netherlands: 'nl', Denmark: 'nordic', Sweden: 'nordic', Norway: 'nordic', Finland: 'nordic', Estonia: 'nordic', Poland: 'pl', Czechia: 'pl', Slovakia: 'pl', Ukraine: 'pl', Lithuania: 'pl', Italy: 'it', Portugal: 'pt', 'United States': 'us', Canada: 'us', 'Puerto Rico': 'mx', Mexico: 'mx', 'Costa Rica': 'mx', Guatemala: 'mx', Brazil: 'br', Argentina: 'ar', Chile: 'ar', Uruguay: 'ar', Peru: 'ar', Colombia: 'ar', Paraguay: 'ar', Ecuador: 'ar', Bolivia: 'ar', Venezuela: 'ar', Morocco: 'maghreb', Algeria: 'maghreb', Tunisia: 'maghreb', Japan: 'jp', 'South Korea': 'kr', China: 'cn', Taiwan: 'cn', 'Hong Kong': 'cn', Australia: 'oce', 'New Zealand': 'oce', Fiji: 'oce' };
+  const cultureOf = (country, region) => CULTURE[country] || { MENA: 'arab', APAC: 'sea', SSA: 'ssa', EU: 'en', NA: 'us', SAM: 'br', OCE: 'oce' }[region] || 'en';
+  const cap = (w) => w.charAt(0).toUpperCase() + w.slice(1);
+  /** Clip a first name the way players do: "Raphael" → "Raph", "Rayan" → "Raysn"-style twists, doubled letters, "-y" endings. */
+  function clipName(n) {
+    const r = Math.random();
+    if (r < 0.3) return n.slice(0, ri(3, Math.max(3, Math.min(5, n.length))));
+    if (r < 0.5) return n.slice(0, ri(3, 4)) + pick(['y', 'z', 'x', 'o', 'ie', 'i']);
+    if (r < 0.65) return n.replace(/[aeiou](?=[^aeiou]*$)/, '') || n;
+    if (r < 0.8) return n.split('').reverse().join('').slice(0, ri(3, 6));
+    return n;
   }
+  function styleCase(n) {
+    const r = Math.random();
+    if (r < 0.45) return n.toLowerCase();
+    if (r < 0.95 || n.length > 5) return cap(n.toLowerCase());
+    return n.toUpperCase();
+  }
+  const shortWord = () => { let w; do { w = pick(TAG_WORDS); } while (w.length > 5); return w; };
+  function rawTag(country, region) {
+    const r = Math.random();
+    if (r < 0.3) return cap(pick(TAG_WORDS)); // Frost
+    if (r < 0.36) return cap(shortWord()) + cap(shortWord()); // short compounds: IceFox
+    if (r < 0.48) return (Math.random() < 0.5 ? shortWord() : pick(TAG_WORDS)) + (Math.random() < 0.55 ? ri(1, 99) : pick(TAG_SUF)); // nova7 / frosty
+    if (r < 0.52) return pick(TAG_PRE) + cap(shortWord()); // xFrost, lilNova
+    if (r < 0.85) return clipName(pick(FIRST[cultureOf(country, region)])); // clipped first name
+    return pick(SYL1) + pick(SYL2) + pick(SYL3); // syllable style
+  }
+  let usedNames = null;
+  const USED_KEY = 'rlsim.usedNames';
+  function usedSet() {
+    if (usedNames) return usedNames;
+    try { usedNames = new Set(JSON.parse(localStorage.getItem(USED_KEY) || '[]')); } catch (e) { usedNames = new Set(); }
+    return usedNames;
+  }
+  function rememberName(n) {
+    const u = usedSet(); u.add(n.toLowerCase());
+    if (u.size % 25 === 0 || u.size < 25) { try { localStorage.setItem(USED_KEY, JSON.stringify(Array.from(u).slice(-5000))); } catch (e) { /* storage full */ } }
+  }
+  function newName(country, region) {
+    const taken = new Set(Object.values(C.players).map((p) => p.name.toLowerCase()));
+    const used = usedSet();
+    for (let i = 0; i < 80; i++) {
+      let n = styleCase(rawTag(country, region)).replace(/[^A-Za-z0-9.]/g, '');
+      if (Math.random() < 0.06) n += '.';
+      if (n.length < 3 || n.length > 11) continue;
+      const k = n.toLowerCase();
+      if (taken.has(k) || (i < 60 && used.has(k))) continue; // a fresh name, also across this device's earlier careers
+      rememberName(n);
+      return n;
+    }
+    return 'Rookie' + ri(100, 999);
+  }
+  /** Development curve: early bloomers peak young and fade sooner, late bloomers keep growing into their mid-20s. */
+  const pickCurve = () => { const r = Math.random(); return r < 0.22 ? 'early' : r < 0.78 ? 'normal' : 'late'; };
   function addPlayer(p) {
     const id = 'p' + (C.nextPid++);
     const full = Object.assign({ id, team: null, contract: ri(1, 3), stats: { gp: 0, g: 0, a: 0, sv: 0, score: 0 }, form: 0 }, p);
@@ -291,7 +378,7 @@
     const country = pick(ROOKIE_COUNTRIES[region]);
     const age = ri(16, 20);
     const rating = ri(58, 74);
-    return addPlayer({ name: newName(), country, flag: global.RL_DATA.flagFor(country), region, age, rating, pot: clamp(rating + ri(6, 22), rating, 97) });
+    return addPlayer({ name: newName(country, region), country, flag: global.RL_DATA.flagFor(country), region, age, rating, pot: clamp(rating + ri(6, 22), rating, 97), curve: pickCurve() });
   }
 
   /* ---------------- youth academies ----------------
@@ -303,6 +390,8 @@
   const AC_UPKEEP = 6000; // per level, per season
   const acTier = (cid) => (cid === C.user ? C.acLevel || 1 : Math.max(1, tierOf(cid) - 1)); // AI: Established 2, Major 3, Elite 4
   const acCap = (cid) => (cid === C.user ? 2 + Math.floor((C.acLevel || 1) / 2) : tierOf(cid) >= 4 ? 3 : 2);
+  /** Each career rolls how good every academy is, so different clubs produce the stars in each save. */
+  const acRep = (cid) => { C.acRep = C.acRep || {}; if (C.acRep[cid] == null) C.acRep[cid] = Math.round(rnd(0.45, 1.8) * 100) / 100; return C.acRep[cid]; };
   const hasAcademy = (cid) => cid === C.user || tierOf(cid) >= 3;
   /** The star count of the real 2027 scene, used as the long-run target. */
   function talentBase() {
@@ -313,9 +402,9 @@
     const reg = C.teams[cid] ? C.teams[cid].region : cid;
     const country = pick(ROOKIE_COUNTRIES[reg]);
     const q = C.teams[cid] ? acTier(cid) : 2;
-    const pot = elite ? ri(91, 97) : clamp(ri(70, 80 + q * 2), 68, 90);
-    const rating = elite ? ri(67, 74) : ri(54, 64 + q);
-    const id = addPlayer({ name: newName(), country, flag: global.RL_DATA.flagFor(country), region: reg, age: ri(15, 16), rating, pot, contract: 0, salary: 0, academy: C.teams[cid] ? cid : null, wonder: elite || undefined, intake: C.season });
+    const pot = elite ? ri(89, 97) : clamp(ri(70, 80 + q * 2) + (Math.random() < 0.05 ? ri(4, 8) : 0), 68, 93); // the odd hidden gem
+    const rating = elite ? ri(64, 75) : ri(54, 64 + q);
+    const id = addPlayer({ name: newName(country, reg), curve: pickCurve(), country, flag: global.RL_DATA.flagFor(country), region: reg, age: ri(15, 16), rating, pot, contract: 0, salary: 0, academy: C.teams[cid] ? cid : null, wonder: elite || undefined, intake: C.season });
     if (C.teams[cid]) (C.academy[cid] = C.academy[cid] || []).push(id);
     return id;
   }
@@ -340,7 +429,7 @@
     // extra development for academy players (on top of the normal growth)
     Object.keys(C.academy).forEach((cid) => (C.academy[cid] || []).forEach((pid) => {
       const p = C.players[pid]; if (!p) return;
-      const d = rnd(1.5, 3.5) + (acTier(cid) - 2) * 0.5;
+      const d = rnd(1.5, 3.5) + (acTier(cid) - 2) * 0.5 + (cid === C.user ? 0 : (acRep(cid) - 1) * 0.8);
       p.rating = clamp(Math.round(Math.min(p.pot, p.rating + d)), 45, 99);
     }));
     // graduations
@@ -374,7 +463,7 @@
     for (let i = 0; i < elite; i++) {
       // bigger academies find more of them; a quarter come through unattached and can be signed by anyone
       if (Math.random() < 0.25) { const id = makeProspect(pick(REGIONS), true); C.players[id].age = ri(16, 17); C.fa.push(id); wonders.push(C.players[id]); continue; }
-      const w = clubs.map((cid) => (cid === C.user ? 1 + (C.acLevel || 1) * 0.8 : [0, 0, 0, 1, 2, 3.2][tierOf(cid)]));
+      const w = clubs.map((cid) => (cid === C.user ? 1 + (C.acLevel || 1) * 0.8 : [0, 0, 0, 1, 2, 3.2][tierOf(cid)] * acRep(cid) * acRep(cid)));
       let x = Math.random() * w.reduce((a, b) => a + b, 0), k = 0;
       while (k < clubs.length - 1 && x > w[k]) { x -= w[k]; k++; }
       wonders.push(C.players[makeProspect(clubs[k], true)]);
@@ -410,7 +499,7 @@
         const known = born ? ageFromBorn(born) : null;
         const age = known != null ? known : 17 + Math.floor(hash(t.id + p.name) * 10);
         const pot = clamp(p.rating + Math.max(0, 23 - age) * (1 + hash(p.name) * 1.4), p.rating, 97);
-        return addPlayer({ name: p.name, country: p.country, flag: p.flag, region: t.region, age, born: born || undefined, ageKnown: known != null, rating: p.rating, pot: Math.round(pot), team: cid, contract: 1 + Math.floor(hash(p.name + 'c') * 3), sub: i >= 3 });
+        return addPlayer({ curve: pickCurve(), name: p.name, country: p.country, flag: p.flag, region: t.region, age, born: born || undefined, ageKnown: known != null, rating: p.rating, pot: Math.round(pot), team: cid, contract: 1 + Math.floor(hash(p.name + 'c') * 3), sub: i >= 3 });
       });
       const base = E.teamStrength(t);
       const tier = orgTier(t.name, !!t.partner, base);
@@ -810,10 +899,19 @@
     const topG = all.slice().sort((a, b) => b.stats.g - a.stats.g)[0];
     // player development, ageing, contracts, retirements
     const devLines = [];
+    let breakNews = 0;
     Object.values(C.players).forEach((p) => {
       const old = p.rating;
+      if (!p.curve) p.curve = pickCurve();
+      // surprises: some youngsters break out (higher ceiling), some stall (lower ceiling)
+      if (p.age <= 22 && (p.team || p.academy || C.fa.includes(p.id))) {
+        const r = Math.random();
+        if (r < 0.09) { const was = p.pot; p.pot = clamp(p.pot + ri(3, 9), p.rating, 97); if (was < 90 && p.pot >= 90 && p.rating >= 74 && breakNews < 3) { breakNews++; news('academy', `<span class="tag-hot">Breakout</span> <b>${esc(p.name)}</b> (${p.age}${p.team && C.teams[p.team] ? ', ' + esc(C.teams[p.team].name) : ''}) is suddenly the talk of the scene: scouts now see a future star.`, { pid: p.id }); } }
+        else if (r < 0.17) p.pot = Math.max(p.rating, p.pot - ri(2, 7));
+      }
+      const ea = p.age + ({ early: 1.5, late: -2 }[p.curve] || 0); // the age the body "feels" on this curve
       let d;
-      if (p.age <= 20) d = rnd(1, 5); else if (p.age <= 23) d = rnd(0, 3); else if (p.age <= 26) d = rnd(-1, 1.5); else if (p.age <= 28) d = rnd(-3, 0.5); else d = rnd(-5, -1);
+      if (ea <= 20) d = rnd(1, 5); else if (ea <= 23) d = rnd(0, 3); else if (ea <= 26) d = rnd(-1, 1.5); else if (ea <= 28) d = rnd(-3, 0.5); else d = rnd(-5, -1);
       if (p.rating + d > p.pot) d = Math.min(d, Math.max(0, p.pot - p.rating)) + (d < 0 ? d : 0);
       if (p.stats.gp > 30) d += clamp((p.stats.score / p.stats.gp - 380) / 120, -1, 1.5);
       p.rating = clamp(Math.round(p.rating + d), 45, 99);
