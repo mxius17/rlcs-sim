@@ -88,8 +88,8 @@
     ['A', 'B'].forEach((side) => {
       const team = this.cars.filter((k) => k.side === side).sort((p, q) => len(p.x, p.y) - len(q.x, q.y) || p.y - q.y);
       team[0].kick = 'go';
-      team[1].kick = 'cheat';
-      team[2].kick = 'boost';
+      if (team.length === 2) team[1].kick = 'boost';
+      else if (team[1]) { team[1].kick = 'cheat'; if (team[2]) team[2].kick = 'boost'; }
     });
     this.kickT = 0;
   };

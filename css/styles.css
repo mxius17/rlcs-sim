@@ -2332,3 +2332,42 @@ html.cer-open, html.cer-open body { overflow: hidden; }
   .cut-worlds .cut-team { padding: 4px 5px; gap: 4px; } .cut-worlds .cut-team .badge { width: 20px; height: 20px; } .cut-worlds .cut-team small { font-size: 10px; }
   .cut-reg .cut-team { padding: 4px 2px; }
 }
+
+/* ---------- 1v1 & 2v2 Championships ---------- */
+.side-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.side-card { display: flex; gap: 14px; align-items: flex-start; text-align: left; padding: 16px; border-radius: 16px; color: var(--text); cursor: pointer;
+  border: 1px solid color-mix(in srgb, #d4a017 40%, var(--line)); background: linear-gradient(135deg, color-mix(in srgb, #1f5bff 22%, var(--tile)), var(--tile) 70%); transition: border-color .12s; }
+.side-card:hover { border-color: #d4a017; }
+.side-mono { flex: none; width: 54px; height: 54px; border-radius: 12px; display: grid; place-items: center; font-family: var(--display); font-weight: 700; font-size: 17px; color: #d4a017; border: 1.5px solid #d4a017; background: rgba(212,160,23,0.08); }
+.side-txt { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.side-txt b { font-family: var(--display); font-size: 17px; font-weight: 600; }
+.side-txt small { color: var(--text-2); font-size: 12px; }
+.side-prog { display: flex; gap: 4px; flex-wrap: wrap; margin: 4px 0 2px; }
+.side-prog i { font-style: normal; font-size: 10px; font-weight: 700; letter-spacing: .04em; padding: 2px 6px; border-radius: 5px; border: 1px solid var(--line-strong); color: var(--text-3); }
+.side-prog i.on { color: #0b1226; background: #d4a017; border-color: #d4a017; }
+.side-prog i.w { border-style: dashed; }
+.side-rows { display: flex; flex-direction: column; gap: 8px; }
+.side-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--e1, #2f8cff) 40%, var(--line)); background: linear-gradient(100deg, color-mix(in srgb, var(--e1, #2f8cff) 16%, var(--tile)), var(--tile) 60%); }
+.side-reg { flex: none; width: 46px; height: 34px; display: grid; place-items: center; border-radius: 8px; font-weight: 700; font-size: 12px; color: var(--e-on, #fff); background: var(--e1, #2f8cff); }
+.side-mid { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.side-mid small { color: var(--text-2); font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
+.side-worlds { padding: 12px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--e3, #d4a017) 45%, var(--line)); background: linear-gradient(135deg, color-mix(in srgb, var(--e1, #1f5bff) 18%, var(--tile)), var(--tile) 70%); display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.side-wf { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: 100%; }
+.side-champ { margin: 0; font-size: 13px; }
+@media (max-width: 760px) {
+  .side-grid, .side-wf { grid-template-columns: 1fr; }
+  .side-row { flex-wrap: wrap; }
+  .side-row .btn { margin-left: auto; }
+}
+/* career: 16-step season timeline, 1v1/2v2 field */
+.timeline { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+@media (max-width: 720px) { .timeline { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.tl.side b, .tl.sidew b { color: #d4a017; }
+.sf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 6px; margin: 10px 0 4px; }
+.sf-chip { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg-2); min-width: 0; }
+.sf-chip i { flex: none; font-style: normal; font-size: 10px; font-weight: 700; color: var(--text-3); min-width: 18px; text-align: center; }
+.sf-chip > span { min-width: 0; display: flex; flex-direction: column; }
+.sf-chip b { font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sf-chip small { font-size: 11px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sf-chip.me { border-color: var(--accent, #2f8cff); background: var(--blue-soft); }
+@media (max-width: 760px) { .sf-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

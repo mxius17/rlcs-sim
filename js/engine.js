@@ -638,7 +638,9 @@
     const psA = A.id === T.managed ? PLAYSTYLES[T.playstyle] || PLAYSTYLES.balanced : PLAYSTYLES.balanced;
     const psB = B.id === T.managed ? PLAYSTYLES[T.playstyle] || PLAYSTYLES.balanced : PLAYSTYLES.balanced;
     const sA = teamStrength(A) + psA.str, sB = teamStrength(B) + psB.str;
-    return { style, goals, psA, psB, sA, sB };
+    // 1v1 and 2v2: fewer goals than 3v3 (more space, but one or two attackers)
+    const n = Math.min(3, (A.players || []).length || 3, (B.players || []).length || 3);
+    return { style, goals: goals * (n === 1 ? 0.74 : n === 2 ? 0.9 : 1), psA, psB, sA, sB };
   }
 
   /** Simulate one game. Returns {ga, gb, ot, otTime, events:[...], pstats} */
@@ -713,7 +715,7 @@
         }
         const demos = poisson((side === 'A' && psA === PLAYSTYLES.demo) || (side === 'B' && psB === PLAYSTYLES.demo) ? 3.4 : 1.7);
         for (let i = 0; i < demos; i++) {
-          const who = list[Math.floor(rnd() * 3)]; const vic = olist[Math.floor(rnd() * 3)];
+          const who = list[Math.floor(rnd() * list.length)]; const vic = olist[Math.floor(rnd() * olist.length)];
           who.dm++; who.score += 15;
           events.push({ t: rnd() * 299, type: 'demo', side, who: who.name, victim: vic.name });
         }
@@ -730,7 +732,7 @@
       for (let i = 0; i < n; i++) {
         const s = rnd() < 0.5 ? 'A' : 'B';
         const list = s === 'A' ? pa : pb, olist = s === 'A' ? pb : pa;
-        const shooter = list[Math.floor(rnd() * 3)], saver = olist[Math.floor(rnd() * 3)];
+        const shooter = list[Math.floor(rnd() * list.length)], saver = olist[Math.floor(rnd() * olist.length)];
         shooter.sh++; shooter.score += 20; saver.sv++; saver.score += 50;
         events.push({ t: 300 + rnd() * otTime, type: 'save', side: s, shooter: shooter.name, saver: saver.name, ot: true });
       }
