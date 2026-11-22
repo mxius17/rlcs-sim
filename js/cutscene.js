@@ -196,7 +196,7 @@
     const sty = o.worlds ? null : styleFor(o.city);
     const layers = sty ? fx(sty.mood, seeded(o.city + '|fx')) : { back: '', front: '' };
     const el = document.createElement('div');
-    el.className = 'cut' + (o.worlds ? ' cut-worlds' : ` mood-${sty.mood} open-${sty.open} title-${sty.title}`);
+    el.className = 'cut' + (o.worlds ? ' cut-worlds' : ` mood-${sty.mood} open-${sty.open} title-${sty.title}`) + (o.week ? ' has-week' : '');
     el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Major intro: ' + o.city);
     el.style.cssText = `--a:${a};--b:${b};--c:${c}`;
     el.innerHTML = `
@@ -225,7 +225,7 @@
       <div class="cut-bands" aria-hidden="true"><i></i><i></i><i></i></div>
       ${sty && sty.open === 'shutter' ? `<div class="cut-shutter" aria-hidden="true">${[0, 1, 2, 3, 4, 5, 6, 7].map((k) => `<i style="--k:${k}"></i>`).join('')}</div>` : ''}
       <div class="cut-text">
-        ${o.worlds ? '<span class="cut-wc">World Championship</span>' : ''}<span class="cut-kicker">${esc(o.kicker)}</span>
+        ${o.worlds ? `<span class="cut-wc">${esc(o.chip || 'World Championship')}</span>` : ''}<span class="cut-kicker">${esc(o.kicker)}</span>
         <span class="cut-hello">${esc(hello)}</span>
         <h1 class="cut-name" aria-label="${esc(o.city)}" style="--len:${longest}">${letters}</h1>
         <span class="cut-country">${o.flag || ''} ${esc(o.country)}</span>
@@ -239,6 +239,9 @@
         ${o.holder ? `<p class="cut-holder">🏆 Defending champions: <b>${esc(o.holder)}</b></p>` : ''}
         ${o.note ? `<p class="cut-note">${esc(o.note)}</p>` : ''}
       </div>
+      ${o.week ? `<div class="cut-week" aria-label="Worlds Week schedule"><span class="cut-fh">Worlds Week · three world titles</span><div class="cut-days">${o.week.map((d, k) => `<div class="cut-day${d.now ? ' now' : ''}${d.done ? ' done' : ''}" style="--k:${k}">
+          <small>${esc(d.day)}${d.now ? ' · <b>Up next</b>' : d.done ? ' · Played' : ''}</small><h3>${esc(d.name)}</h3><p>${esc(d.sub)}</p>
+          ${d.list.length ? `<div class="cut-dl">${d.list.map((e) => `<span class="${e.mine ? 'mine' : ''}">${e.badge || ''}<b>${esc(e.name)}</b><i>${esc(e.region || '')}</i></span>`).join('')}</div>` : ''}</div>`).join('')}</div></div>` : ''}
       <div class="cut-ui"><button class="cut-skip" type="button">Skip intro</button><button class="cut-go" type="button">Let’s go →</button></div>`;
     document.body.appendChild(el);
     document.documentElement.classList.add('cer-open');
@@ -250,7 +253,9 @@
     document.addEventListener('keydown', S.onKey, true);
     // second beat: the city text moves up and the field flies in
     S.timers.push(setTimeout(() => { if (!S.dead) el.classList.add('beat2'); }, o.worlds ? 5200 : 4300));
-    S.timers.push(setTimeout(() => { const g = el.querySelector('.cut-go'); if (g && !S.dead) { g.classList.add('on'); g.focus({ preventScroll: true }); } }, o.worlds ? 7200 : 6200));
+    // Worlds Week: the schedule of the three events first, then the World Championship field
+    if (o.week) S.timers.push(setTimeout(() => { if (!S.dead) el.classList.add('beat3'); }, 10200));
+    S.timers.push(setTimeout(() => { const g = el.querySelector('.cut-go'); if (g && !S.dead) { g.classList.add('on'); g.focus({ preventScroll: true }); } }, o.week ? 12000 : o.worlds ? 7200 : 6200));
   }
 
   global.RLCutscene = { play, stop, has: (city) => !!SCENE[city], styleFor };

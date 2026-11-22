@@ -292,7 +292,7 @@
     const ps = sidePids(id).map((pid) => C.players[pid]).filter(Boolean);
     if (!ps.length) return null;
     const club = C.teams[ps[0].team] || null;
-    const obj = { id, side: +id[3], name: ps.map((p) => p.name).join(' & '), tag: club ? club.tag : ps[0].name.slice(0, 4).toUpperCase(), region: club ? club.region : ps[0].region, color: club ? club.color : '#556', club: club ? club.name : 'Free agent',
+    const obj = { id, side: +id[3], logoKey: club ? club.logoKey || club.name : undefined, name: ps.map((p) => p.name).join(' & '), tag: club ? club.tag : ps[0].name.slice(0, 4).toUpperCase(), region: club ? club.region : ps[0].region, color: club ? club.color : '#556', club: club ? club.name : 'Free agent',
       players: ps.map((p) => ({ name: p.name, country: p.country, flag: p.flag, rating: p.rating, pid: p.id })), career: true };
     obj.ovr = Math.round(E.teamStrength(obj));
     teamCache[id] = obj;
@@ -689,7 +689,7 @@
   const majorCity = (st) => seasonHosts(C.season)[st.split === 2 ? 'm2' : 'm1'];
   const worldsCity = () => seasonHosts(C.season).w;
   const hostCity = (st) => (st.type === 'major' ? majorCity(st) : st.type === 'worlds' || st.type === 'sidew' ? worldsCity() : null);
-  const themeKeyFor = (st) => { if (st.type === 'open') return C && (V() || userTeam()) ? regionKey(homeReg()) : null; if (st.type === 'side' || st.type === 'sidew') return 'side-' + st.mode + 'v' + st.mode + (st.type === 'sidew' ? '-wc' : ''); if (st.type === 'worlds') return 'career-worlds'; const c = hostCity(st); return c && HOST_PAL[c] ? hostKey(c) : null; };
+  const themeKeyFor = (st) => { if (st.type === 'open') return C && (V() || userTeam()) ? regionKey(homeReg()) : null; if (st.type === 'side') return 'side-' + st.mode + 'v' + st.mode; if (st.type === 'worlds' || st.type === 'sidew') return 'career-worlds'; const c = hostCity(st); return c && HOST_PAL[c] ? hostKey(c) : null; };
   const hostTheme = (st) => { const k = themeKeyFor(st); return k ? window.RL_EVENT_THEMES[k] || null : null; };
   const hostVars = (th) => (th ? `--e1:${th.a};--e2:${th.b};--e3:${th.c};--e-on:${th.on}` : '');
 
@@ -1196,7 +1196,7 @@
     const field = ids.length ? `<div class="sf-grid">${ids.map((id, i) => { const o = sideObj(id); if (!o) return ''; const me = sideClub(id) === C.user; return `<span class="sf-chip${me ? ' me' : ''}"><i>${W ? esc(o.region) : i + 1}</i><span><b>${o.players.map((p) => p.flag || '').join('')} ${esc(o.name)}</b><small>${esc(o.club)} · ${o.ovr}</small></span></span>`; }).join('')}</div>` : '';
     return `<p><b>${esc(title)}</b> · ${desc}.</p><p class="help">${help}</p>${mineTxt}${field}
       <div class="action-row">${activeEvent ? `<button class="btn primary" data-action="resume">Resume event →</button><button class="btn" data-action="career-sim-rest">Simulate the rest</button>`
-        : `${ids.length ? `<button class="btn primary" data-action="career-play">▶ ${mine.length ? 'Play' : 'Watch'} event</button>` : ''}<button class="btn ${ids.length ? '' : 'primary'}" data-action="career-sim">Simulate event${W ? '' : 's'}</button>`}</div>${ids.length && window.RLSideIntro ? `<button class="fc-intro" data-action="career-intro">▶ Watch the ${mode} ${W ? 'World Championship' : 'Open'} intro</button>` : ''}`;
+        : `${ids.length ? `<button class="btn primary" data-action="career-play">▶ ${mine.length ? 'Play' : 'Watch'} event</button>` : ''}<button class="btn ${ids.length ? '' : 'primary'}" data-action="career-sim">Simulate event${W ? '' : 's'}</button>`}</div>${ids.length && window.RLSideIntro && !W ? `<button class="fc-intro" data-action="career-intro">▶ Watch the ${mode} Open intro</button>` : ''}`;
   }
   function renderHub(app) {
     const st = step();
@@ -1317,7 +1317,7 @@
         <div class="fc-side-row"><span class="fc-day">${C.step + 1}</span><span><small>${esc(st.type === 'window' ? 'Transfer window' : st.type === 'review' ? 'Season review' : st.type === 'open' ? 'Regional Open' : st.type === 'major' ? 'Major' : st.type === 'side' ? (st.mode === 1 ? '1v1' : '2v2') + ' Championship' : st.type === 'sidew' ? 'Worlds week' : 'World Championship')}</small><b>${esc(st.short || st.name)}</b></span><span class="fc-ico" aria-hidden="true">${st.type === 'window' ? '⇄' : st.type === 'review' ? '★' : '🏆'}</span></div>
         <div class="fc-side-mid"><small>${viewer ? 'Neutral viewer · home region ' + esc(api.regions[reg]) : esc(t.name) + ' · ' + regionRankLabel() + ' in ' + esc(api.regions[reg])}</small>
           <div class="fc-rings">${viewer ? (() => { const n88 = Object.values(C.players).filter((p) => p.team && p.rating >= 88).length, base = (C.base || talentBase()).n88; return ring(t.ovr - 60, 40, 'Region leader', `<span data-count="${t.ovr}">${t.ovr}</span>`, '◆') + ring(n88, Math.round(base * 1.5), 'Stars 88+', `<span data-count="${n88}">${n88}</span>`, '★'); })() : ring(t.ovr - 60, 40, 'Team rating', `<span data-count="${t.ovr}">${t.ovr}</span>`, '◆')}${viewer ? '' : ring(C.board, 100, 'Board', `<span data-count="${C.board}" data-suf="%">${C.board}%</span>`, '☺')}${ring(C.step + 1, SCHEDULE.length, 'Season', (C.step + 1) + '/' + SCHEDULE.length, '▶')}</div></div>
-        <div class="fc-next">${next}${(st.type === 'major' || st.type === 'worlds') && window.RLCutscene ? `<button class="fc-intro" data-action="career-intro">▶ Watch the ${esc(st.type === 'worlds' ? worldsCity() + ' Worlds' : majorCity(st))} intro</button>` : ''}</div>
+        <div class="fc-next">${next}${(st.type === 'major' || st.type === 'worlds' || st.type === 'sidew') && window.RLCutscene ? `<button class="fc-intro" data-action="career-intro">▶ Watch the ${esc(st.type === 'major' ? majorCity(st) : worldsCity() + ' Worlds Week')} intro</button>` : ''}</div>
       </aside>`;
     const tiles = `<nav class="fc-tiles" aria-label="Career hub">${VIEWS.map(([k, l, sub]) => `<button class="fc-tile ${k === view && tab === 'central' ? 'on' : ''}" data-action="career-view" data-v="${k}"><b>${l}</b><small>${esc(sub)}</small><span class="fc-tile-ico" aria-hidden="true">${{ next: '▶', standings: '☰', schedule: '▦', objectives: '✔', news: '▤' }[k]}</span></button>`).join('')}</nav>`;
     // ---- tabs ----
@@ -1404,12 +1404,13 @@
     const ts = app.querySelector('#thSort');
     if (ts) ts.addEventListener('change', () => { ui.thSort = ts.value; ui.thSel = null; api.render(); });
     // first time a Major comes up: its host-city intro plays once
-    const cutKey = C.season + '|' + st.key;
-    if ((st.type === 'major' || st.type === 'worlds') && tab === 'central' && !activeEvent && window.RLCutscene && !(C.cutSeen || []).includes(cutKey)) {
+    const week = st.type === 'worlds' || st.type === 'sidew';
+    const cutKey = C.season + '|' + (week ? 'week' : st.key);
+    if ((st.type === 'major' || week) && tab === 'central' && !activeEvent && window.RLCutscene && !(C.cutSeen || []).includes(cutKey)) {
       C.cutSeen = (C.cutSeen || []).concat(cutKey).slice(-40); save();
       setTimeout(() => playMajorIntro(st), 350);
     }
-    if ((st.type === 'side' || st.type === 'sidew') && tab === 'central' && !activeEvent && window.RLSideIntro && !(C.cutSeen || []).includes(cutKey) && sideIntroField(st).length) {
+    if (st.type === 'side' && tab === 'central' && !activeEvent && window.RLSideIntro && !(C.cutSeen || []).includes(cutKey) && sideIntroField(st).length) {
       C.cutSeen = (C.cutSeen || []).concat(cutKey).slice(-40); save();
       setTimeout(() => playSideIntro(st), 350);
     }
@@ -1432,7 +1433,9 @@
   /** The host city's intro for a Major (js/cutscene.js), with the 16 qualified teams. */
   function playMajorIntro(st) {
     if (!window.RLCutscene || !C) return;
-    const wc = st.type === 'worlds';
+    const wc = st.type === 'worlds' || st.type === 'sidew';
+    const cur = st;
+    if (wc) st = SCHEDULE.find((x) => x.type === 'worlds');
     const city = wc ? worldsCity() : majorCity(st), pal = HOST_PAL[city], th = hostTheme(st) || { a: '#1f8bff', b: '#121A2E', c: '#d4a017' };
     const country = pal ? pal[0] : '';
     const flag = global.RL_DATA.flagFor(country === 'United Kingdom' ? (city === 'Edinburgh' ? 'Scotland' : 'England') : country);
@@ -1444,7 +1447,15 @@
     const home = V() ? ids.filter((id) => C.teams[id].region === homeReg()).length : 0;
     const note = V() ? `${home} team${home === 1 ? '' : 's'} from ${api.regions[homeReg()]} made it.` : mineIn ? `${userTeam().name} are in, ${wc ? 'one of ' + ids.length + ' teams chasing the world title.' : 'seeded ' + E.ordinal(eventCfg(st).cfg.teams.slice().sort((x, y) => ovr(y) - ovr(x)).indexOf(C.user) + 1) + ' of 16.'}` : `${userTeam().name} did not qualify. You can still simulate the event and follow the results.`;
     const prev = (C.history || []).find((h) => h.season === C.season - 1);
-    window.RLCutscene.play({ city, country, flag, palette: th, worlds: wc, holder: wc && prev && prev.champion && prev.champion !== '—' ? prev.champion : null, kicker: wc ? `RLCS ${C.season} · The season finale` : `RLCS ${C.season} · ${st.name} · Split ${st.split}`, field, note });
+    // Worlds Week: the 1v1 and 2v2 World Championships, then the World Championship itself
+    const sideList = (n) => sideWorldsField(n).map((id) => { const o = sideObj(id); return o && { name: o.name, region: o.region, badge: api.badge(o, 'sm'), mine: !V() && sideClub(id) === C.user }; }).filter(Boolean);
+    const now = cur.type === 'sidew' ? 'wd' + cur.mode : 'w';
+    const week = wc ? [
+      { key: 'wd1', day: 'Day 1', name: '1v1 World Championship', sub: 'The four regional 1v1 Open winners · $85,000', list: sideList(1), done: !!C.results.wd1 },
+      { key: 'wd2', day: 'Day 2', name: '2v2 World Championship', sub: 'The four regional 2v2 Open winners · $170,000', list: sideList(2), done: !!C.results.wd2 },
+      { key: 'w', day: 'Days 3–6', name: 'World Championship', sub: ids.length + ' teams from 7 regions · groups, then the knockout', list: [], done: false },
+    ].map((x) => Object.assign(x, { now: x.key === now })) : null;
+    window.RLCutscene.play({ city, country, flag, palette: th, worlds: wc, week, chip: wc ? 'Worlds Week' : null, holder: wc && prev && prev.champion && prev.champion !== '—' ? prev.champion : null, kicker: wc ? `RLCS ${C.season} · The season finale` : `RLCS ${C.season} · ${st.name} · Split ${st.split}`, field, note });
   }
   /** Viewer: the 16 strongest teams worldwide. */
   function powerHtml() {
@@ -1804,7 +1815,7 @@
     switch (a) {
       case 'career-pick': newCareer(id, api.state.ui.cdiff || 'normal'); api.go('career'); return true;
       case 'career-viewer': newCareer(null, 'normal', v || 'EU'); api.state.ui.ctab = 'central'; api.state.ui.cview = 'next'; api.go('career'); return true;
-      case 'career-intro': { const st = step(); if (st.type === 'major' || st.type === 'worlds') playMajorIntro(st); else if (st.type === 'side' || st.type === 'sidew') playSideIntro(st); return true; }
+      case 'career-intro': { const st = step(); if (st.type === 'major' || st.type === 'worlds' || st.type === 'sidew') playMajorIntro(st); else if (st.type === 'side') playSideIntro(st); return true; }
       case 'career-vpick': api.state.ui.vreg = v; api.render(); return true;
       case 'career-vmarket': api.state.ui.ctab = 'transfers'; api.state.ui.thTab = 'activity'; api.state.ui.thSel = null; api.render(); window.scrollTo({ top: 0 }); return true;
       case 'career-vreg': if (C && V() && REGIONS.includes(v)) { C.vreg = v; bump(); save(); api.render(); } return true;

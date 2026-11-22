@@ -2841,3 +2841,35 @@ html.cer-open, html.cer-open body { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { .cfx i, .cfx svg, .cfx span { animation: none !important; } .cfx-rain, .cfx-snow, .cfx-petals, .cfx-sand { display: none; } }
 .cfx-fw span::after { content: ''; position: absolute; left: -30px; top: -30px; width: 60px; height: 60px; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--c2) 80%, #fff), transparent 65%); opacity: 0; animation: cfxCore 2.6s var(--d) ease-out infinite; }
 @keyframes cfxCore { 0% { opacity: 1; transform: scale(.3); } 30% { opacity: .6; transform: scale(1.6); } 100% { opacity: 0; transform: scale(2.2); } }
+
+/* Worlds Week intro: the three world titles of the week, then the World Championship field */
+.cut-week { position: absolute; left: 50%; bottom: 90px; width: min(1180px, 94vw); transform: translateX(-50%); z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 12px; opacity: 0; pointer-events: none; transition: opacity .5s; }
+.cut.has-week.beat2 .cut-week { opacity: 1; pointer-events: auto; }
+.cut.has-week.beat3 .cut-week { opacity: 0; pointer-events: none; }
+.cut.has-week.beat2:not(.beat3) .cut-field { opacity: 0; pointer-events: none; }
+.cut.has-week.beat2 .cut-team, .cut.has-week.beat2 .cut-fh, .cut.has-week.beat2 .cut-note, .cut.has-week.beat2 .cut-holder { animation: none; opacity: 0; }
+.cut.has-week.beat3 .cut-team { opacity: 1; animation: cutTeam .45s calc(var(--i) * 0.04s) cubic-bezier(.2,.8,.2,1) both; }
+.cut.has-week.beat3 .cut-fh, .cut.has-week.beat3 .cut-note { opacity: 1; animation: cerUp .4s both; } .cut.has-week.beat3 .cut-note { animation-delay: .9s; }
+.cut.has-week.beat3 .cut-holder { opacity: 1; animation: cerUp .4s .8s both; }
+.cut-week .cut-fh { opacity: 1 !important; animation: cerUp .4s both !important; }
+.cut-days { display: grid; grid-template-columns: 1fr 1fr 1.15fr; gap: 12px; width: 100%; }
+.cut-day { display: flex; flex-direction: column; gap: 6px; padding: 14px; border-radius: 14px; background: rgba(5,8,18,0.78); border: 1px solid rgba(255,255,255,0.14); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); min-width: 0; }
+.cut.has-week.beat2 .cut-day { animation: cutTeam .55s calc(.15s + var(--k) * .22s) cubic-bezier(.2,.8,.2,1) both; }
+.cut-day.now { border-color: var(--c); box-shadow: 0 0 0 1px var(--c) inset, 0 0 40px color-mix(in srgb, var(--c) 30%, transparent); }
+.cut-day.done { opacity: .6; }
+.cut-day small { font: 800 11px var(--display); text-transform: uppercase; letter-spacing: .18em; color: rgba(255,255,255,0.6); }
+.cut-day small b { color: var(--c); }
+.cut-day h3 { margin: 0; font: 800 clamp(17px, 2vw, 24px) var(--display); text-transform: uppercase; letter-spacing: -0.01em; }
+.cut-day p { margin: 0; font-size: 13px; color: rgba(255,255,255,0.7); }
+.cut-dl { display: flex; flex-direction: column; gap: 5px; margin-top: 4px; }
+.cut-dl span { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 8px; background: rgba(255,255,255,0.06); min-width: 0; }
+.cut-dl span.mine { box-shadow: 0 0 0 1px var(--c) inset; }
+.cut-dl .badge { width: 22px; height: 22px; flex: none; border-radius: 6px; }
+.cut-dl b { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
+.cut-dl i { font-style: normal; font: 800 10px var(--display); letter-spacing: .1em; color: var(--c); }
+@media (max-width: 760px) {
+  .cut-week { bottom: 76px; top: 30%; justify-content: flex-start; overflow-y: auto; }
+  .cut-days { grid-template-columns: 1fr; gap: 8px; }
+  .cut-day { padding: 10px 12px; gap: 4px; } .cut-dl { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+}
+.cut-dl .badge { overflow: hidden; font-size: 7px; letter-spacing: 0; }

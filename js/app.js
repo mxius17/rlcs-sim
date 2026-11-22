@@ -114,7 +114,7 @@
   function openSide(n) {
     const M = SIDE[n], se = curSeason(), res = sideStore(se, n);
     const wf = sideWorlds(n, se);
-    const th = themeOf('side-' + n + 'v' + n + '-wc') || themeOf('career-worlds'), brand = themeOf('side-' + n + 'v' + n);
+    const th = themeOf('worlds-2026') || themeOf('career-worlds'), brand = themeOf('side-' + n + 'v' + n);
     const champ = res.W && getTeam(res.W);
     const row = (r) => {
       const ids = sideField(n, r, se), w = res[r] && getTeam(res[r]);
@@ -148,9 +148,11 @@
     const teams = W ? sideWorlds(n, se).map((x) => x.id).sort((a, b) => getTeam(b).ovr - getTeam(a).ovr) : sideField(n, reg, se);
     const cfg = Object.assign(defaultSetup(), { format: 'knockout', size: W ? 4 : 16, teams, simStyle: state.setup.simStyle, goalLevel: state.setup.goalLevel });
     const title = W ? seasonLabel(se) + ' ' + M.name + ' World Championship' : seasonLabel(se) + ' · ' + REGIONS[reg] + ' ' + M.name + ' Open';
-    const theme = 'side-' + n + 'v' + n + (W ? '-wc' : '');
+    // the Opens wear their mode's brand and get its intro; the World Championships are part of Worlds Week
+    const theme = W ? (themeOf('worlds-2026') ? 'worlds-2026' : 'career-worlds') : 'side-' + n + 'v' + n;
     closeModal();
-    sideIntro(n, reg, se, teams, () => launch(cfg, title, { theme, side: { n, reg, season: se } }));
+    if (W) launch(cfg, title, { theme, side: { n, reg, season: se } });
+    else sideIntro(n, reg, se, teams, () => launch(cfg, title, { theme, side: { n, reg, season: se } }));
   }
   function recordSide(T) {
     if (!T.side || T.side.recorded || !T.finished || !T.champion) return;
@@ -1170,7 +1172,11 @@
 
   /** Everything the ceremony shows: the MVP, the goal of the tournament and the champions. */
   /** 1v1 / 2v2 events (their theme is side-1v1, side-2v2 or a -wc World Championship edition). */
-  const sideOf = (T) => { const m = /^side-([12])v[12](-wc)?$/.exec(T.theme || ''); return m ? { mode: +m[1], worlds: !!m[2] } : null; };
+  const sideOf = (T) => {
+    if (T.side) return { mode: +T.side.n, worlds: T.side.reg === 'W' };
+    const m = /^(?:x|c:~)([12]):/.exec((T.teams || [])[0] || '');
+    return m ? { mode: +m[1], worlds: /worlds/.test(T.theme || '') } : null;
+  };
   /** Everything the ceremony (js/ceremony.js) stages: the final game by game, MVP and goal of the tournament (3v3),
       the champions and the road to the title, in the event's colours. */
   function ceremonyData(T) {

@@ -46,12 +46,11 @@
   }
   const BRANDS = {
     'side-1v1': { name: '1v1 Championship · Duel', a: '#E11D48', b: '#0A0A12', c: '#F5F0E6', on: '#fff', art: duelArt(false) },
-    'side-1v1-wc': { name: '1v1 World Championship', a: '#E11D48', b: '#0A0A12', c: '#D4A017', on: '#fff', art: duelArt(true) },
     'side-2v2': { name: '2v2 Championship · Doubles', a: '#14B8A6', b: '#160F3A', c: '#A78BFA', on: '#06201d', art: doublesArt(false) },
-    'side-2v2-wc': { name: '2v2 World Championship', a: '#14B8A6', b: '#160F3A', c: '#D4A017', on: '#06201d', art: doublesArt(true) },
   };
   Object.assign(T, BRANDS);
-  const brandKey = (mode, worlds) => 'side-' + mode + 'v' + mode + (worlds ? '-wc' : '');
+  // the World Championships are part of Worlds Week and wear the Worlds branding; only the Opens use these
+  const brandKey = (mode) => 'side-' + mode + 'v' + mode;
 
   /* ---------- intros ---------- */
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
