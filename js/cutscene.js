@@ -106,6 +106,71 @@
     return out;
   }
 
+  /* ---------- what makes each Major's intro its own ----------
+     mood: the host city's atmosphere (sky, sun or moon, weather, local time); open: the camera move that reveals
+     the city; title: how the city name lands. Mood comes from the city's climate; open and title are drawn from
+     the city's name, so the same city always gets the same intro and different cities rarely share all three. */
+  const MOODS = {
+    neon: 'Tokyo Seoul Hong Kong|Shanghai|Singapore|Busan|Taipei|Kuala Lumpur|Bangkok|Ho Chi Minh City|Manila|Las Vegas|Mumbai',
+    aurora: 'Stockholm|Oslo|Helsinki|Calgary|Edinburgh',
+    desert: 'Dubai|Riyadh|Doha|Abu Dhabi|Jeddah|Kuwait City|Muscat|Cairo|Phoenix|Marrakech|Amman|Casablanca|Tunis',
+    golden: 'Paris|Rome|Madrid|Barcelona|Lisbon|Athens|Milan|Valencia|Porto|Prague|Vienna|Budapest|Lyon|Marseille|Kraków|Bucharest|Istanbul|Los Angeles|Austin|Nashville',
+    fog: 'London|Birmingham|Dublin|Hamburg|Seattle|San Francisco|Amsterdam|Rotterdam|Brussels|Cologne|Wellington|Warsaw|Copenhagen',
+    tropic: 'Rio de Janeiro|Miami|Brisbane|Perth|Durban|Cape Town|Orlando|Lagos|Jakarta|Accra|Auckland|Montevideo|Lima',
+    fireworks: 'Sydney|New York|Berlin|Mexico City|Buenos Aires|São Paulo|Belo Horizonte|Bogotá|Melbourne',
+    storm: 'Chicago|Dallas|Houston|Atlanta|Raleigh|Philadelphia|Fort Worth|Boston|Johannesburg|Nairobi',
+    blossom: 'Osaka|Vancouver|Guadalajara|Medellín',
+    snow: 'Denver|Zurich|Toronto|Montréal|Santiago|Quito|Munich|Katowice|Monterrey',
+  };
+  const MOOD_OF = {};
+  Object.entries(MOODS).forEach(([m, list]) => list.replace('Tokyo Seoul', 'Tokyo|Seoul').split('|').forEach((c) => (MOOD_OF[c] = m)));
+  /* local time window [from, to] in hours, weather words, temperature range °C */
+  const MOOD_INFO = {
+    neon: [[21, 24], ['light rain', 'drizzle', 'rain'], [9, 18]], aurora: [[21, 24], ['clear, aurora visible', 'light snow'], [-12, -2]],
+    desert: [[17, 19], ['clear', 'hazy', 'warm wind'], [29, 41]], golden: [[18, 20], ['clear', 'few clouds'], [19, 28]],
+    fog: [[7, 9], ['fog', 'drizzle', 'overcast'], [6, 13]], tropic: [[5, 7], ['clear', 'sea breeze'], [23, 30]],
+    fireworks: [[22, 24], ['clear', 'mild'], [12, 24]], storm: [[19, 21], ['thunderstorms', 'heavy rain'], [17, 27]],
+    blossom: [[17, 19], ['mild', 'light breeze'], [14, 21]], snow: [[9, 12], ['snow', 'light snow'], [-6, 1]],
+  };
+  const OPENS = ['bands', 'iris', 'pan', 'drone', 'zoom', 'shutter'];
+  const TITLES = ['rise', 'stamp', 'type', 'wave', 'split'];
+  const hashN = (str) => { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+  function styleFor(city) {
+    const h = hashN(city);
+    const mood = MOOD_OF[city] || ['golden', 'fog', 'fireworks', 'storm', 'snow'][h % 5];
+    let open = OPENS[(h >>> 3) % OPENS.length];
+    if (mood === 'aurora' && h % 2) open = 'drone';
+    const title = mood === 'neon' ? 'neon' : TITLES[(h >>> 7) % TITLES.length];
+    return { mood, open, title };
+  }
+  function localLine(city, mood) {
+    const r = seeded(city + '|t'), [hrs, wx, tmp] = MOOD_INFO[mood];
+    const hh = Math.floor(hrs[0] + r() * (hrs[1] - hrs[0])) % 24, mm = Math.floor(r() * 60);
+    return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')} local · ${wx[Math.floor(r() * wx.length)]} · ${Math.round(tmp[0] + r() * (tmp[1] - tmp[0]))}°C`;
+  }
+  const ICON = { neon: '🌧', aurora: '🌌', desert: '🌅', golden: '🌇', fog: '🌫', tropic: '🌊', fireworks: '🎆', storm: '⛈', blossom: '🌸', snow: '❄' };
+  /** Weather and sky layers: `back` sits behind the skyline, `front` in front of it. */
+  function fx(mood, rnd) {
+    const n = (k) => (global.matchMedia && global.matchMedia('(max-width: 760px)').matches ? Math.round(k * 0.55) : k);
+    const many = (k, f) => Array.from({ length: n(k) }, (_, i) => f(i)).join('');
+    const pct = () => (rnd() * 100).toFixed(1) + '%';
+    const stars = (k) => `<div class="cfx-stars">${many(k, () => `<i style="left:${pct()};top:${(rnd() * 55).toFixed(1)}%;--d:${(rnd() * 3).toFixed(2)}s;--z:${(1 + rnd() * 2).toFixed(1)}px"></i>`)}</div>`;
+    const rain = (k, heavy) => `<div class="cfx-rain${heavy ? ' heavy' : ''}">${many(k, () => `<i style="left:${pct()};--d:${(rnd() * 1.2).toFixed(2)}s;--s:${(0.45 + rnd() * 0.4).toFixed(2)}s;--h:${Math.round(50 + rnd() * 60)}px"></i>`)}</div>`;
+    const snow = (k) => `<div class="cfx-snow">${many(k, () => `<i style="left:${pct()};--d:${(-rnd() * 10).toFixed(2)}s;--s:${(6 + rnd() * 7).toFixed(1)}s;--z:${(3 + rnd() * 5).toFixed(1)}px;--w:${Math.round(-30 + rnd() * 60)}px"></i>`)}</div>`;
+    const birds = (k) => `<div class="cfx-birds">${many(k, (i) => `<svg viewBox="0 0 40 16" style="top:${(10 + rnd() * 30).toFixed(1)}%;--d:${(1.4 + i * 0.35 + rnd() * 0.3).toFixed(2)}s;--s:${(11 + rnd() * 5).toFixed(1)}s;--z:${Math.round(18 + rnd() * 16)}px"><path d="M2 12 Q11 1 20 10 Q29 1 38 12"/></svg>`)}</div>`;
+    if (mood === 'neon') return { back: stars(30), front: rain(70) + '<div class="cfx-wet"></div>' };
+    if (mood === 'aurora') return { back: stars(90) + '<div class="cfx-aurora"><i></i><i></i><i></i></div><div class="cfx-moon"></div>', front: snow(40) };
+    if (mood === 'desert') return { back: '', front: `<div class="cfx-sand">${many(60, () => `<i style="top:${(45 + rnd() * 55).toFixed(1)}%;--d:${(-rnd() * 4).toFixed(2)}s;--s:${(1.6 + rnd() * 2.2).toFixed(2)}s"></i>`)}</div><div class="cfx-haze"></div>` };
+    if (mood === 'golden') return { back: birds(7) + '<div class="cfx-flare"></div>', front: '' };
+    if (mood === 'fog') return { back: '', front: '<div class="cfx-fog"><i></i><i></i><i></i></div>' + rain(40) };
+    if (mood === 'tropic') return { back: birds(5), front: '' };
+    if (mood === 'fireworks') return { back: stars(60) + `<div class="cfx-fw">${many(7, (i) => `<span style="left:${(10 + rnd() * 80).toFixed(1)}%;top:${(8 + rnd() * 34).toFixed(1)}%;--d:${(1.2 + i * 0.75 + rnd() * 0.5).toFixed(2)}s;--c2:var(--${['a', 'c', 'a', 'c', 'b'][i % 5]})">${Array.from({ length: 14 }, (_, k) => `<i style="--k:${k}"></i>`).join('')}</span>`)}</div>`, front: '' };
+    if (mood === 'storm') return { back: '<div class="cfx-clouds"><i></i><i></i><i></i><i></i></div><svg class="cfx-bolt" viewBox="0 0 100 300" preserveAspectRatio="none"><path d="M60 0 L35 120 L58 120 L30 300 L80 100 L55 100 L75 0Z"/></svg>', front: rain(110, true) + '<div class="cfx-flash"></div>' };
+    if (mood === 'blossom') return { back: '', front: `<div class="cfx-petals">${many(36, () => `<i style="left:${pct()};--d:${(-rnd() * 9).toFixed(2)}s;--s:${(7 + rnd() * 6).toFixed(1)}s;--z:${(7 + rnd() * 6).toFixed(1)}px;--w:${Math.round(60 + rnd() * 140)}px;--r:${Math.round(rnd() * 360)}deg"></i>`)}</div>` };
+    if (mood === 'snow') return { back: '', front: snow(80) };
+    return { back: '', front: '' };
+  }
+
   let cur = null;
   function stop() {
     if (!cur) return;
@@ -125,31 +190,47 @@
     const hello = HELLO[o.country] || 'Welcome to';
     let li = 0;
     const words = o.city.split(' ');
-    const letters = words.map((w) => `<span class="cut-w">${Array.from(w).map((ch) => `<i style="--i:${li++}">${esc(ch)}</i>`).join('')}</span>`).join(' ');
+    const letters = words.map((w) => `<span class="cut-w">${Array.from(w).map((ch) => { const k = li++; return `<i class="${k % 2 ? 'o' : 'e'}" style="--i:${k}">${esc(ch)}</i>`; }).join('')}</span>`).join(' ');
     const longest = Math.max(...words.map((w) => w.length));
+    const backD = skyline(rnd), winH = windows(rnd);
+    const sty = o.worlds ? null : styleFor(o.city);
+    const layers = sty ? fx(sty.mood, seeded(o.city + '|fx')) : { back: '', front: '' };
     const el = document.createElement('div');
-    el.className = 'cut' + (o.worlds ? ' cut-worlds' : '');
+    el.className = 'cut' + (o.worlds ? ' cut-worlds' : ` mood-${sty.mood} open-${sty.open} title-${sty.title}`);
     el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Major intro: ' + o.city);
     el.style.cssText = `--a:${a};--b:${b};--c:${c}`;
     el.innerHTML = `
+      <div class="cut-world">
       <div class="cut-sky"></div>
-      <div class="cut-bands" aria-hidden="true"><i></i><i></i><i></i></div>
       <div class="cut-sun" aria-hidden="true"></div>
+      <div class="cfx cfx-back" aria-hidden="true">${layers.back}</div>
       ${o.worlds ? `<div class="cut-beams" aria-hidden="true">${[0, 1, 2, 3, 4, 5].map((k) => `<i style="--k:${k}"></i>`).join('')}</div>
       <svg class="cut-globe" viewBox="-110 -110 220 220" aria-hidden="true"><circle r="100" class="g-o"/>${[0, 1, 2, 3, 4, 5].map((k) => `<ellipse rx="100" ry="100" class="g-m" style="--k:${k}"/>`).join('')}${[-60, -30, 30, 60].map((y) => `<ellipse cy="${y}" rx="${Math.round(Math.sqrt(10000 - y * y))}" ry="${Math.round(Math.sqrt(10000 - y * y) * 0.22)}" class="g-p"/>`).join('')}<ellipse rx="100" ry="22" class="g-eq"/>${[[-42, -38], [-62, -22], [8, -30], [40, 6], [-30, 38], [70, 34], [22, 52]].map(([x, y], k) => `<circle cx="${x}" cy="${y}" r="4.5" class="g-dot" style="--k:${k}"/>`).join('')}</svg>` : ''}
       <svg class="cut-city" viewBox="0 0 1600 600" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
         <defs><linearGradient id="cutLm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${b}"/><stop offset="1" stop-color="#05070e"/></linearGradient></defs>
-        <path class="cut-back" d="${skyline(rnd)}"/>
-        <g class="cut-win">${windows(rnd)}</g>
+        <path class="cut-back" d="${backD}"/>
+        <g class="cut-win">${winH}</g>
         <path class="cut-lm" d="${lm}" fill="url(#cutLm)"/>
         <rect class="cut-ground" x="0" y="${G}" width="1600" height="40"/>
       </svg>
+      ${sty && sty.mood === 'tropic' ? `<div class="cfx-water" aria-hidden="true"><svg class="cut-city cut-refl" viewBox="0 0 1600 600" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+        <defs><linearGradient id="cutLmR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${b}"/><stop offset="1" stop-color="#05070e"/></linearGradient></defs>
+        <path class="cut-back" d="${backD}"/>
+        <g class="cut-win">${winH}</g>
+        <path class="cut-lm" d="${lm}" fill="url(#cutLmR)"/>
+        <rect class="cut-ground" x="0" y="${G}" width="1600" height="40"/>
+      </svg><i class="cfx-ripple"></i></div>` : ''}
+      <div class="cfx cfx-front" aria-hidden="true">${layers.front}</div>
+      </div>
+      <div class="cut-bands" aria-hidden="true"><i></i><i></i><i></i></div>
+      ${sty && sty.open === 'shutter' ? `<div class="cut-shutter" aria-hidden="true">${[0, 1, 2, 3, 4, 5, 6, 7].map((k) => `<i style="--k:${k}"></i>`).join('')}</div>` : ''}
       <div class="cut-text">
         ${o.worlds ? '<span class="cut-wc">World Championship</span>' : ''}<span class="cut-kicker">${esc(o.kicker)}</span>
         <span class="cut-hello">${esc(hello)}</span>
         <h1 class="cut-name" aria-label="${esc(o.city)}" style="--len:${longest}">${letters}</h1>
         <span class="cut-country">${o.flag || ''} ${esc(o.country)}</span>
         <span class="cut-lmname">${esc(info[1])} · <em>${esc(info[2])}</em></span>
+        ${sty ? `<span class="cut-local">${ICON[sty.mood]} ${esc(localLine(o.city, sty.mood))}</span>` : ''}
       </div>
       <div class="cut-field" aria-label="The field">
         <span class="cut-fh">${o.worlds ? 'The field · ' + (o.field || []).length + ' teams · 7 regions' : 'The field · 16 teams'}</span>
@@ -172,5 +253,5 @@
     S.timers.push(setTimeout(() => { const g = el.querySelector('.cut-go'); if (g && !S.dead) { g.classList.add('on'); g.focus({ preventScroll: true }); } }, o.worlds ? 7200 : 6200));
   }
 
-  global.RLCutscene = { play, stop, has: (city) => !!SCENE[city] };
+  global.RLCutscene = { play, stop, has: (city) => !!SCENE[city], styleFor };
 })(window);

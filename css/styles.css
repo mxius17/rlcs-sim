@@ -2696,3 +2696,135 @@ html.cer-open, html.cer-open body { overflow: hidden; }
 .sc-w { display: inline-block; white-space: nowrap; }
 .sc-final, .sc-champ, .sc-road { justify-content: safe center; overflow-y: auto; }
 @media (max-width: 700px) { .sc-road { justify-content: flex-start; padding-top: 22px; } .sc-path { gap: 4px; } .sc-pm { padding: 7px 12px; } }
+
+/* ---------- Major intros: atmosphere, camera opening and title style per host city (js/cutscene.js) ---------- */
+.cut-world { position: absolute; inset: 0; overflow: hidden; }
+.cfx { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.cfx-back { z-index: 0; } .cut-city { z-index: 1; } .cfx-front { z-index: 2; }
+.cut-local { align-self: flex-start; margin-top: 4px; padding: 5px 12px; border-radius: 999px; background: rgba(5,8,18,0.55); border: 1px solid rgba(255,255,255,0.18); font: 600 13px var(--font); color: rgba(255,255,255,0.88); backdrop-filter: blur(6px); animation: cerUp .5s 2.7s both; }
+/* stars, moon */
+.cfx-stars i { position: absolute; width: var(--z); height: var(--z); border-radius: 50%; background: #fff; opacity: .2; animation: cfxTwinkle 2.4s var(--d) ease-in-out infinite alternate; }
+@keyframes cfxTwinkle { to { opacity: .9; } }
+.cfx-moon { position: absolute; left: 76%; top: 14%; width: 9vmin; height: 9vmin; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff, #d9e2f0 60%, #b7c3d6); box-shadow: 0 0 40px rgba(220,235,255,0.6); animation: cerFade 2s .8s both; }
+/* rain */
+.cfx-rain i { position: absolute; top: -20vh; width: 1.5px; height: var(--h); background: linear-gradient(180deg, transparent, rgba(220,235,255,0.55)); transform: rotate(12deg); animation: cfxRain var(--s) var(--d) linear infinite; }
+.cfx-rain.heavy i { width: 2px; background: linear-gradient(180deg, transparent, rgba(220,235,255,0.75)); }
+@keyframes cfxRain { from { transform: translate(0, 0) rotate(12deg); } to { transform: translate(-26vh, 130vh) rotate(12deg); } }
+.cfx-wet { position: absolute; left: 0; right: 0; bottom: 0; height: 8vh; background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--a) 30%, transparent)); filter: blur(4px); animation: cfxPulse 2.4s ease-in-out infinite alternate; }
+@keyframes cfxPulse { from { opacity: .5; } to { opacity: 1; } }
+/* snow */
+.cfx-snow i { position: absolute; top: -5vh; width: var(--z); height: var(--z); border-radius: 50%; background: #fff; opacity: .85; filter: blur(.5px); animation: cfxSnow var(--s) var(--d) linear infinite; }
+@keyframes cfxSnow { 0% { transform: translate(0, 0); } 50% { transform: translate(var(--w), 55vh); } 100% { transform: translate(0, 112vh); } }
+/* aurora */
+.cfx-aurora i { position: absolute; left: -20%; width: 140%; height: 34vh; top: calc(6vh + var(--y, 0vh)); border-radius: 50%; filter: blur(28px); mix-blend-mode: screen; opacity: .65; animation: cfxAurora 7s ease-in-out infinite alternate; }
+.cfx-aurora i:nth-child(1) { background: linear-gradient(90deg, transparent, #22f5a0, color-mix(in srgb, var(--c) 70%, #22f5a0), transparent); }
+.cfx-aurora i:nth-child(2) { --y: 9vh; background: linear-gradient(90deg, transparent, #7c5cff, #22d3ee, transparent); animation-duration: 9s; animation-delay: -3s; opacity: .5; }
+.cfx-aurora i:nth-child(3) { --y: -2vh; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--a) 60%, #22f5a0), transparent); animation-duration: 11s; opacity: .45; }
+@keyframes cfxAurora { from { transform: translateX(-6%) skewY(-4deg) scaleY(.8); } to { transform: translateX(6%) skewY(5deg) scaleY(1.15); } }
+/* desert sand and heat */
+.cfx-sand i { position: absolute; left: -5%; width: 3px; height: 2px; border-radius: 2px; background: rgba(255,214,150,0.7); animation: cfxSand var(--s) var(--d) linear infinite; }
+@keyframes cfxSand { from { transform: translate(0, 0); } to { transform: translate(112vw, -6vh); } }
+.cfx-haze { position: absolute; left: 0; right: 0; bottom: 0; height: 30vh; background: linear-gradient(0deg, rgba(255,170,80,0.28), transparent); animation: cfxPulse 3s ease-in-out infinite alternate; }
+.mood-desert .cut-city { animation: cfxHeat 3.2s ease-in-out infinite alternate; }
+@keyframes cfxHeat { from { transform: skewX(0) translateY(0); } to { transform: skewX(.4deg) translateY(1px); } }
+/* birds and flare */
+.cfx-birds svg { position: absolute; left: -6vw; width: var(--z); height: calc(var(--z) * .4); animation: cfxFly var(--s) var(--d) linear both; }
+.cfx-birds path { fill: none; stroke: rgba(10,10,20,0.75); stroke-width: 2.4; stroke-linecap: round; transform-origin: 50% 70%; animation: cfxFlap .5s ease-in-out infinite alternate; }
+@keyframes cfxFly { from { transform: translate(0, 0); } to { transform: translate(115vw, -8vh); } }
+@keyframes cfxFlap { from { transform: scaleY(1); } to { transform: scaleY(.3); } }
+.cfx-flare { position: absolute; left: 70%; top: 48%; width: 60vmin; height: 2px; margin-left: -30vmin; background: linear-gradient(90deg, transparent, rgba(255,240,200,0.8), transparent); filter: blur(1px); animation: cerFade 1.4s 1.6s both; }
+/* fog */
+.cfx-fog i { position: absolute; left: -30%; width: 160%; height: 26vh; border-radius: 50%; background: rgba(200,210,225,0.28); filter: blur(30px); animation: cfxFog 14s ease-in-out infinite alternate; }
+.cfx-fog i:nth-child(1) { bottom: -6vh; } .cfx-fog i:nth-child(2) { bottom: 14vh; opacity: .7; animation-duration: 18s; animation-delay: -6s; } .cfx-fog i:nth-child(3) { bottom: 30vh; opacity: .45; animation-duration: 22s; }
+@keyframes cfxFog { from { transform: translateX(-8%); } to { transform: translateX(8%); } }
+/* tropic: the city above the water, its reflection rippling below */
+.mood-tropic .cut-city:not(.cut-refl) { bottom: 11.9vh; height: 62vh; }
+.mood-tropic .cut-ground { display: none; }
+.cfx-water { position: absolute; left: 0; right: 0; bottom: 0; height: 16vh; overflow: hidden; z-index: 1; background: linear-gradient(180deg, color-mix(in srgb, var(--a) 35%, #0b2a4a), #061428); }
+.cut-refl { position: absolute; top: -57.9vh; bottom: auto !important; height: 62vh !important; transform: scaleY(-1); transform-origin: 50% 100%; opacity: .38; filter: blur(1.5px); animation: cfxRipple 3s ease-in-out infinite alternate; }
+@keyframes cfxRipple { from { transform: scaleY(-1) skewX(-1deg); } to { transform: scaleY(-1.03) skewX(1deg); } }
+.cfx-ripple { position: absolute; inset: 0; background: repeating-linear-gradient(180deg, rgba(255,255,255,0.12) 0 1px, transparent 1px 9px); animation: cfxWaves 2.4s linear infinite; }
+@keyframes cfxWaves { from { background-position: 0 0; } to { background-position: 0 18px; } }
+/* fireworks */
+.cfx-fw span { position: absolute; width: 0; height: 0; }
+.cfx-fw i { position: absolute; left: -2px; top: -9px; width: 4px; height: 18px; border-radius: 4px; transform-origin: 50% 100%; background: var(--c2); box-shadow: 0 0 10px var(--c2); transform: rotate(calc(var(--k) * 25.7deg)) translateY(0); opacity: 0; animation: cfxBurst 2.6s var(--d) cubic-bezier(.1,.7,.3,1) infinite; }
+@keyframes cfxBurst { 0% { opacity: 1; transform: rotate(calc(var(--k) * 25.7deg)) translateY(0) scale(1); } 60% { opacity: 1; } 100% { opacity: 0; transform: rotate(calc(var(--k) * 25.7deg)) translateY(-20vmin) scale(.5); } }
+/* storm */
+.cfx-clouds i { position: absolute; top: -10vh; width: 60vw; height: 30vh; border-radius: 50%; background: rgba(18,22,32,0.85); filter: blur(24px); animation: cfxFog 16s ease-in-out infinite alternate; }
+.cfx-clouds i:nth-child(1) { left: -10vw; } .cfx-clouds i:nth-child(2) { left: 30vw; top: -14vh; } .cfx-clouds i:nth-child(3) { left: 60vw; } .cfx-clouds i:nth-child(4) { left: 15vw; top: 2vh; height: 18vh; opacity: .7; }
+.cfx-bolt { position: absolute; left: 36%; top: 0; width: 6vw; height: 48vh; opacity: 0; filter: drop-shadow(0 0 16px #cfe3ff); animation: cfxBolt 5.2s 1.9s infinite; }
+.cfx-bolt path { fill: #eaf3ff; }
+.cfx-flash { position: absolute; inset: 0; background: #dfe9ff; opacity: 0; animation: cfxFlash 5.2s 1.9s infinite; }
+@keyframes cfxBolt { 0%, 7%, 100% { opacity: 0; } 1%, 4% { opacity: 1; } 2.5% { opacity: .2; } }
+@keyframes cfxFlash { 0%, 8%, 100% { opacity: 0; } 1% { opacity: .55; } 3% { opacity: .1; } 4.5% { opacity: .35; } }
+/* blossom petals */
+.cfx-petals i { position: absolute; top: -5vh; width: var(--z); height: calc(var(--z) * .7); border-radius: 60% 0 60% 0; background: linear-gradient(135deg, #ffd1e0, #ff8fb4); opacity: .9; animation: cfxPetal var(--s) var(--d) linear infinite; }
+@keyframes cfxPetal { 0% { transform: translate(0, 0) rotate(var(--r)); } 50% { transform: translate(calc(var(--w) * -0.5), 55vh) rotate(calc(var(--r) + 200deg)); } 100% { transform: translate(var(--w), 112vh) rotate(calc(var(--r) + 420deg)); } }
+
+/* skies per mood (the event palette still tints each one) */
+.mood-neon .cut-sky { background: radial-gradient(900px 500px at 20% 80%, color-mix(in srgb, var(--a) 45%, transparent), transparent 70%), radial-gradient(800px 500px at 85% 70%, color-mix(in srgb, var(--c) 35%, transparent), transparent 70%), linear-gradient(180deg, #05010f 0%, #160733 60%, #2a0b45 100%); }
+.mood-neon .cut-sun { display: none; }
+.mood-neon .cut-win rect:nth-child(odd) { fill: var(--a); } .mood-neon .cut-win rect:nth-child(even) { fill: var(--c); }
+.mood-neon .cut-win rect { animation-name: cfxNeonWin; }
+@keyframes cfxNeonWin { 0%, 100% { opacity: .15; } 50% { opacity: 1; } }
+.mood-neon .cut-lm { filter: drop-shadow(0 0 14px var(--a)) drop-shadow(0 0 30px var(--c)); }
+.mood-aurora .cut-sky { background: linear-gradient(180deg, #01040b 0%, #04142a 55%, #0b2540 100%); }
+.mood-aurora .cut-sun { display: none; }
+.mood-desert .cut-sky { background: radial-gradient(1000px 600px at 70% 80%, color-mix(in srgb, var(--a) 30%, transparent), transparent 70%), linear-gradient(180deg, #2b0c22 0%, #8c3220 40%, #e07a35 70%, #f6c06a 100%); }
+.mood-desert .cut-sun { top: 74%; width: 46vmin; height: 46vmin; margin: -23vmin 0 0 -23vmin; background: radial-gradient(circle, #fff1c4, #ff9a3d 45%, rgba(255,120,40,0.25) 65%, transparent 72%); }
+.mood-golden .cut-sky { background: radial-gradient(1100px 600px at 70% 70%, color-mix(in srgb, var(--a) 28%, transparent), transparent 70%), linear-gradient(180deg, #1c2a55 0%, #6f4a6b 35%, #d1784a 70%, #f6c56b 100%); }
+.mood-golden .cut-sun { background: radial-gradient(circle, #fff6d8, #ffc766 40%, rgba(255,180,80,0.2) 65%, transparent 72%); }
+.mood-fog .cut-sky { background: linear-gradient(180deg, #1d2633 0%, #44505f 55%, #6d7784 100%); }
+.mood-fog .cut-sun { opacity: .35 !important; filter: blur(14px); background: radial-gradient(circle, #f3f6fa, transparent 65%); }
+.mood-fog .cut-back { fill: #2a3240; }
+.mood-tropic .cut-sky { background: radial-gradient(900px 500px at 30% 70%, color-mix(in srgb, var(--a) 30%, transparent), transparent 70%), linear-gradient(180deg, #23164a 0%, #8b3f7a 35%, #f06e6e 62%, #ffb86b 85%, #ffd99a 100%); }
+.mood-tropic .cut-sun { top: 70%; background: radial-gradient(circle, #fff3d1, #ffb05c 45%, rgba(255,140,90,0.25) 65%, transparent 72%); animation: cfxSunrise 4s .4s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes cfxSunrise { from { transform: translateY(22vh); opacity: .4; } to { transform: none; opacity: 1; } }
+.mood-fireworks .cut-sky { background: radial-gradient(900px 500px at 50% 100%, color-mix(in srgb, var(--a) 30%, transparent), transparent 70%), linear-gradient(180deg, #01020a 0%, #070d2a 70%, #10183d 100%); }
+.mood-fireworks .cut-sun { display: none; }
+.mood-storm .cut-sky { background: linear-gradient(180deg, #07090f 0%, #1a212d 55%, #2b3441 100%); }
+.mood-storm .cut-sun { display: none; }
+.mood-storm .cut-back { fill: #161c27; }
+.mood-blossom .cut-sky { background: radial-gradient(900px 500px at 70% 70%, color-mix(in srgb, var(--a) 22%, transparent), transparent 70%), linear-gradient(180deg, #2f2650 0%, #8a5a8c 45%, #e39ab4 78%, #f8c9d4 100%); }
+.mood-blossom .cut-sun { background: radial-gradient(circle, #fff, #ffd6e2 45%, transparent 70%); opacity: .8; }
+.mood-snow .cut-sky { background: linear-gradient(180deg, #0b1830 0%, #2d4c78 55%, #9db8da 100%); }
+.mood-snow .cut-sun { width: 18vmin; height: 18vmin; margin: -9vmin 0 0 -9vmin; top: 30%; background: radial-gradient(circle, #ffffff, rgba(220,235,255,0.4) 50%, transparent 70%); }
+.mood-snow .cut-ground, .mood-aurora .cut-ground { fill: #dfe8f3; }
+.mood-blossom .cut-text, .mood-snow .cut-text, .mood-golden .cut-text, .mood-tropic .cut-text, .mood-desert .cut-text { text-shadow: 0 2px 18px rgba(0,0,0,0.55); }
+
+/* camera openings: how the city is revealed */
+.cut:not(.open-bands):not(.cut-worlds) .cut-bands { display: none; }
+.open-iris .cut-world { animation: cutIris 1.5s .1s cubic-bezier(.6,0,.2,1) both; }
+@keyframes cutIris { from { clip-path: circle(0% at 70% 62%); } to { clip-path: circle(150% at 70% 62%); } }
+.open-pan .cut-world { animation: cutPan 2.8s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes cutPan { from { transform: translateX(-16%) scale(1.18); filter: blur(3px); } to { transform: none; filter: none; } }
+.open-drone .cut-world { animation: cutDrone 2.8s cubic-bezier(.3,0,.2,1) both; }
+@keyframes cutDrone { from { transform: translateY(45vh) scale(1.1); } to { transform: none; } }
+.open-zoom .cut-world { transform-origin: 70% 70%; animation: cutZoom 2.6s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes cutZoom { from { transform: scale(2.8); filter: blur(4px); } to { transform: none; filter: none; } }
+.cut-shutter { position: absolute; inset: 0; z-index: 5; pointer-events: none; display: flex; flex-direction: column; }
+.cut-shutter i { flex: 1; background: var(--b); animation: cutShut .8s calc(.15s + var(--k) * .07s) cubic-bezier(.7,0,.2,1) both; }
+.cut-shutter i:nth-child(odd) { background: var(--a); animation-name: cutShutR; }
+@keyframes cutShut { from { transform: none; } to { transform: translateX(-102%); } }
+@keyframes cutShutR { from { transform: none; } to { transform: translateX(102%); } }
+
+/* title styles: how the city name lands */
+.title-stamp .cut-name i { animation: cutStamp .4s calc(1.6s + var(--i) * 0.07s) cubic-bezier(.2,1.4,.4,1) both; }
+@keyframes cutStamp { from { transform: scale(2.6); opacity: 0; filter: blur(4px); } to { transform: none; opacity: 1; filter: none; } }
+.title-type .cut-name i { animation: cutType .01s calc(1.6s + var(--i) * 0.09s) both; }
+@keyframes cutType { from { opacity: 0; } to { opacity: 1; } }
+.title-type .cut-name::after { content: ''; display: inline-block; width: .08em; height: .8em; margin-left: .06em; background: var(--c); vertical-align: baseline; animation: cutCaret .8s steps(2) infinite; }
+@keyframes cutCaret { 50% { opacity: 0; } }
+.title-wave .cut-name i { animation: cerLetter .5s calc(1.6s + var(--i) * 0.05s) cubic-bezier(.2,.8,.2,1) both, cutWave 2.4s calc(2.4s + var(--i) * 0.12s) ease-in-out infinite; }
+@keyframes cutWave { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-0.08em); } }
+.title-split .cut-name i.e { animation: cutFromTop .55s calc(1.6s + var(--i) * 0.04s) cubic-bezier(.2,1.2,.4,1) both; }
+.title-split .cut-name i.o { animation: cutFromBottom .55s calc(1.6s + var(--i) * 0.04s) cubic-bezier(.2,1.2,.4,1) both; }
+@keyframes cutFromTop { from { transform: translateY(-60vh); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes cutFromBottom { from { transform: translateY(60vh); opacity: 0; } to { transform: none; opacity: 1; } }
+.title-neon .cut-name { color: #fff; text-shadow: 0 0 6px #fff, 0 0 18px var(--a), 0 0 40px var(--a), 0 0 80px var(--c); }
+.title-neon .cut-name i { animation: cutNeon 1.2s calc(1.6s + var(--i) * 0.06s) both; }
+@keyframes cutNeon { 0% { opacity: 0; } 10% { opacity: 1; } 14% { opacity: .1; } 22% { opacity: 1; } 30% { opacity: .3; } 36%, 100% { opacity: 1; } }
+@media (max-width: 760px) { .mood-tropic .cut-city:not(.cut-refl) { bottom: 9.1vh; height: 44vh; } .cfx-water { height: 12vh; } .cut-refl { top: -41.1vh; height: 44vh !important; } .cut-local { font-size: 12px; } }
+@media (prefers-reduced-motion: reduce) { .cfx i, .cfx svg, .cfx span { animation: none !important; } .cfx-rain, .cfx-snow, .cfx-petals, .cfx-sand { display: none; } }
+.cfx-fw span::after { content: ''; position: absolute; left: -30px; top: -30px; width: 60px; height: 60px; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--c2) 80%, #fff), transparent 65%); opacity: 0; animation: cfxCore 2.6s var(--d) ease-out infinite; }
+@keyframes cfxCore { 0% { opacity: 1; transform: scale(.3); } 30% { opacity: .6; transform: scale(1.6); } 100% { opacity: 0; transform: scale(2.2); } }
