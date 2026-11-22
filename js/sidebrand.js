@@ -164,7 +164,7 @@
     ccStop(); stop();
     const mode = o.mode === 2 ? 2 : 1, th = BRANDS[brandKey(mode, o.worlds)];
     const el = document.createElement('div');
-    el.className = 'sc si-m' + mode + (o.worlds ? ' si-wc' : '');
+    el.className = 'side-cer si-m' + mode + (o.worlds ? ' si-wc' : '');
     el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', (o.label || 'Champion') + ' ceremony');
     el.style.cssText = `--a:${th.a};--b:${th.b};--c:${th.c};--c3:${th.c}`;
     const steps = [['final', o.final && o.runner ? 'The final' : null], ['champ', o.label || 'Champion'], ['road', 'Road to the title']].filter((x) => x[1]);

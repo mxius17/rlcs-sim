@@ -2522,11 +2522,11 @@ html.cer-open, html.cer-open body { overflow: hidden; }
 .si-m1.beat2 .si-split { filter: brightness(.45) saturate(.8); }
 
 /* ---------- 1v1 / 2v2 champion ceremony (js/sidebrand.js) ---------- */
-.sc { position: fixed; inset: 0; z-index: 410; overflow: hidden; color: #fff; background: #05060b; font-family: var(--font); animation: cerFade .3s both; }
+.side-cer { position: fixed; inset: 0; z-index: 410; overflow: hidden; color: #fff; background: #05060b; font-family: var(--font); animation: cerFade .3s both; }
 .sc-stage { position: absolute; inset: 0 0 64px; }
 .sc-confetti { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 8; }
-.sc .cer-ui { z-index: 9; }
-.sc .si-kicker { opacity: 1; animation: siUp .5s .2s both; }
+.side-cer .cer-ui { z-index: 9; }
+.side-cer .si-kicker { opacity: 1; animation: siUp .5s .2s both; }
 /* scene 1: the final */
 .sc-final { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding: 16px; }
 .sc-final > .si-split .l, .sc-final > .si-split .r { animation-delay: 0s; }
