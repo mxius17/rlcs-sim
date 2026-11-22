@@ -2631,3 +2631,68 @@ html.cer-open, html.cer-open body { overflow: hidden; }
   .sc-pstats { grid-template-columns: 1fr; }
   .sc-duo { flex-direction: column; gap: 6px; }
 }
+
+/* ---------- shared ceremony: 3v3 (js/ceremony.js) ---------- */
+.side-cer .sc-face { position: relative; }
+.side-cer .sc-face img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 15%; z-index: 1; }
+.sc-art { position: absolute; inset: 0; background: var(--art) center / cover no-repeat; opacity: .22; filter: blur(2px) saturate(1.2); transform: scale(1.06); }
+.si-m3 .si-bg { background: radial-gradient(ellipse at 50% 60%, color-mix(in srgb, var(--a) 34%, transparent), transparent 65%), linear-gradient(160deg, color-mix(in srgb, var(--b) 80%, #000), #04050a); }
+.sc-beams { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.sc-beams i { position: absolute; bottom: -10%; width: 16vmin; height: 130%; background: linear-gradient(0deg, color-mix(in srgb, var(--c) 45%, transparent), transparent 80%); transform-origin: 50% 100%; opacity: .35; filter: blur(6px); animation: scBeam 6s ease-in-out infinite alternate; }
+.sc-beams i:nth-child(1) { left: 8%; --r0: -24deg; --r1: 6deg; } .sc-beams i:nth-child(2) { left: 30%; --r0: 14deg; --r1: -14deg; animation-duration: 7s; }
+.sc-beams i:nth-child(3) { right: 30%; --r0: -10deg; --r1: 16deg; animation-duration: 5.5s; } .sc-beams i:nth-child(4) { right: 8%; --r0: 22deg; --r1: -8deg; animation-duration: 6.5s; }
+@keyframes scBeam { from { transform: rotate(var(--r0)); } to { transform: rotate(var(--r1)); } }
+/* final: the champion's half and the runner-up's half; the champion's colour takes the whole screen */
+.sc-halves { position: absolute; inset: 0; z-index: 1; }
+.sc-halves i { position: absolute; inset: 0; }
+.sc-halves .l { background: linear-gradient(110deg, color-mix(in srgb, var(--a) 55%, transparent), transparent); clip-path: polygon(0 0, 52% 0, 48% 100%, 0 100%); animation: siInL .6s cubic-bezier(.2,.9,.2,1) both; transition: clip-path .9s cubic-bezier(.7,0,.2,1); }
+.sc-halves .r { background: linear-gradient(250deg, rgba(255,255,255,0.08), transparent); clip-path: polygon(52% 0, 100% 0, 100% 100%, 48% 100%); animation: siInR .6s cubic-bezier(.2,.9,.2,1) both; transition: clip-path .9s cubic-bezier(.7,0,.2,1); }
+.sc-final.decided .sc-halves .l { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
+.sc-final.decided .sc-halves .r { clip-path: polygon(100% 0, 100% 0, 100% 100%, 100% 100%); }
+.sc-final.decided .sc-halves { animation: siShake .4s both; }
+.sc-flags { font-size: 15px; letter-spacing: 2px; }
+/* MVP under a spotlight */
+.sc-mvp { position: absolute; inset: 0; display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); align-items: center; gap: 4vw; padding: 0 6vw; }
+.sc-ghost { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); text-align: center; white-space: nowrap; font: 900 italic clamp(90px, 22vw, 340px)/1 var(--display); text-transform: uppercase; color: transparent; -webkit-text-stroke: 2px rgba(255,255,255,0.07); pointer-events: none; animation: scGhost 8s linear both; }
+@keyframes scGhost { from { transform: translate(6%, -50%); } to { transform: translate(-6%, -50%); } }
+.sc-mphoto { position: relative; justify-self: end; width: min(32vw, 400px); aspect-ratio: 4 / 5; border-radius: 22px; overflow: hidden; display: grid; place-items: center; z-index: 2;
+  background: linear-gradient(150deg, var(--a), color-mix(in srgb, var(--a) 30%, #000)); border: 3px solid var(--c); box-shadow: 0 30px 80px rgba(0,0,0,0.55); animation: scPhoto .7s .2s cubic-bezier(.2,1.2,.4,1) both; }
+.sc-mphoto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 15%; z-index: 1; }
+.sc-mphoto > b { font: 900 clamp(60px, 9vw, 130px) var(--display); color: rgba(255,255,255,0.85); }
+@keyframes scPhoto { from { transform: translateX(-30vw) rotate(-6deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.sc-minfo { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; min-width: 0; }
+.sc-mname { font-size: clamp(44px, 8vw, 120px); text-align: left; overflow-wrap: anywhere; }
+.sc-minfo .sc-club { animation-delay: 1.2s; }
+.sc-mstats { width: 100%; max-width: 560px; }
+.sc-mstats div { animation-delay: calc(1.3s + var(--i) * .08s); }
+/* goal title card */
+.sc-goal { position: absolute; inset: 0; }
+.sc-goal h2 { position: relative; z-index: 1; font-style: italic; }
+.sc-goal .si-kicker { position: relative; z-index: 1; }
+/* champions: trophy, crest, name, the three players */
+.sc-cup .cu { fill: var(--c); } .sc-cup .ha { fill: none; stroke: var(--c); stroke-width: 12; stroke-linecap: round; }
+.sc-cup .sh { fill: none; stroke: rgba(255,255,255,0.55); stroke-width: 7; stroke-linecap: round; } .sc-cup .st { fill: rgba(0,0,0,0.25); }
+.si-m3 .sc-cup { animation: scDrop .9s .2s cubic-bezier(.2,1.2,.4,1) both, scGlow 2.4s 1.2s ease-in-out infinite; transform-origin: 50% 50%; }
+@keyframes scGlow { 0%, 100% { filter: drop-shadow(0 0 18px color-mix(in srgb, var(--c) 50%, transparent)); } 50% { filter: drop-shadow(0 0 44px color-mix(in srgb, var(--c) 90%, transparent)); } }
+.sc-crest { position: relative; z-index: 2; animation: scPopIn .5s .55s cubic-bezier(.2,1.5,.4,1) both; }
+.sc-crest .badge { width: clamp(70px, 10vmin, 110px); height: clamp(70px, 10vmin, 110px); border-radius: 24px; box-shadow: 0 16px 40px rgba(0,0,0,0.5); }
+.sc-tname { font-size: clamp(38px, 8.5vmin, 110px); line-height: .95; max-width: 94vw; }
+.sc-trio { position: relative; z-index: 2; display: flex; justify-content: center; gap: clamp(14px, 4vw, 48px); margin-top: 4px; }
+.sc-trio .sc-pl b { font-size: clamp(15px, 2.2vmin, 22px); font-style: normal; text-transform: none; letter-spacing: 0; }
+.sc-trio .sc-face { width: clamp(58px, 9vmin, 92px); height: clamp(58px, 9vmin, 92px); }
+.sc-trio .p0 { animation: scFlyL .6s 1.3s cubic-bezier(.3,1.3,.4,1) both; }
+.sc-trio .p1 { animation: scRiseP .6s 1.45s cubic-bezier(.3,1.3,.4,1) both; }
+.sc-trio .p2 { animation: scFlyR .6s 1.6s cubic-bezier(.3,1.3,.4,1) both; }
+@keyframes scRiseP { from { transform: translateY(50vh); } to { transform: none; } }
+.si-m3 .sc-label { animation-delay: 2s; } .si-m3 .sc-next { animation-delay: 2.3s; }
+.sc-pm.lost { border-left-color: rgba(255,255,255,0.25); } .sc-pm.lost span { color: rgba(255,255,255,0.5); }
+.sc-pstats.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 700px) {
+  .sc-mvp { grid-template-columns: 1fr; justify-items: center; align-content: center; gap: 16px; padding: 0 16px; text-align: center; }
+  .sc-mphoto { justify-self: center; width: min(52vw, 220px); }
+  .sc-minfo { align-items: center; } .sc-mname { text-align: center; }
+  .sc-trio { gap: 10px; } .sc-pstats.three { grid-template-columns: 1fr; }
+}
+.sc-w { display: inline-block; white-space: nowrap; }
+.sc-final, .sc-champ, .sc-road { justify-content: safe center; overflow-y: auto; }
+@media (max-width: 700px) { .sc-road { justify-content: flex-start; padding-top: 22px; } .sc-path { gap: 4px; } .sc-pm { padding: 7px 12px; } }
