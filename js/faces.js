@@ -193,11 +193,31 @@
     const irisD = shade(irisC, -0.4);
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 250"><defs>${defs.join('').replace('stop-color="IRIS"', `stop-color="${shade(irisC, 0.25)}"`).replace('stop-color="IRISD"', `stop-color="${irisD}"`).replace(`stop-color="${shade('#000000', 0)}"`, `stop-color="${shade(irisC, 0.45)}"`)}</defs>${out.join('')}</svg>`;
   }
-  /** Data URI, cached per seed and colour. */
+  /** Data URI, cached per seed and colour. The 2D drawing comes back at once; when WebGL is available the
+      PS2-style 3D portrait (js/faces3d.js) is rendered in the background, a few per frame, and every <img>
+      still showing the 2D version is swapped to it. */
+  const cache3d = new Map(), pending = new Map();
+  let pumping = false;
+  const later = (fn, slow) => (slow ? setTimeout(fn, 120) : global.requestIdleCallback ? global.requestIdleCallback(fn, { timeout: 300 }) : requestAnimationFrame(fn));
+  function pump() {
+    pumping = false;
+    if (!pending.size) return;
+    const k = Array.from(pending.keys()).pop(), job = pending.get(k); // newest first: what is on screen now
+    pending.delete(k);
+    const t0 = performance.now();
+    const u = global.RLFaces3D.render(job.o);
+    if (!u) { pending.clear(); return; }
+    cache3d.set(k, u); if (cache3d.size > 1500) cache3d.delete(cache3d.keys().next().value);
+    document.querySelectorAll('img').forEach((img) => { if (img.getAttribute('src') === job.s) img.src = u; });
+    // one portrait per idle slot; back off on slow (software-rendered) GPUs so the page stays responsive
+    if (pending.size) { pumping = true; later(pump, performance.now() - t0 > 40); }
+  }
   function uri(o) {
     const k = o.seed + '|' + (o.color || '') + '|' + (o.age >= 20 ? 'a' : 'y');
+    if (cache3d.has(k)) return cache3d.get(k);
     let u = cache.get(k);
     if (!u) { u = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg(o)); cache.set(k, u); if (cache.size > 3000) cache.delete(cache.keys().next().value); }
+    if (global.RLFaces3D && global.RLFaces3D.available() && !pending.has(k)) { pending.set(k, { o, s: u }); if (!pumping) { pumping = true; later(pump, false); } }
     return u;
   }
   global.RLFaces = { svg, uri };
