@@ -125,5 +125,126 @@
     1: ['One car. No teammates. No excuses.', 'Four regions. Four duellists. One world champion.'],
     2: ['Two players. One rotation. Zero hiding.', 'Four duos, one title: the best partnership in the world.'],
   };
-  global.RLSideIntro = { play, stop, brandKey, tagline: (mode, worlds) => TAG[mode === 2 ? 2 : 1][worlds ? 1 : 0] };
+  /* ---------- champion ceremony ----------
+     Three scenes in the mode's brand:
+       1. The final: champion vs runner-up, the series replayed game by game until the decider, then the
+          loser's side is swept away (1v1: the blade-cut screen; 2v2: the tiles and passing lanes).
+       2. The champion: 1v1 — a spotlight, a swinging Duel medal and the name letter by letter.
+                        2v2 — the two players fly in from either side and meet in the middle; a double-ring medal.
+       3. The road to the title: every series, the record and each player's numbers.
+     o = { mode, worlds, kicker, title, label, champ:{name, players:[{name,flag,photo,g,a,sv}], club, badge}, runner:{...},
+           final:{round, games:[{w,l,ot}]}, path:[{round, opp, w, l}], record:{sw,sl,gw,gl}, next } */
+  let cc = null;
+  function ccStop() {
+    if (!cc) return;
+    cc.dead = true; cc.timers.forEach(clearTimeout); if (cc.raf) cancelAnimationFrame(cc.raf);
+    document.removeEventListener('keydown', cc.onKey, true);
+    if (cc.el.parentNode) cc.el.parentNode.removeChild(cc.el);
+    document.documentElement.classList.remove('cer-open');
+    cc = null;
+  }
+  const ini = (n) => (String(n).replace(/[^A-Za-z0-9]/g, '').slice(0, 2) || '?').toUpperCase();
+  const face = (p) => `<span class="sc-face">${p.photo ? `<img src="${esc(p.photo)}" alt="" />` : `<b>${esc(ini(p.name))}</b>`}</span>`;
+  const side = (e, cls) => `<div class="sc-side ${cls}">${e.badge || ''}<div class="sc-sn">${e.players.map((p) => `<b>${esc(p.flag || '')} ${esc(p.name)}</b>`).join('')}<small>${esc(e.club || '')}</small></div></div>`;
+  function confetti(S, cols) {
+    const cv = S.el.querySelector('.sc-confetti'); if (!cv) return;
+    const ctx = cv.getContext('2d'); const W = (cv.width = innerWidth), H = (cv.height = innerHeight);
+    const N = matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches ? 40 : 170;
+    const ps = Array.from({ length: N }, () => ({ x: Math.random() * W, y: -20 - Math.random() * H * 0.8, vx: (Math.random() - 0.5) * 2, vy: 2 + Math.random() * 3.5, r: Math.random() * 6, w: 6 + Math.random() * 7, h: 3 + Math.random() * 5, c: cols[Math.floor(Math.random() * cols.length)], s: Math.random() * 0.2 - 0.1 }));
+    const t0 = performance.now();
+    const tick = (t) => {
+      if (S.dead) return; ctx.clearRect(0, 0, W, H);
+      ps.forEach((p) => { p.x += p.vx + Math.sin((t + p.y) / 400); p.y += p.vy; p.r += p.s; if (p.y > H + 20 && t - t0 < 4500) { p.y = -20; p.x = Math.random() * W; }
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.c; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h * Math.abs(Math.cos(p.r * 3))); ctx.restore(); });
+      S.raf = requestAnimationFrame(tick);
+    };
+    S.raf = requestAnimationFrame(tick);
+  }
+  function ceremony(o, done) {
+    ccStop(); stop();
+    const mode = o.mode === 2 ? 2 : 1, th = BRANDS[brandKey(mode, o.worlds)];
+    const el = document.createElement('div');
+    el.className = 'sc si-m' + mode + (o.worlds ? ' si-wc' : '');
+    el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', (o.label || 'Champion') + ' ceremony');
+    el.style.cssText = `--a:${th.a};--b:${th.b};--c:${th.c};--c3:${th.c}`;
+    const steps = [['final', o.final && o.runner ? 'The final' : null], ['champ', o.label || 'Champion'], ['road', 'Road to the title']].filter((x) => x[1]);
+    el.innerHTML = `<div class="si-bg" aria-hidden="true"></div>${o.worlds ? '<div class="si-rays" aria-hidden="true"></div>' : ''}<div class="sc-stage"></div><canvas class="sc-confetti" aria-hidden="true"></canvas>
+      <div class="cer-ui"><div class="cer-steps">${steps.map(([k, l]) => `<span data-k="${k}">${esc(l)}</span>`).join('')}</div>
+        <div class="cer-btns"><button class="cer-next" type="button">Next ▸</button><button class="cer-skip" type="button">Skip ceremony</button></div></div>`;
+    document.body.appendChild(el);
+    document.documentElement.classList.add('cer-open');
+    const S = (cc = { el, timers: [], dead: false, raf: 0, advance: null });
+    const stage = el.querySelector('.sc-stage');
+    const finish = () => { if (S.dead) return; ccStop(); if (done) done(); };
+    const next = () => { if (S.advance) { const f = S.advance; S.advance = null; f(); } };
+    el.querySelector('.cer-next').addEventListener('click', next);
+    el.querySelector('.cer-skip').addEventListener('click', finish);
+    S.onKey = (ev) => { if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); finish(); } else if (ev.key === ' ' || ev.key === 'ArrowRight' || ev.key === 'Enter') { ev.preventDefault(); ev.stopPropagation(); next(); } };
+    document.addEventListener('keydown', S.onKey, true);
+    const wait = (ms) => new Promise((res) => { const t = setTimeout(() => { S.advance = null; res(); }, ms); S.timers.push(t); S.advance = () => { clearTimeout(t); res(); }; });
+    const later = (ms, f) => S.timers.push(setTimeout(() => { if (!S.dead) f(); }, ms));
+    const mark = (k) => el.querySelectorAll('.cer-steps span').forEach((x) => { x.classList.toggle('on', x.dataset.k === k); if (x.dataset.k === k) x.classList.add('seen'); });
+    const C = o.champ, R = o.runner, plural = C.players.length > 1;
+
+    const sceneFinal = async () => {
+      mark('final');
+      const games = (o.final && o.final.games) || [];
+      stage.innerHTML = `<div class="sc-final">
+        ${mode === 1 ? '<div class="si-split" aria-hidden="true"><i class="l"></i><i class="r"></i><i class="seam"></i></div>'
+          : '<div class="si-tiles sc-tiles" aria-hidden="true"><i class="t1"></i><i class="t2"></i><i class="t3"></i><i class="t4"></i></div><svg class="si-trails sc-trails" viewBox="0 0 1600 900" preserveAspectRatio="none" aria-hidden="true"><path class="ta" d="M-60 760 C 420 760, 700 160, 1660 150"/><path class="tb" d="M-60 150 C 640 150, 960 760, 1660 750"/></svg>'}
+        <div class="sc-fhead"><span class="si-kicker">${esc(o.kicker || '')}</span><h2>${esc((o.final && o.final.round) || 'Grand Final')}</h2></div>
+        <div class="sc-vs">${side(C, 'w')}<div class="sc-score"><b class="sa">0</b><i>–</i><b class="sb">0</b></div>${side(R, 'l')}</div>
+        <div class="sc-games">${games.map((g, i) => `<span class="${g.w > g.l ? 'won' : 'lost'}" style="--i:${i}"><small>G${i + 1}</small>${g.w}–${g.l}${g.ot ? '<em>OT</em>' : ''}</span>`).join('')}</div>
+        <div class="sc-point">Championship point</div>
+      </div>`;
+      const sa = stage.querySelector('.sa'), sb = stage.querySelector('.sb'), chips = stage.querySelectorAll('.sc-games span');
+      let a = 0, b = 0;
+      games.forEach((g, i) => later(1100 + i * 520, () => { chips[i].classList.add('on'); if (g.w > g.l) { a++; sa.textContent = a; sa.classList.remove('pop'); void sa.offsetWidth; sa.classList.add('pop'); } else { b++; sb.textContent = b; sb.classList.remove('pop'); void sb.offsetWidth; sb.classList.add('pop'); } if (i === games.length - 2) stage.querySelector('.sc-point').classList.add('on'); }));
+      later(1100 + games.length * 520 + 200, () => stage.querySelector('.sc-final').classList.add('decided'));
+      await wait(1100 + games.length * 520 + 2600);
+    };
+    const sceneChamp = async () => {
+      mark('champ');
+      let li = 0;
+      const big = (n) => `<span class="sc-word">${Array.from(n).map((ch) => `<i style="--i:${li++}">${esc(ch)}</i>`).join('')}</span>`;
+      const medal = mode === 1
+        ? `<svg class="sc-medal" viewBox="0 0 200 260" aria-hidden="true"><path d="M70 0 L100 70 L130 0" class="rib"/><circle cx="100" cy="160" r="88" class="m1"/><circle cx="100" cy="160" r="72" class="m2"/><path d="M60 125 L100 205 L140 125" class="mv"/><text x="100" y="172" class="mt">1V1</text></svg>`
+        : `<svg class="sc-medal" viewBox="0 0 240 260" aria-hidden="true"><path d="M90 0 L120 70 L150 0" class="rib"/><circle cx="92" cy="160" r="70" class="m1 r1"/><circle cx="148" cy="160" r="70" class="m1 r2"/><text x="120" y="172" class="mt">2V2</text></svg>`;
+      stage.innerHTML = `<div class="sc-champ">
+        <div class="sc-spot" aria-hidden="true"></div>${medal}
+        <span class="si-kicker">${esc(o.kicker || '')}</span>
+        ${mode === 1 ? `<div class="sc-hero">${face(C.players[0])}</div><h1 class="sc-name">${big(C.players[0].name)}</h1>`
+          : `<div class="sc-duo"><div class="sc-pl l">${face(C.players[0])}<b>${esc(C.players[0].flag || '')} ${esc(C.players[0].name)}</b></div><span class="sc-amp">&amp;</span><div class="sc-pl r">${face(C.players[1] || C.players[0])}<b>${esc((C.players[1] || {}).flag || '')} ${esc((C.players[1] || {}).name || '')}</b></div><i class="sc-burst" aria-hidden="true"></i></div>`}
+        <div class="sc-club">${C.badge || ''}<span>${esc(C.club || '')}</span></div>
+        <div class="sc-label">${esc(o.label || '')}</div>
+        ${o.next ? `<p class="sc-next">${esc(o.next)}</p>` : ''}
+      </div>`;
+      later(mode === 1 ? 1000 : 850, () => confetti(S, mode === 1 ? [th.a, th.c, '#ffffff', '#ff6b81'] : [th.a, th.c, '#ffffff', '#5eead4']));
+      await wait(7000);
+    };
+    const sceneRoad = async () => {
+      mark('road');
+      const r = o.record || {};
+      const tiles = [['Series', (r.sw || 0) + '–' + (r.sl || 0)], ['Games', (r.gw || 0) + '–' + (r.gl || 0)], ['Goals', C.players.reduce((x, p) => x + (p.g || 0), 0)], ['Saves', C.players.reduce((x, p) => x + (p.sv || 0), 0)]];
+      stage.innerHTML = `<div class="sc-road">
+        <h2>Road to the title</h2><p class="sc-sub">${esc(o.title || '')}</p>
+        <div class="sc-rec">${tiles.map(([k, v], i) => `<div style="--i:${i}"><b>${esc(v)}</b><small>${k}</small></div>`).join('')}</div>
+        <div class="sc-path">${(o.path || []).map((m, i) => `<div class="sc-pm" style="--i:${i}"><small>${esc(m.round)}</small><b>${esc(m.opp)}</b><span>${m.w}–${m.l}</span></div>`).join('')}</div>
+        ${plural ? `<div class="sc-pstats">${C.players.map((p) => `<div><b>${esc(p.flag || '')} ${esc(p.name)}</b><span>${p.g || 0} G · ${p.a || 0} A · ${p.sv || 0} Sv</span></div>`).join('')}</div>` : ''}
+        ${o.next ? `<p class="sc-next">${esc(o.next)}</p>` : ''}
+        <button class="sc-done" type="button">Continue →</button>
+      </div>`;
+      stage.querySelector('.sc-done').addEventListener('click', finish);
+      el.querySelector('.cer-next').textContent = 'Finish ▸';
+      await wait(60000);
+    };
+    (async () => {
+      if (o.final && o.runner) await sceneFinal();
+      if (S.dead) return; await sceneChamp();
+      if (S.dead) return; await sceneRoad();
+      finish();
+    })();
+  }
+
+  global.RLSideIntro = { play, stop, brandKey, ceremony, tagline: (mode, worlds) => TAG[mode === 2 ? 2 : 1][worlds ? 1 : 0] };
 })(window);

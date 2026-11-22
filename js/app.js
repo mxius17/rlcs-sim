@@ -1203,9 +1203,30 @@
     out.champ = { name: t.name, color: t.color, color2: th ? th.c : '#ffffff', badge: badge(t, 'xl'), line: ru ? `Beat ${ru.name} ${w}–${l}${finalM && finalM.roundName && !single ? ' in the ' + finalM.roundName.toLowerCase() : ''}` : '', players: t.players.slice(0, 3).map((p) => info(p.name, t)) };
     return out;
   }
+  /** 1v1 / 2v2 events (their theme is side-1v1, side-2v2 or a -wc World Championship edition). */
+  const sideOf = (T) => { const m = /^side-([12])v[12](-wc)?$/.exec(T.theme || ''); return m ? { mode: +m[1], worlds: !!m[2] } : null; };
+  /** The branded champion ceremony (js/sidebrand.js): the final game by game, the champion, the road to the title. */
+  function sideCeremonyData(T, sd) {
+    const P = window.RL_PHOTOS || {};
+    const C = getTeam(T.champion), R = T.runnerUp && getTeam(T.runnerUp), id = T.champion;
+    const photo = (p) => P[p.name + '|' + (p.country || '')] || (T.career && window.RLCareer && window.RLCareer.photoByName ? window.RLCareer.photoByName(p.name, p.country) : null);
+    const stat = (name) => Object.values(T.stats).find((x) => x && x.team === id && x.name === name) || {};
+    const ent = (t, mine) => ({ name: t.name, club: t.club || '', badge: badge(t, 'lg'), players: t.players.map((p) => Object.assign({ name: p.name, flag: p.flag || '', photo: photo(p) }, mine ? { g: stat(p.name).g || 0, a: stat(p.name).a || 0, sv: stat(p.name).sv || 0 } : {})) });
+    const mine = T.order.map((k) => T.matches[k]).filter((m) => m && m.result && !m.result.bye && m.result.games && (m.a === id || m.b === id));
+    const orient = (m) => { const A = m.a === id; return { w: A ? m.result.sa : m.result.sb, l: A ? m.result.sb : m.result.sa, games: m.result.games.map((g) => ({ w: A ? g.ga : g.gb, l: A ? g.gb : g.ga, ot: g.ot })) }; };
+    const fm = mine[mine.length - 1];
+    const rec = { sw: 0, sl: 0, gw: 0, gl: 0 };
+    const path = mine.map((m) => { const o = orient(m); if (o.w > o.l) rec.sw++; else rec.sl++; rec.gw += o.w; rec.gl += o.l; return { round: m.roundName || m.label || 'Match', opp: getTeam(m.a === id ? m.b : m.a).name, w: o.w, l: o.l }; });
+    const M = sd.mode + 'v' + sd.mode, pl = sd.mode === 2 ? 's' : '';
+    const label = sd.worlds ? M + ' World Champion' + pl : (REGIONS[C.region] || C.region || '') + ' ' + M + ' Open champion' + pl;
+    return { mode: sd.mode, worlds: sd.worlds, kicker: T.title || M, title: T.title || M, label,
+      champ: ent(C, true), runner: R ? ent(R, false) : null, final: fm ? { round: fm.roundName || 'Grand Final', games: orient(fm).games } : null, path, record: rec,
+      next: sd.worlds ? null : (sd.mode === 2 ? 'They qualify' : 'Qualified') + ' for the ' + M + ' World Championship.' };
+  }
   function playCeremony(T, done) {
     ensurePhotos();
-    const go = () => window.RLCeremony.play(ceremonyData(T), done);
+    const sd = sideOf(T);
+    const go = () => (sd && window.RLSideIntro && window.RLSideIntro.ceremony ? window.RLSideIntro.ceremony(sideCeremonyData(T, sd), done) : window.RLCeremony.play(ceremonyData(T), done));
     if (window.RL_PHOTOS) return go();
     let n = 0; const iv = setInterval(() => { if (window.RL_PHOTOS || ++n > 15) { clearInterval(iv); go(); } }, 100);
   }
