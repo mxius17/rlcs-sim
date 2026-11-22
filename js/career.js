@@ -1201,7 +1201,7 @@
         <div class="fc-side-row"><span class="fc-day">${C.step + 1}</span><span><small>${esc(st.type === 'window' ? 'Transfer window' : st.type === 'review' ? 'Season review' : st.type === 'open' ? 'Regional Open' : st.type === 'major' ? 'Major' : 'World Championship')}</small><b>${esc(st.short || st.name)}</b></span><span class="fc-ico" aria-hidden="true">${st.type === 'window' ? '⇄' : st.type === 'review' ? '★' : '🏆'}</span></div>
         <div class="fc-side-mid"><small>${viewer ? 'Neutral viewer · home region ' + esc(api.regions[reg]) : esc(t.name) + ' · ' + regionRankLabel() + ' in ' + esc(api.regions[reg])}</small>
           <div class="fc-rings">${viewer ? (() => { const n88 = Object.values(C.players).filter((p) => p.team && p.rating >= 88).length, base = (C.base || talentBase()).n88; return ring(t.ovr - 60, 40, 'Region leader', `<span data-count="${t.ovr}">${t.ovr}</span>`, '◆') + ring(n88, Math.round(base * 1.5), 'Stars 88+', `<span data-count="${n88}">${n88}</span>`, '★'); })() : ring(t.ovr - 60, 40, 'Team rating', `<span data-count="${t.ovr}">${t.ovr}</span>`, '◆')}${viewer ? '' : ring(C.board, 100, 'Board', `<span data-count="${C.board}" data-suf="%">${C.board}%</span>`, '☺')}${ring(C.step + 1, SCHEDULE.length, 'Season', (C.step + 1) + '/' + SCHEDULE.length, '▶')}</div></div>
-        <div class="fc-next">${next}${st.type === 'major' && window.RLCutscene ? `<button class="fc-intro" data-action="career-intro">▶ Watch the ${esc(majorCity(st))} intro</button>` : ''}</div>
+        <div class="fc-next">${next}${(st.type === 'major' || st.type === 'worlds') && window.RLCutscene ? `<button class="fc-intro" data-action="career-intro">▶ Watch the ${esc(st.type === 'worlds' ? worldsCity() + ' Worlds' : majorCity(st))} intro</button>` : ''}</div>
       </aside>`;
     const tiles = `<nav class="fc-tiles" aria-label="Career hub">${VIEWS.map(([k, l, sub]) => `<button class="fc-tile ${k === view && tab === 'central' ? 'on' : ''}" data-action="career-view" data-v="${k}"><b>${l}</b><small>${esc(sub)}</small><span class="fc-tile-ico" aria-hidden="true">${{ next: '▶', standings: '☰', schedule: '▦', objectives: '✔', news: '▤' }[k]}</span></button>`).join('')}</nav>`;
     // ---- tabs ----
@@ -1289,7 +1289,7 @@
     if (ts) ts.addEventListener('change', () => { ui.thSort = ts.value; ui.thSel = null; api.render(); });
     // first time a Major comes up: its host-city intro plays once
     const cutKey = C.season + '|' + st.key;
-    if (st.type === 'major' && tab === 'central' && !activeEvent && window.RLCutscene && !(C.cutSeen || []).includes(cutKey)) {
+    if ((st.type === 'major' || st.type === 'worlds') && tab === 'central' && !activeEvent && window.RLCutscene && !(C.cutSeen || []).includes(cutKey)) {
       C.cutSeen = (C.cutSeen || []).concat(cutKey).slice(-40); save();
       setTimeout(() => playMajorIntro(st), 350);
     }
@@ -1297,15 +1297,19 @@
   /** The host city's intro for a Major (js/cutscene.js), with the 16 qualified teams. */
   function playMajorIntro(st) {
     if (!window.RLCutscene || !C) return;
-    const city = majorCity(st), pal = HOST_PAL[city], th = hostTheme(st) || { a: '#1f8bff', b: '#121A2E', c: '#d4a017' };
+    const wc = st.type === 'worlds';
+    const city = wc ? worldsCity() : majorCity(st), pal = HOST_PAL[city], th = hostTheme(st) || { a: '#1f8bff', b: '#121A2E', c: '#d4a017' };
     const country = pal ? pal[0] : '';
     const flag = global.RL_DATA.flagFor(country === 'United Kingdom' ? (city === 'Edinburgh' ? 'Scotland' : 'England') : country);
     const ids = eventCfg(st).cfg.teams.slice().sort((x, y) => ovr(y) - ovr(x));
-    const field = ids.map((id) => { const tt = teamObj(id); return { badge: api.badge(tt, 'md'), name: tt.name, short: tt.tag || tt.name, mine: !V() && id === C.user }; });
+    const RO = ['EU', 'NA', 'MENA', 'SAM', 'OCE', 'APAC', 'SSA'];
+    if (wc) ids.sort((x, y) => RO.indexOf(C.teams[x].region) - RO.indexOf(C.teams[y].region) || ovr(y) - ovr(x));
+    const field = ids.map((id) => { const tt = teamObj(id); return { badge: api.badge(tt, 'md'), name: tt.name, short: tt.tag || tt.name, region: C.teams[id].region, mine: !V() && id === C.user }; });
     const mineIn = !V() && ids.includes(C.user);
     const home = V() ? ids.filter((id) => C.teams[id].region === homeReg()).length : 0;
-    const note = V() ? `${home} team${home === 1 ? '' : 's'} from ${api.regions[homeReg()]} made it.` : mineIn ? `${userTeam().name} are in, seeded ${E.ordinal(ids.indexOf(C.user) + 1)} of 16.` : `${userTeam().name} did not qualify. You can still simulate the event and follow the results.`;
-    window.RLCutscene.play({ city, country, flag, palette: th, kicker: `RLCS ${C.season} · ${st.name} · Split ${st.split}`, field, note });
+    const note = V() ? `${home} team${home === 1 ? '' : 's'} from ${api.regions[homeReg()]} made it.` : mineIn ? `${userTeam().name} are in, ${wc ? 'one of ' + ids.length + ' teams chasing the world title.' : 'seeded ' + E.ordinal(eventCfg(st).cfg.teams.slice().sort((x, y) => ovr(y) - ovr(x)).indexOf(C.user) + 1) + ' of 16.'}` : `${userTeam().name} did not qualify. You can still simulate the event and follow the results.`;
+    const prev = (C.history || []).find((h) => h.season === C.season - 1);
+    window.RLCutscene.play({ city, country, flag, palette: th, worlds: wc, holder: wc && prev && prev.champion && prev.champion !== '—' ? prev.champion : null, kicker: wc ? `RLCS ${C.season} · The season finale` : `RLCS ${C.season} · ${st.name} · Split ${st.split}`, field, note });
   }
   /** Viewer: the 16 strongest teams worldwide. */
   function powerHtml() {
@@ -1653,7 +1657,7 @@
     switch (a) {
       case 'career-pick': newCareer(id, api.state.ui.cdiff || 'normal'); api.go('career'); return true;
       case 'career-viewer': newCareer(null, 'normal', v || 'EU'); api.state.ui.ctab = 'central'; api.state.ui.cview = 'next'; api.go('career'); return true;
-      case 'career-intro': { const st = step(); if (st.type === 'major') playMajorIntro(st); return true; }
+      case 'career-intro': { const st = step(); if (st.type === 'major' || st.type === 'worlds') playMajorIntro(st); return true; }
       case 'career-vpick': api.state.ui.vreg = v; api.render(); return true;
       case 'career-vmarket': api.state.ui.ctab = 'transfers'; api.state.ui.thTab = 'activity'; api.state.ui.thSel = null; api.render(); window.scrollTo({ top: 0 }); return true;
       case 'career-vreg': if (C && V() && REGIONS.includes(v)) { C.vreg = v; bump(); save(); api.render(); } return true;

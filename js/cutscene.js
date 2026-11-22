@@ -44,6 +44,8 @@
     'Brisbane': ['palms', 'Story Bridge', 'Brissie'], 'Perth': ['palms', 'Kings Park', 'City of Lights'], 'Wellington': ['mountain', 'Mount Victoria', 'Windy Welly'],
     'Lagos': ['bridge', 'Third Mainland Bridge', 'Centre of Excellence'], 'Nairobi': ['needle', 'KICC', 'Green City in the Sun'], 'Accra': ['gate', 'Independence Arch', 'The Gateway'],
     'Durban': ['wave', 'Moses Mabhida Stadium', 'Durbs'],
+    // Worlds-only hosts
+    'Fort Worth': ['wave', 'Dickies Arena', 'Where the West begins'], 'Boston': ['bridge', 'Zakim Bridge', 'Beantown'], 'Las Vegas': ['needle', 'The Strat', 'The Entertainment Capital of the World'],
   };
   const HELLO = {
     Denmark: 'Velkommen til', Norway: 'Velkommen til', Sweden: 'Välkommen till', Finland: 'Tervetuloa', Germany: 'Willkommen in', Austria: 'Willkommen in', Switzerland: 'Willkommen in',
@@ -126,13 +128,15 @@
     const letters = words.map((w) => `<span class="cut-w">${Array.from(w).map((ch) => `<i style="--i:${li++}">${esc(ch)}</i>`).join('')}</span>`).join(' ');
     const longest = Math.max(...words.map((w) => w.length));
     const el = document.createElement('div');
-    el.className = 'cut';
+    el.className = 'cut' + (o.worlds ? ' cut-worlds' : '');
     el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Major intro: ' + o.city);
     el.style.cssText = `--a:${a};--b:${b};--c:${c}`;
     el.innerHTML = `
       <div class="cut-sky"></div>
       <div class="cut-bands" aria-hidden="true"><i></i><i></i><i></i></div>
       <div class="cut-sun" aria-hidden="true"></div>
+      ${o.worlds ? `<div class="cut-beams" aria-hidden="true">${[0, 1, 2, 3, 4, 5].map((k) => `<i style="--k:${k}"></i>`).join('')}</div>
+      <svg class="cut-globe" viewBox="-110 -110 220 220" aria-hidden="true"><circle r="100" class="g-o"/>${[0, 1, 2, 3, 4, 5].map((k) => `<ellipse rx="100" ry="100" class="g-m" style="--k:${k}"/>`).join('')}${[-60, -30, 30, 60].map((y) => `<ellipse cy="${y}" rx="${Math.round(Math.sqrt(10000 - y * y))}" ry="${Math.round(Math.sqrt(10000 - y * y) * 0.22)}" class="g-p"/>`).join('')}<ellipse rx="100" ry="22" class="g-eq"/>${[[-42, -38], [-62, -22], [8, -30], [40, 6], [-30, 38], [70, 34], [22, 52]].map(([x, y], k) => `<circle cx="${x}" cy="${y}" r="4.5" class="g-dot" style="--k:${k}"/>`).join('')}</svg>` : ''}
       <svg class="cut-city" viewBox="0 0 1600 600" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
         <defs><linearGradient id="cutLm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${b}"/><stop offset="1" stop-color="#05070e"/></linearGradient></defs>
         <path class="cut-back" d="${skyline(rnd)}"/>
@@ -141,15 +145,17 @@
         <rect class="cut-ground" x="0" y="${G}" width="1600" height="40"/>
       </svg>
       <div class="cut-text">
-        <span class="cut-kicker">${esc(o.kicker)}</span>
+        ${o.worlds ? '<span class="cut-wc">World Championship</span>' : ''}<span class="cut-kicker">${esc(o.kicker)}</span>
         <span class="cut-hello">${esc(hello)}</span>
         <h1 class="cut-name" aria-label="${esc(o.city)}" style="--len:${longest}">${letters}</h1>
         <span class="cut-country">${o.flag || ''} ${esc(o.country)}</span>
         <span class="cut-lmname">${esc(info[1])} · <em>${esc(info[2])}</em></span>
       </div>
       <div class="cut-field" aria-label="The field">
-        <span class="cut-fh">The field · 16 teams</span>
-        <div class="cut-grid">${(o.field || []).map((t, i) => `<span class="cut-team${t.mine ? ' mine' : ''}" style="--i:${i}" title="${esc(t.name)}">${t.badge}<small>${esc(t.short || t.name)}</small></span>`).join('')}</div>
+        <span class="cut-fh">${o.worlds ? 'The field · ' + (o.field || []).length + ' teams · 7 regions' : 'The field · 16 teams'}</span>
+        ${o.worlds ? (() => { let i = 0; const regs = []; (o.field || []).forEach((t) => { let g = regs.find((r) => r.k === t.region); if (!g) regs.push((g = { k: t.region, t: [] })); g.t.push(t); }); return `<div class="cut-regs">${regs.map((g) => `<div class="cut-reg"><span class="cut-rk">${esc(g.k)}</span>${g.t.map((t) => `<span class="cut-team${t.mine ? ' mine' : ''}" style="--i:${i++}" title="${esc(t.name)}">${t.badge}<small>${esc(t.short || t.name)}</small></span>`).join('')}</div>`).join('')}</div>`; })()
+          : `<div class="cut-grid">${(o.field || []).map((t, i) => `<span class="cut-team${t.mine ? ' mine' : ''}" style="--i:${i}" title="${esc(t.name)}">${t.badge}<small>${esc(t.short || t.name)}</small></span>`).join('')}</div>`}
+        ${o.holder ? `<p class="cut-holder">🏆 Defending champions: <b>${esc(o.holder)}</b></p>` : ''}
         ${o.note ? `<p class="cut-note">${esc(o.note)}</p>` : ''}
       </div>
       <div class="cut-ui"><button class="cut-skip" type="button">Skip intro</button><button class="cut-go" type="button">Let’s go →</button></div>`;
@@ -162,8 +168,8 @@
     S.onKey = (ev) => { if (ev.key === 'Escape' || ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); ev.stopPropagation(); finish(); } };
     document.addEventListener('keydown', S.onKey, true);
     // second beat: the city text moves up and the field flies in
-    S.timers.push(setTimeout(() => { if (!S.dead) el.classList.add('beat2'); }, 4300));
-    S.timers.push(setTimeout(() => { const g = el.querySelector('.cut-go'); if (g && !S.dead) { g.classList.add('on'); g.focus({ preventScroll: true }); } }, 6200));
+    S.timers.push(setTimeout(() => { if (!S.dead) el.classList.add('beat2'); }, o.worlds ? 5200 : 4300));
+    S.timers.push(setTimeout(() => { const g = el.querySelector('.cut-go'); if (g && !S.dead) { g.classList.add('on'); g.focus({ preventScroll: true }); } }, o.worlds ? 7200 : 6200));
   }
 
   global.RLCutscene = { play, stop, has: (city) => !!SCENE[city] };
