@@ -535,7 +535,12 @@
       if (!photoReq) { photoReq = true; const sc = document.createElement('script'); sc.src = 'js/photos.js'; sc.async = true; sc.onload = () => { if (api.state.view === 'career' && C) api.render(); }; document.head.appendChild(sc); }
       return null;
     }
-    return P[p.name + '|' + (p.country || '')] || null;
+    const real = P[p.name + '|' + (p.country || '')];
+    if (real) return real;
+    // no real photo: a generated portrait (js/faces.js), like FIFA's generated youth players
+    if (!global.RLFaces) return null;
+    const club = p.team && C.teams[p.team] ? C.teams[p.team] : p.academy && C.teams[p.academy] ? C.teams[p.academy] : null;
+    return global.RLFaces.uri({ seed: p.id + '|' + p.name, region: p.region || (club && club.region), country: p.country, age: p.age, color: club ? club.color : '#3a4256' });
   }
   const initialsOf = (n) => (String(n).replace(/[^A-Za-z0-9]/g, '').slice(0, 2) || '?').toUpperCase();
   function avatar(p, cls) { const ph = photoOf(p); return `<span class="pav ${cls || ''}"><span>${esc(initialsOf(p.name))}</span>${ph ? `<img src="${esc(ph)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}</span>`; }
@@ -1759,6 +1764,8 @@
     },
     render, onAction, recordFromT, simRest,
     has: () => !!C,
+    /** Photo (real or generated) of a career player, by name: used by the tournament ceremony. */
+    photoByName: (name, country) => { if (!C) return null; const p = Object.values(C.players).find((x) => x.name === name && (!country || x.country === country)) || Object.values(C.players).find((x) => x.name === name); return p ? photoOf(p) : null; },
     /** Delete the current career (home screen "Start new career"). */
     end: () => { C = null; save(); const ui = api.state.ui; ui.ctab = 'central'; ui.cview = 'next'; ui.cnews = 0; },
     teamObj: (id) => (C ? teamObj(id) : null),

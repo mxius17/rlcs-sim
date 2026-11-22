@@ -1067,7 +1067,7 @@
   function ceremonyData(T) {
     const t = getTeam(T.champion), th = themeOf(T.theme), single = !!(T.cfg && T.cfg.custom);
     const P = window.RL_PHOTOS || {};
-    const info = (name, team) => { const p = (team.players || []).find((x) => x.name === name) || {}; return { name, flag: p.flag || '', photo: P[name + '|' + (p.country || '')] || null }; };
+    const info = (name, team) => { const p = (team.players || []).find((x) => x.name === name) || {}; return { name, flag: p.flag || '', photo: P[name + '|' + (p.country || '')] || (T.career && window.RLCareer && window.RLCareer.photoByName ? window.RLCareer.photoByName(name, p.country) : null) }; };
     const rows = Object.values(T.stats).filter((s) => s && s.name);
     const ms = rows.filter((s) => s.team === T.champion).sort((a, b) => b.score - a.score)[0];
     const played = T.order.map((id) => T.matches[id]).filter((m) => m && m.result && !m.result.bye && m.result.games);
