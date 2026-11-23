@@ -182,6 +182,9 @@
 
   const LOGOS = window.RL_LOGOS || {};
   const badge = (t, cls) => {
+    // national teams: the country's flag is the logo
+    const flag = t && t.nation && window.RLFlags && window.RLFlags.url(t.tag);
+    if (flag) return `<span class="badge logo nat ${cls || ''}" style="--c:${esc(t.color || '#2f8cff')}" title="${esc(t.name)}" aria-hidden="true"><img src="${flag}" alt="" decoding="async" /></span>`;
     const logo = t && (LOGOS[t.logoKey] || LOGOS[t.name]);
     if (logo) return `<span class="badge logo ${cls || ''}" style="--c:${esc(t.color || '#2f8cff')}" title="${esc(t.name)}" aria-hidden="true"><img src="${logo}" alt="" decoding="async" /></span>`;
     return `<span class="badge ${cls || ''}" style="--c:${esc(t.color || '#2f8cff')}" aria-hidden="true">${esc((t.tag || t.name || '?').slice(0, 4))}</span>`;

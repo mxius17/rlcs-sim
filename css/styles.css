@@ -2952,3 +2952,10 @@ html.cer-open, html.cer-open body { overflow: hidden; }
 .timeline { grid-template-columns: repeat(10, minmax(0, 1fr)); }
 @media (max-width: 720px) { .timeline { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .tl.nation b { color: #F2C14E; }
+
+/* ---------- flags as images (js/flags.js) ---------- */
+img.flag-emoji { display: inline-block; height: 1.25em; width: 1.25em; vertical-align: -0.3em; margin: 0 .04em; object-fit: contain; pointer-events: none; }
+.badge.logo.nat { padding: 2px !important; background: color-mix(in srgb, var(--c) 18%, rgba(255,255,255,0.06)); }
+.badge.logo.nat img { filter: none; transform: scale(1.12); }
+/* big flags in the national-team intros */
+.ni-flag img.flag-emoji, .ni-row span img.flag-emoji, .ni-wall img.flag-emoji, .ni-orbit img.flag-emoji, .ni-march img.flag-emoji { height: 1.3em; width: 1.3em; vertical-align: middle; margin: 0; }
