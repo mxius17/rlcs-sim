@@ -1309,7 +1309,8 @@
         
         <div class="field"><label for="setSpeed">Default playback speed</label><select class="select" id="setSpeed">${SPEEDS.map((s) => `<option value="${s}" ${st.speed === s ? 'selected' : ''}>${s}×</option>`).join('')}</select></div>
         <div class="field"><label for="setMode">Default viewer</label><select class="select" id="setMode">${[['extended', 'Extended (pitch + commentary)'], ['highlights', 'Highlights only'], ['commentary', 'Commentary only']].map(([k, v]) => `<option value="${k}" ${st.mode === k ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
-        <div class="field"><label for="setSfx">Sound effects</label><div class="sfx-row"><label class="sfx-switch"><input type="checkbox" id="setSfx" ${window.RLSfx && window.RLSfx.on ? 'checked' : ''} /> <span>Enabled</span></label><input type="range" id="setVol" min="0" max="100" value="${Math.round((window.RLSfx ? window.RLSfx.volume : 0.55) * 100)}" aria-label="Volume" /></div></div>
+        <div class="field"><label for="setSfx">Sound effects</label><div class="sfx-row"><label class="sfx-switch"><input type="checkbox" id="setSfx" ${window.RLSfx && window.RLSfx.on ? 'checked' : ''} /> <span>Enabled</span></label><input type="range" id="setVol" min="0" max="100" value="${Math.round((window.RLSfx ? window.RLSfx.volume : 0.55) * 100)}" aria-label="Sound effects volume" /></div></div>
+        <div class="field"><label for="setMusic">Intro music</label><div class="sfx-row"><label class="sfx-switch"><input type="checkbox" id="setMusic" ${window.RLSfx && window.RLSfx.music ? 'checked' : ''} /> <span>Enabled</span></label><input type="range" id="setMVol" min="0" max="100" value="${Math.round((window.RLSfx ? window.RLSfx.musicVolume : 0.5) * 100)}" aria-label="Music volume" /></div><p class="help" style="margin:4px 0 0">Themed music for the Major, Esports World Cup and Worlds Week intros.</p></div>
         <hr class="divider" />
         <p class="help">Data: ${esc(DATA.source)} · updated ${esc(DATA.updated)}.</p>
         <button class="btn danger" data-action="reset-all">Reset all saved data</button>
@@ -1902,7 +1903,7 @@
         break;
       }
       case 'open-settings': openSettings(); break;
-      case 'save-settings': state.settings.speed = +$('#setSpeed').value; state.settings.mode = $('#setMode').value; if (window.RLSfx && $('#setSfx')) window.RLSfx.set({ on: $('#setSfx').checked, vol: +$('#setVol').value / 100 }); syncSfxBtn(); closeModal(); persistRender(); break;
+      case 'save-settings': state.settings.speed = +$('#setSpeed').value; state.settings.mode = $('#setMode').value; if (window.RLSfx && $('#setSfx')) window.RLSfx.set({ on: $('#setSfx').checked, vol: +$('#setVol').value / 100, music: $('#setMusic').checked, mvol: +$('#setMVol').value / 100 }); syncSfxBtn(); closeModal(); persistRender(); break;
       case 'sfx-toggle': if (window.RLSfx) { window.RLSfx.toggle(); syncSfxBtn(); toast(window.RLSfx.on ? 'Sound effects on' : 'Sound effects off'); } break;
       case 'reset-all':
         openModal(`${modalHead('Reset all saved data?', 'This deletes your setup, custom teams, roster edits and saved tournament in this browser.')}<div class="modal-foot"><button class="btn" data-action="close-modal">Cancel</button><button class="btn danger" data-action="reset-confirm">Delete everything</button></div>`, { size: 'sm' });

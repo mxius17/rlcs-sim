@@ -8,10 +8,10 @@
 (function (global) {
   'use strict';
   const KEY = 'rlsim.sfx';
-  let cfg = { on: true, vol: 0.55 };
+  let cfg = { on: true, vol: 0.55, music: true, mvol: 0.5 };
   try { Object.assign(cfg, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { /* storage blocked */ }
   const saveCfg = () => { try { localStorage.setItem(KEY, JSON.stringify(cfg)); } catch (e) { /* storage blocked */ } };
-  let ctx = null, master = null, noiseBuf = null;
+  let ctx = null, master = null, musicBus = null, noiseBuf = null;
   function init() {
     if (ctx) return ctx;
     const AC = global.AudioContext || global.webkitAudioContext;
@@ -21,6 +21,7 @@
     comp.threshold.value = -16; comp.ratio.value = 4;
     master = ctx.createGain(); master.gain.value = cfg.vol;
     master.connect(comp); comp.connect(ctx.destination);
+    musicBus = ctx.createGain(); musicBus.gain.value = cfg.mvol * 0.6; musicBus.connect(comp); // background music (js/music.js)
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
     const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     return ctx;
@@ -73,7 +74,7 @@
     toast: () => { tone(900, 2200, 0.022, { gain: 0.22, attack: 0.0008 }); tick(5200, 0.01, 0.22, 0.022); },
     confirm: () => { thump(180, 0.2); tick(3200, 0.016, 0.42); tick(4800, 0.012, 0.26, 0.06); ping(1760, 0.07, 0.06); ping(2640, 0.06, 0.11); },
     // a ratchet that speeds up, then a ping
-    sim: () => { let at = 0; for (let k = 0; k < 8; k++) { tick(3000 + k * 260, 0.01, 0.42, at); at += 0.05 - k * 0.004; } ping(2900, 0.07, at + 0.01); },
+    sim: () => { thump(150, 0.2); tick(2800, 0.018, 0.45, 0, 3); tick(4600, 0.01, 0.15, 0.05); },
     deny: () => { [0, 0.08].forEach((at) => { noise(0.03, { filter: 'lowpass', f0: 700, gain: 0.32, at, attack: 0.0006 }); thump(110, 0.15, at); }); },
     count: () => { tick(4500, 0.012, 0.32); ping(3000, 0.04); },
     whoosh: () => noise(0.7, { f0: 300, f1: 3200, q: 0.8, gain: 0.16, attack: 0.25 }),
@@ -146,7 +147,11 @@
     play,
     get on() { return cfg.on; },
     get volume() { return cfg.vol; },
-    set(o) { Object.assign(cfg, o); if (master) master.gain.value = cfg.vol; if (cfg.on) unlock(); saveCfg(); },
+    get music() { return cfg.music; },
+    get musicVolume() { return cfg.mvol; },
+    set(o) { Object.assign(cfg, o); if (master) master.gain.value = cfg.vol; if (musicBus) musicBus.gain.value = cfg.mvol * 0.6; if (cfg.on) unlock(); saveCfg(); if ((!cfg.on || !cfg.music) && global.RLMusic) global.RLMusic.stop(0.3); },
+    /** Audio context and the music bus for js/music.js, or null when muted, music is off or audio is not ready. */
+    audio() { if (!cfg.on || !cfg.music || !init() || ctx.state === 'suspended') return null; return { ctx, out: musicBus, noise: noiseBuf }; },
     toggle() { this.set({ on: !cfg.on }); if (cfg.on) setTimeout(() => play('confirm'), 30); return cfg.on; },
   };
 })(window);

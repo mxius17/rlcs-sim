@@ -179,6 +179,7 @@
     if (cur.el.parentNode) cur.el.parentNode.removeChild(cur.el);
     document.documentElement.classList.remove('cer-open');
     cur = null;
+    if (global.RLMusic) global.RLMusic.stop();
   }
   /** o: { city, country, flag, palette:{a,b,c}, kicker, field:[{badge,name,mine}], note } */
   function play(o, done) {
@@ -254,6 +255,8 @@
     // second beat: the city text moves up and the field flies in
     const sfx = (n) => global.RLSfx && global.RLSfx.play(n);
     sfx('whoosh');
+    // themed background music: the atmosphere's style (Worlds Week: the anthem), seeded by the host city
+    if (global.RLMusic) global.RLMusic.start(o.worlds ? 'anthem' : sty.mood, o.city);
     S.timers.push(setTimeout(() => { if (!S.dead) sfx('impact'); }, 1600));
     S.timers.push(setTimeout(() => { if (!S.dead) sfx('whoosh'); }, o.worlds ? 5150 : 4250));
     if (o.week) S.timers.push(setTimeout(() => { if (!S.dead) sfx('whoosh'); }, 10150));
