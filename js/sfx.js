@@ -8,10 +8,10 @@
 (function (global) {
   'use strict';
   const KEY = 'rlsim.sfx';
-  let cfg = { on: true, vol: 0.55, music: true, mvol: 0.5 };
+  let cfg = { on: true, vol: 0.55, music: true, mvol: 0.5, bgm: true, bvol: 0.4 };
   try { Object.assign(cfg, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { /* storage blocked */ }
   const saveCfg = () => { try { localStorage.setItem(KEY, JSON.stringify(cfg)); } catch (e) { /* storage blocked */ } };
-  let ctx = null, master = null, musicBus = null, noiseBuf = null;
+  let ctx = null, master = null, musicBus = null, bgmBus = null, noiseBuf = null;
   function init() {
     if (ctx) return ctx;
     const AC = global.AudioContext || global.webkitAudioContext;
@@ -21,12 +21,13 @@
     comp.threshold.value = -16; comp.ratio.value = 4;
     master = ctx.createGain(); master.gain.value = cfg.vol;
     master.connect(comp); comp.connect(ctx.destination);
-    musicBus = ctx.createGain(); musicBus.gain.value = cfg.mvol * 0.6; musicBus.connect(comp); // background music (js/music.js)
+    musicBus = ctx.createGain(); musicBus.gain.value = cfg.mvol * 0.6; musicBus.connect(comp); // intro anthems (js/music.js)
+    bgmBus = ctx.createGain(); bgmBus.gain.value = cfg.bvol * 0.6; bgmBus.connect(comp); // background music (js/bgm.js)
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
     const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     return ctx;
   }
-  const unlock = () => { if (!cfg.on) return; init(); if (ctx && ctx.state === 'suspended') ctx.resume(); };
+  const unlock = () => { if (!cfg.on) return; init(); if (ctx && ctx.state === 'suspended') ctx.resume().then(() => global.RLBgm && global.RLBgm.sync()); else if (global.RLBgm) global.RLBgm.sync(); };
   ['pointerdown', 'keydown', 'touchstart'].forEach((ev) => global.addEventListener(ev, unlock, { capture: true, passive: true }));
 
   /* ---------- building blocks ---------- */
@@ -149,9 +150,13 @@
     get volume() { return cfg.vol; },
     get music() { return cfg.music; },
     get musicVolume() { return cfg.mvol; },
-    set(o) { Object.assign(cfg, o); if (master) master.gain.value = cfg.vol; if (musicBus) musicBus.gain.value = cfg.mvol * 0.6; if (cfg.on) unlock(); saveCfg(); if ((!cfg.on || !cfg.music) && global.RLMusic) global.RLMusic.stop(0.3); },
+    set(o) { Object.assign(cfg, o); if (master) master.gain.value = cfg.vol; if (musicBus) musicBus.gain.value = cfg.mvol * 0.6; if (bgmBus) bgmBus.gain.value = cfg.bvol * 0.6; if (global.RLBgm) global.RLBgm.sync(); if (cfg.on) unlock(); saveCfg(); if ((!cfg.on || !cfg.music) && global.RLMusic) global.RLMusic.stop(0.3); },
     /** Audio context and the music bus for js/music.js, or null when muted, music is off or audio is not ready. */
     audio() { if (!cfg.on || !cfg.music || !init() || ctx.state === 'suspended') return null; return { ctx, out: musicBus, noise: noiseBuf }; },
+    get bgm() { return cfg.bgm; },
+    get bgmVolume() { return cfg.bvol; },
+    /** The background-music bus for js/bgm.js, or null when muted, background music is off or audio is not ready. */
+    bgmAudio() { if (!cfg.on || !cfg.bgm || !init() || ctx.state === 'suspended') return null; return { ctx, out: bgmBus, noise: noiseBuf }; },
     toggle() { this.set({ on: !cfg.on }); if (cfg.on) setTimeout(() => play('confirm'), 30); return cfg.on; },
   };
 })(window);
