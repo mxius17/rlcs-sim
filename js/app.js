@@ -93,11 +93,13 @@
     o.ovr = Math.round(E.teamStrength(o));
     return (natCache[id] = o);
   }
-  /** The strongest nations of a season (three players each), the host Saudi Arabia always in; sized to fit the groups. */
-  function nationField(size, groupSize, se) {
+  /** The host of a national-team event that season (rotating yearly, js/career.js). */
+  const nationHostOf = (key, se) => (window.RLNationHost ? window.RLNationHost(key, parseInt(se, 10)) : { city: 'Riyadh', country: 'Saudi Arabia', nation: 'Saudi Arabia' });
+  /** The strongest nations of a season (three players each), the host nation always in; sized to fit the groups. */
+  function nationField(size, groupSize, se, hostNation) {
     const all = Object.keys(nationPool(se)).map((c) => 'xn:' + se + '|' + c).filter((id) => nationTeam(id)).sort((a, b) => nationTeam(b).ovr - nationTeam(a).ovr);
     let ids = all.slice(0, size);
-    const host = 'xn:' + se + '|Saudi Arabia';
+    const host = 'xn:' + se + '|' + (hostNation || 'Saudi Arabia');
     if (all.includes(host) && !ids.includes(host)) ids = ids.slice(0, size - 1).concat(host);
     const n = [size, 32, 24, 16, 12, 8].find((x) => x <= ids.length && x % groupSize === 0) || 0;
     return ids.slice(0, n).sort((a, b) => nationTeam(b).ovr - nationTeam(a).ovr);
@@ -166,15 +168,7 @@
           <button class="btn primary" data-action="side-start" data-v="${n}|W" ${wf.length < 4 ? 'disabled' : ''}>Play the World Championship →</button>
         </div>
       </div>
-      <div class="modal-foot"><button class="btn" data-action="side-intro" data-v="${n}">▶ Watch the intro</button><button class="btn" data-action="side-reset" data-v="${n}">Clear results</button><button class="btn" data-action="side-mode" data-v="${n === 1 ? 2 : 1}">${SIDE[n === 1 ? 2 : 1].full} →</button></div>`, { size: 'md', cls: brand ? 'event-themed' : '', style: themeVars(brand) });
-  }
-  /** The mode's own intro (js/sidebrand.js) with the event's field, then `done`. */
-  function sideIntro(n, reg, se, teams, done) {
-    if (!window.RLSideIntro) { done(); return; }
-    const W = reg === 'W', M = SIDE[n];
-    const field = teams.map((id) => { const t = getTeam(id); return { name: t.name, players: t.players.map((p) => ({ name: p.name, flag: p.flag })), club: t.club, ovr: t.ovr, region: t.region, badge: badge(t, 'md') }; });
-    window.RLSideIntro.play({ mode: n, worlds: W, kicker: seasonLabel(se) + ' · ' + (W ? 'Worlds week' : REGIONS[reg]), title: M.name + (W ? ' World Championship' : ' Open'), tagline: window.RLSideIntro.tagline(n, W), field,
-      note: W ? 'The four regional Open winners. Semi-finals and final are best of seven.' : '16 ' + M.unit + ' · single elimination · the winner goes to Worlds.' }, done);
+      <div class="modal-foot"><button class="btn" data-action="side-reset" data-v="${n}">Clear results</button><button class="btn" data-action="side-mode" data-v="${n === 1 ? 2 : 1}">${SIDE[n === 1 ? 2 : 1].full} →</button></div>`, { size: 'md', cls: brand ? 'event-themed' : '', style: themeVars(brand) });
   }
   function startSide(v) {
     const [nS, reg] = v.split('|'), n = +nS, se = curSeason(), M = SIDE[n];
@@ -182,11 +176,10 @@
     const teams = W ? sideWorlds(n, se).map((x) => x.id).sort((a, b) => getTeam(b).ovr - getTeam(a).ovr) : sideField(n, reg, se);
     const cfg = Object.assign(defaultSetup(), { format: 'knockout', size: W ? 4 : 16, teams, simStyle: state.setup.simStyle, goalLevel: state.setup.goalLevel });
     const title = W ? seasonLabel(se) + ' ' + M.name + ' World Championship' : seasonLabel(se) + ' · ' + REGIONS[reg] + ' ' + M.name + ' Open';
-    // the Opens wear their mode's brand and get its intro; the World Championships are part of Worlds Week
+    // the Opens wear their mode's brand (no intro); the World Championships are part of Worlds Week
     const theme = W ? (themeOf('worlds-2026') ? 'worlds-2026' : 'career-worlds') : 'side-' + n + 'v' + n;
     closeModal();
-    if (W) launch(cfg, title, { theme, side: { n, reg, season: se } });
-    else sideIntro(n, reg, se, teams, () => launch(cfg, title, { theme, side: { n, reg, season: se } }));
+    launch(cfg, title, { theme, side: { n, reg, season: se } });
   }
   function recordSide(T) {
     if (!T.side || T.side.recorded || !T.finished || !T.champion) return;
@@ -1242,18 +1235,7 @@
       champ: ent(t, true), runner: R ? ent(R, false) : null, final: fo ? { round: single ? 'Showmatch' : finalM.roundName || 'Grand Final', games: fo.games } : null, path, record: rec,
       labels: single ? { mvp: 'Match MVP', goal: 'Goal of the match' } : { mvp: 'Tournament MVP', goal: 'Goal of the tournament' },
       line: R && fo ? `Beat ${R.name} ${fo.w}–${fo.l}${single ? '' : ' in the ' + (finalM.roundName || 'final').toLowerCase()}` : '' };
-    if (sd) {
-      const M = sd.mode + 'v' + sd.mode, pl = sd.mode === 2 ? 's' : '';
-      out.label = sd.worlds ? M + ' World Champion' + pl : (REGIONS[t.region] || t.region || '') + ' ' + M + ' Open champion' + pl;
-      out.next = sd.worlds ? null : (sd.mode === 2 ? 'They qualify' : 'Qualified') + ' for the ' + M + ' World Championship.';
-      out.line = '';
-      return out;
-    }
-    const NAMED = { enc: 'Nations Cup champions', fifae: 'FIFAe World Cup champions', ewc: 'Esports World Cup champions' };
-    out.label = single ? 'Winners' : worlds ? 'World Champions' : NAMED[T.theme] || 'Champions';
-    // MVP: the champion's best player; goal of the tournament: fast shots, OT winners, late goals, the final
-    const ms = rows.filter((x) => x.team === id).sort((a, b) => b.score - a.score)[0];
-    if (ms) { const p = t.players.find((x) => x.name === ms.name) || {}; out.mvp = { name: ms.name, flag: p.flag || '', photo: photo(p.name ? p : { name: ms.name }), team: t.name, badge: badge(t, 'md'), stats: [['Goals', ms.g], ['Assists', ms.a], ['Saves', ms.sv], ['Score', ms.score]] }; }
+    // goal of the tournament (every mode): fast shots, OT winners, late goals, the final
     let best = null;
     played.forEach((m) => {
       const ko = /final|semi|quarter|upper|lower|playoff|round of/i.test(m.roundName || m.label || '');
@@ -1270,6 +1252,18 @@
       const A = getTeam(best.m.a), B = getTeam(best.m.b), e = best.e;
       out.goal = { event: e, A, B, theme: th, label: (best.m.label || best.m.roundName || 'Match') + ' · Game ' + (best.gi + 1), clock: e.ot ? fmtClock(e.t - 300, true) + ' OT' : fmtClock(300 - e.t) + ' left' };
     }
+    if (sd) {
+      const M = sd.mode + 'v' + sd.mode, pl = sd.mode === 2 ? 's' : '';
+      out.label = sd.worlds ? M + ' World Champion' + pl : (REGIONS[t.region] || t.region || '') + ' ' + M + ' Open champion' + pl;
+      out.next = sd.worlds ? null : (sd.mode === 2 ? 'They qualify' : 'Qualified') + ' for the ' + M + ' World Championship.';
+      out.line = '';
+      return out;
+    }
+    const NAMED = { enc: 'Nations Cup champions', fifae: 'FIFAe World Cup champions', ewc: 'Esports World Cup champions' };
+    out.label = single ? 'Winners' : worlds ? 'World Champions' : NAMED[T.theme] || 'Champions';
+    // MVP: the champion's best player; goal of the tournament: fast shots, OT winners, late goals, the final
+    const ms = rows.filter((x) => x.team === id).sort((a, b) => b.score - a.score)[0];
+    if (ms) { const p = t.players.find((x) => x.name === ms.name) || {}; out.mvp = { name: ms.name, flag: p.flag || '', photo: photo(p.name ? p : { name: ms.name }), team: t.name, badge: badge(t, 'md'), stats: [['Goals', ms.g], ['Assists', ms.a], ['Saves', ms.sv], ['Score', ms.score]] }; }
     return out;
   }
   function playCeremony(T, done) {
@@ -1397,12 +1391,13 @@
       fmtText: 'Four groups of four (the real event plays them double elimination; simulated here as a round robin), the top two of each group into an eight-team knockout (Bo7).' });
     // national-team events, built from the newest rosters
     const nse = SEASON_KEYS[0];
-    const enc = nationField(48, 4, nse), fifae = nationField(16, 8, nse);
-    list.push({ id: 'enc', nations: true, season: nse, theme: 'enc', mono: 'ENC', color: '#2148FF', name: 'Esports Nations Cup', sub: 'Riyadh · ' + enc.length + ' nations · $1,320,000', format: 'groups', groupSize: 4, advance: 2, size: enc.length, teams: () => enc,
-      info27: { where: 'Riyadh, Saudi Arabia', date: 'November (48 nations in the real 2026 event)', prize: '$1,320,000', status: 'National teams: each country\'s three best players' },
-      fmtText: 'Groups of four (Bo5), the top two of each group into the knockout. Every nation sends its three best players from the current rosters; the host, Saudi Arabia, is always in.' });
-    list.push({ id: 'fifae', nations: true, season: nse, theme: 'fifae', mono: 'FWC', color: '#00A3E0', name: 'FIFAe World Cup', sub: 'Riyadh · ' + fifae.length + ' nations · won by France (2025)', format: 'groups', groupSize: 8, advance: 4, size: fifae.length, teams: () => fifae,
-      info: { where: 'Riyadh, Saudi Arabia', date: 'December', winner: 'France (2025) · Saudi Arabia (2024)', runnerUp: '—' },
+    const hE = nationHostOf('enc', nse), hF = nationHostOf('fifae', nse);
+    const enc = nationField(48, 4, nse, hE.nation), fifae = nationField(16, 8, nse, hF.nation);
+    list.push({ id: 'enc', nations: true, season: nse, theme: 'enc', mono: 'ENC', color: '#2148FF', name: 'Esports Nations Cup', sub: hE.city + ' · ' + enc.length + ' nations · $1,320,000', format: 'groups', groupSize: 4, advance: 2, size: enc.length, teams: () => enc,
+      info27: { where: hE.city + ', ' + hE.country, date: 'November (48 nations in the real 2026 event, in Riyadh; the host rotates every year)', prize: '$1,320,000', status: 'National teams: each country\'s three best players' },
+      fmtText: 'Groups of four (Bo5), the top two of each group into the knockout. Every nation sends its three best players from the current rosters; the host nation, ' + hE.nation + ', is always in.' });
+    list.push({ id: 'fifae', nations: true, season: nse, theme: 'fifae', mono: 'FWC', color: '#00A3E0', name: 'FIFAe World Cup', sub: hF.city + ' · ' + fifae.length + ' nations · won by France (2025)', format: 'groups', groupSize: 8, advance: 4, size: fifae.length, teams: () => fifae,
+      info: { where: hF.city + ', ' + hF.country, date: 'December (2024 and 2025 in Riyadh; the host rotates every year)', winner: 'France (2025) · Saudi Arabia (2024)', runnerUp: '—' },
       fmtText: 'Two groups of eight, the top four of each into an eight-nation knockout (Bo7). The real event plays each group pair twice in best-of-2 matches; simulated here as one Bo5 series.' });
     list.forEach((c) => (c.season = c.season || '2026'));
     list.forEach((c) => { const th = themeOf(c.theme); if (th) c.color = th.a; });
@@ -1817,7 +1812,6 @@
       case 'custom-match': openCustomMatch(); break;
       case 'side-mode': openSide(+v); break;
       case 'side-start': startSide(v); break;
-      case 'side-intro': { const n = +v, se = curSeason(); sideIntro(n, 'EU', se, sideField(n, 'EU', se), () => {}); break; }
       case 'side-reset': { const S = state.settings.side || {}; if (S[curSeason()]) delete S[curSeason()][v]; save(); openSide(+v); render(); break; }
       case 'custom-match-start': {
         const A = $('#cmA').value, B = $('#cmB').value;

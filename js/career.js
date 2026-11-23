@@ -159,10 +159,23 @@
   /* Esports World Cup (Riyadh, August): a 16-team club event outside the RLCS — prize money, no RLCS points.
      $1,010,000 like EWC 2025 (Karmine Corp beat Geekay Esports for $400,000). */
   const EWC_CITY = 'Riyadh';
-  /* National-team events in the off-season after Worlds, both in Riyadh. Players represent their country:
+  /* National-team events in the off-season after Worlds. Players represent their country:
      each nation sends its three best active players. No club prize money and no RLCS points — national pride.
      Esports Nations Cup (November): 48 nations like ENC 2026, $1,320,000. FIFAe World Cup (December): 16 nations in
      two groups of eight, then a Bo7 knockout, like the 2024 (Saudi Arabia) and 2025 (France) editions, $250,000. */
+  /* Their hosts rotate every year (the first entries are the real editions: the ENC 2026 and the FIFAe World Cups of
+     2024 and 2025 were in Riyadh); the host nation is always in the field. Shared with the website (js/app.js). */
+  const NATION_HOSTS = {
+    enc: { from: 2026, cities: ['Riyadh', 'Paris', 'Los Angeles', 'Berlin', 'São Paulo', 'London', 'Madrid', 'Tokyo', 'Sydney', 'Mexico City', 'Copenhagen', 'Toronto'] },
+    fifae: { from: 2024, cities: ['Riyadh', 'Riyadh', 'Paris', 'Dallas', 'Rio de Janeiro', 'Amsterdam', 'Buenos Aires', 'Stockholm', 'Lisbon', 'Melbourne', 'Cologne', 'Casablanca'] },
+  };
+  /** The host of a national-team event in a given year: { city, country (as on the host palette), nation (the team) }. */
+  function nationHost(key, year) {
+    const H = NATION_HOSTS[key], n = H.cities.length, i = ((((+year || H.from) - H.from) % n) + n) % n, city = H.cities[i];
+    const country = (HOST_PAL[city] || [''])[0];
+    return { city, country, nation: country === 'United Kingdom' ? (city === 'Edinburgh' ? 'Scotland' : 'England') : country };
+  }
+  global.RLNationHost = nationHost;
   const NATION_EVENTS = {
     enc: { name: 'Esports Nations Cup', size: 48, groupSize: 4, advance: 2, prize: '$1,320,000', fmt: '48 nations · twelve groups of four, then a 24-nation knockout' },
     fifae: { name: 'FIFAe World Cup', size: 16, groupSize: 8, advance: 4, prize: '$250,000', fmt: '16 nations · two groups of eight, then an eight-nation knockout (Bo7)' },
@@ -719,7 +732,7 @@
     REGIONS.forEach((r) => (ids = ids.concat(standings(r, 'season').slice(0, MAJOR_SLOTS[r]))));
     return ids.sort((a, b) => (C.points[b].season - C.points[a].season) || ovr(b) - ovr(a));
   }
-  /** The national teams of an event: the strongest nations (three players each), the host Saudi Arabia always in. */
+  /** The national teams of an event: the strongest nations (three players each), the host nation always in. */
   function nationField(key) {
     const ev = NATION_EVENTS[key];
     const countries = {};
@@ -727,7 +740,7 @@
     Object.values(C.players).forEach((p) => { if (p.team && p.country && (p.flag || (global.RL_DATA.flagFor && global.RL_DATA.flagFor(p.country)))) countries[p.country] = 1; });
     const list = Object.keys(countries).map((c) => 'c:~n:' + c).filter((id) => nationObj(id) && nationPlayers(id.slice(5)).length >= 3).sort((a, b) => ovr(b) - ovr(a));
     let ids = list.slice(0, ev.size);
-    const host = 'c:~n:Saudi Arabia';
+    const host = 'c:~n:' + nationHost(key, C.season).nation;
     if (list.includes(host) && !ids.includes(host)) ids = ids.slice(0, ev.size - 1).concat(host);
     const n = [ev.size, 32, 24, 16, 12, 8].find((x) => x <= ids.length && x % ev.groupSize === 0) || 0;
     return ids.slice(0, n).sort((a, b) => ovr(b) - ovr(a));
@@ -745,7 +758,7 @@
     if (st.type === 'open') return 'RLCS ' + C.season + ' · ' + api.regions[region] + ' ' + st.name;
     if (st.type === 'major') return 'RLCS ' + C.season + ' · ' + majorCity(st) + ' Major';
     if (st.type === 'ewc') return 'Esports World Cup ' + C.season + ' · ' + EWC_CITY;
-    if (st.type === 'nation') return NATION_EVENTS[st.key].name + ' ' + C.season + ' · ' + EWC_CITY;
+    if (st.type === 'nation') return NATION_EVENTS[st.key].name + ' ' + C.season + ' · ' + nationHost(st.key, C.season).city;
     if (st.type === 'side') return 'RLCS ' + C.season + ' · ' + api.regions[region] + ' ' + (st.mode === 1 ? '1v1' : '2v2') + ' Open';
     if (st.type === 'sidew') return 'RLCS ' + C.season + ' ' + st.name + ' · ' + worldsCity();
     return 'RLCS ' + C.season + ' World Championship · ' + worldsCity();
@@ -768,7 +781,7 @@
   }
   const majorCity = (st) => seasonHosts(C.season)[st.split === 2 ? 'm2' : 'm1'];
   const worldsCity = () => seasonHosts(C.season).w;
-  const hostCity = (st) => (st.type === 'major' ? majorCity(st) : st.type === 'ewc' || st.type === 'nation' ? EWC_CITY : st.type === 'worlds' || st.type === 'sidew' ? worldsCity() : null);
+  const hostCity = (st) => (st.type === 'major' ? majorCity(st) : st.type === 'ewc' ? EWC_CITY : st.type === 'nation' ? nationHost(st.key, C.season).city : st.type === 'worlds' || st.type === 'sidew' ? worldsCity() : null);
   const themeKeyFor = (st) => { if (st.type === 'open') return C && (V() || userTeam()) ? regionKey(homeReg()) : null; if (st.type === 'side') return 'side-' + st.mode + 'v' + st.mode; if (st.type === 'ewc') return 'ewc'; if (st.type === 'nation') return st.key; if (st.type === 'worlds' || st.type === 'sidew') return 'career-worlds'; const c = hostCity(st); return c && HOST_PAL[c] ? hostKey(c) : null; };
   const hostTheme = (st) => { const k = themeKeyFor(st); return k ? window.RL_EVENT_THEMES[k] || null : null; };
   const hostVars = (th) => (th ? `--e1:${th.a};--e2:${th.b};--e3:${th.c};--e-on:${th.on}` : '');
@@ -1285,7 +1298,7 @@
     const duty = V() ? [] : userTeam().roster.map((pid) => C.players[pid]).filter((p) => p && ids.includes('c:~n:' + p.country) && nationPlayers(p.country).some((q) => q.id === p.id));
     const chips = ids.slice(0, 12).map((id, i) => { const o = nationObj(id); const me = duty.some((p) => 'c:~n:' + p.country === id); return `<span class="sf-chip${me ? ' me' : ''}"><i>${i + 1}</i><span><b>${esc(o.tag)} ${esc(o.name)}</b><small>${esc(o.players.map((p) => p.name).join(', '))} · ${o.ovr}</small></span></span>`; }).join('');
     return `<p><b>${esc(eventTitle(st))}</b> · ${ev.fmt} · ${ev.prize}.</p>
-      <p class="help">The off-season belongs to the national teams: each nation picks its three best players. No club prize money and no RLCS points, just national pride. ${st.key === 'fifae' ? 'Saudi Arabia won the first edition in 2024, France the second in 2025.' : 'The host, Saudi Arabia, is always in the field.'}</p>
+      <p class="help">The off-season belongs to the national teams: each nation picks its three best players. No club prize money and no RLCS points, just national pride. The hosts rotate every year; the host nation, ${esc(nationHost(st.key, C.season).nation)}, is always in the field.${st.key === 'fifae' ? ' Saudi Arabia won the first edition in 2024, France the second in 2025.' : ''}</p>
       ${V() ? '' : duty.length ? `<p class="help">Your players on international duty: <b>${duty.map((p) => esc((p.flag || '') + ' ' + p.name)).join('</b>, <b>')}</b>.</p>` : '<p class="help">None of your players were called up by their country.</p>'}
       ${ids.length ? `<div class="tile-kicker" style="margin-top:6px">The favourites · ${ids.length} nations</div><div class="sf-grid">${chips}</div>` : '<p class="help">Not enough national teams this season.</p>'}
       <div class="action-row">${activeEvent ? `<button class="btn primary" data-action="resume">Resume event →</button><button class="btn" data-action="career-sim-rest">Simulate the rest</button>`
@@ -1308,7 +1321,7 @@
     const field = ids.length ? `<div class="sf-grid">${ids.map((id, i) => { const o = sideObj(id); if (!o) return ''; const me = sideClub(id) === C.user; return `<span class="sf-chip${me ? ' me' : ''}"><i>${W ? esc(o.region) : i + 1}</i><span><b>${o.players.map((p) => p.flag || '').join('')} ${esc(o.name)}</b><small>${esc(o.club)} · ${o.ovr}</small></span></span>`; }).join('')}</div>` : '';
     return `<p><b>${esc(title)}</b> · ${desc}.</p><p class="help">${help}</p>${mineTxt}${field}
       <div class="action-row">${activeEvent ? `<button class="btn primary" data-action="resume">Resume event →</button><button class="btn" data-action="career-sim-rest">Simulate the rest</button>`
-        : `${ids.length ? `<button class="btn primary" data-action="career-play">▶ ${mine.length ? 'Play' : 'Watch'} event</button>` : ''}<button class="btn ${ids.length ? '' : 'primary'}" data-action="career-sim">Simulate event${W ? '' : 's'}</button>`}</div>${ids.length && window.RLSideIntro && !W ? `<button class="fc-intro" data-action="career-intro">▶ Watch the ${mode} Open intro</button>` : ''}`;
+        : `${ids.length ? `<button class="btn primary" data-action="career-play">▶ ${mine.length ? 'Play' : 'Watch'} event</button>` : ''}<button class="btn ${ids.length ? '' : 'primary'}" data-action="career-sim">Simulate event${W ? '' : 's'}</button>`}</div>`;
   }
   function renderHub(app) {
     const st = step();
@@ -1530,16 +1543,7 @@
       C.cutSeen = (C.cutSeen || []).concat(cutKey).slice(-40); save();
       setTimeout(() => playNationIntro(st), 350);
     }
-    if (st.type === 'side' && tab === 'central' && !activeEvent && window.RLSideIntro && !(C.cutSeen || []).includes(cutKey) && sideIntroField(st).length) {
-      C.cutSeen = (C.cutSeen || []).concat(cutKey).slice(-40); save();
-      setTimeout(() => playSideIntro(st), 350);
-    }
-  }
-  /** 1v1/2v2 intro (js/sidebrand.js): the home region's Open field, or the four World Championship qualifiers. */
-  function sideIntroField(st) {
-    const W = st.type === 'sidew', reg = W ? null : sideHome();
-    if (!W && !reg) return [];
-    return eventCfg(st, reg).cfg.teams.map((id) => { const o = sideObj(id); return o ? { name: o.name, players: o.players.map((p) => ({ name: p.name, flag: p.flag })), club: o.club, ovr: o.ovr, region: o.region, badge: api.badge(o, 'md'), mine: !V() && sideClub(id) === C.user } : null; }).filter(Boolean);
+    // the 1v1 and 2v2 Opens keep their branding but have no intro
   }
   /** National-team intro (js/nations.js): the parade of flags, then the favourites or the two FIFAe groups. */
   function playNationIntro(st) {
@@ -1551,18 +1555,11 @@
     const nat = (id) => { const o = nationObj(id); return { flag: o.tag, name: o.name, ovr: o.ovr, players: o.players.map((p) => p.name), mine: dutyIds.includes(id) }; };
     const groups = st.key === 'fifae' ? [0, 1].map((g) => cfg.teams.slice(g * ev.groupSize, (g + 1) * ev.groupSize).map(nat)) : null;
     const prev = C.history && C.history[0] && C.history[0][st.key];
-    window.RLNationsIntro.play({ kind: st.key, palette: th, kicker: `${ev.name} ${C.season} · Riyadh · off-season`, title: ev.name, nations: cfg.teams.slice().sort((a, b) => ovr(b) - ovr(a)).map(nat), groups,
+    const H = nationHost(st.key, C.season);
+    window.RLNationsIntro.play({ kind: st.key, palette: th, city: H.city, country: H.nation, hostFlag: global.RL_DATA.flagFor(H.nation), kicker: `${ev.name} ${C.season} · ${H.city} · off-season`, title: ev.name, nations: cfg.teams.slice().sort((a, b) => ovr(b) - ovr(a)).map(nat), groups,
       holder: prev && prev !== '—' ? prev : null, note: V() ? `${cfg.teams.length} nations, three players each.` : dutyIds.length ? 'Your players on international duty are highlighted.' : 'None of your players were called up this time.' });
   }
-  function playSideIntro(st) {
-    if (!window.RLSideIntro || !C) return;
-    const W = st.type === 'sidew', n = st.mode, field = sideIntroField(st);
-    if (!field.length) return;
-    const mine = field.filter((e) => e.mine);
-    const note = V() ? (W ? 'The four regional Open winners meet in ' + worldsCity() + '.' : 'You follow the ' + api.regions[sideHome()] + ' Open.')
-      : mine.length ? 'Your entr' + (mine.length === 1 ? 'y' : 'ies') + ': ' + mine.map((e) => e.name).join(', ') + '.' : 'None of your players made the ' + (W ? 'World Championship' : 'field') + '.';
-    window.RLSideIntro.play({ mode: n, worlds: W, kicker: 'RLCS ' + C.season + ' · ' + (W ? 'Worlds week · ' + worldsCity() : api.regions[sideHome()]), title: n + 'v' + n + (W ? ' World Championship' : ' Open'), tagline: window.RLSideIntro.tagline(n, W), field, note });
-  }
+
   /** The host city's intro for a Major (js/cutscene.js), with the 16 qualified teams. */
   function playMajorIntro(st) {
     if (!window.RLCutscene || !C) return;
@@ -1956,7 +1953,7 @@
     switch (a) {
       case 'career-pick': newCareer(id, api.state.ui.cdiff || 'normal'); api.go('career'); return true;
       case 'career-viewer': newCareer(null, 'normal', v || 'EU'); api.state.ui.ctab = 'central'; api.state.ui.cview = 'next'; api.go('career'); return true;
-      case 'career-intro': { const st = step(); if (st.type === 'major' || st.type === 'ewc' || st.type === 'worlds' || st.type === 'sidew') playMajorIntro(st); else if (st.type === 'side') playSideIntro(st); else if (st.type === 'nation') playNationIntro(st); return true; }
+      case 'career-intro': { const st = step(); if (st.type === 'major' || st.type === 'ewc' || st.type === 'worlds' || st.type === 'sidew') playMajorIntro(st); else if (st.type === 'nation') playNationIntro(st); return true; }
       case 'career-vpick': api.state.ui.vreg = v; api.render(); return true;
       case 'career-vmarket': api.state.ui.ctab = 'transfers'; api.state.ui.thTab = 'activity'; api.state.ui.thSel = null; api.render(); window.scrollTo({ top: 0 }); return true;
       case 'career-vreg': if (C && V() && REGIONS.includes(v)) { C.vreg = v; bump(); save(); api.render(); } return true;

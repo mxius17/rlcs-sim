@@ -109,8 +109,8 @@
       let a = 0, b = 0;
       const step = games.length > 5 ? 430 : 520;
       const bump = (n) => { n.classList.remove('pop'); void n.offsetWidth; n.classList.add('pop'); };
-      games.forEach((g, i) => later(1100 + i * step, () => { sfx('count'); chips[i].classList.add('on'); if (g.w > g.l) { sa.textContent = ++a; bump(sa); } else { sb.textContent = ++b; bump(sb); } if (i === games.length - 2) stage.querySelector('.sc-point').classList.add('on'); }));
-      later(1100 + games.length * step + 200, () => { sfx('impact'); stage.querySelector('.sc-final').classList.add('decided'); });
+      games.forEach((g, i) => later(1100 + i * step, () => { if (!stage.contains(sa)) return; sfx('count'); chips[i].classList.add('on'); if (g.w > g.l) { sa.textContent = ++a; bump(sa); } else { sb.textContent = ++b; bump(sb); } if (i === games.length - 2) stage.querySelector('.sc-point').classList.add('on'); }));
+      later(1100 + games.length * step + 200, () => { if (!stage.contains(sa)) return; sfx('impact'); stage.querySelector('.sc-final').classList.add('decided'); });
       await wait(1100 + games.length * step + 2600);
     };
     const sceneMvp = async () => {

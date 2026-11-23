@@ -4,7 +4,8 @@
  *     favourites and a wall of all the other flags.
  *   FIFAe World Cup: a floodlit football pitch, the nations' flags marching out like a team walkout, the title,
  *     then the two groups of eight.
- * o = { kind: 'enc'|'fifae', palette:{a,b,c}, kicker, title, nations:[{flag,name,ovr,players,mine}], groups:[[...],[...]], holder, note }
+ * The hosts rotate every year: the intro names the host city and plays its anthem (js/music.js).
+ * o = { kind: 'enc'|'fifae', palette:{a,b,c}, city, country, hostFlag, kicker, title, nations:[{flag,name,ovr,players,mine}], groups:[[...],[...]], holder, note }
  */
 (function (global) {
   'use strict';
@@ -17,6 +18,7 @@
     if (cur.el.parentNode) cur.el.parentNode.removeChild(cur.el);
     document.documentElement.classList.remove('cer-open');
     cur = null;
+    if (global.RLMusic) global.RLMusic.stop();
   }
   const TAG = { enc: (n) => `${n} nations. Three players each. One flag on top.`, fifae: () => 'Sixteen nations. Two groups. One world cup.' };
   function play(o, done) {
@@ -47,6 +49,7 @@
         <span class="ni-kicker">${esc(o.kicker || '')}</span>
         <h1 class="ni-title" aria-label="${esc(o.title || '')}">${title}</h1>
         <span class="ni-tag">${esc((TAG[o.kind] || TAG.enc)(N.length))}</span>
+        ${o.city ? `<span class="ni-holder ni-host">Hosted in <b>${esc(o.hostFlag || '')} ${esc(o.city)}</b></span>` : ''}
         ${o.holder ? `<span class="ni-holder">🏆 Holders: <b>${esc(o.holder)}</b></span>` : ''}
       </div>
       <div class="ni-stage">${stage}${o.note ? `<p class="ni-note">${esc(o.note)}</p>` : ''}</div>
@@ -61,6 +64,7 @@
     document.addEventListener('keydown', S.onKey, true);
     const sfx = (n) => global.RLSfx && global.RLSfx.play(n);
     sfx('whoosh');
+    if (o.city && global.RLMusic) global.RLMusic.start({ city: o.city, country: o.country || '' }); // the host city's anthem
     S.timers.push(setTimeout(() => { if (!S.dead) sfx('impact'); }, 1050));
     S.timers.push(setTimeout(() => { if (!S.dead) sfx('whoosh'); }, 4550));
     S.timers.push(setTimeout(() => { if (!S.dead) el.classList.add('beat2'); }, 4600));
