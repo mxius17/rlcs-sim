@@ -66,8 +66,42 @@
   }
   const teamMap = () => { const m = {}; allTeams().forEach((t) => (m[t.id] = t)); return m; };
   let tmap = null;
-  function getTeam(id) { if (typeof id === 'string' && /^x[12]:/.test(id)) { const st = sideTeam(id); if (st) return st; } if (typeof id === 'string' && id.startsWith('c:') && window.RLCareer) { const ct = window.RLCareer.teamObj(id); if (ct) return ct; } if (!tmap) tmap = teamMap(); return tmap[id] || { id, name: 'Unknown', tag: '??', color: '#555', players: [{ name: 'P1', rating: 60 }, { name: 'P2', rating: 60 }, { name: 'P3', rating: 60 }], region: 'EU' }; }
-  function invalidateTeams() { teamCache = null; tmap = null; sideCache = {}; }
+  function getTeam(id) { if (typeof id === 'string' && /^xn:/.test(id)) { const nt = nationTeam(id); if (nt) return nt; } if (typeof id === 'string' && /^x[12]:/.test(id)) { const st = sideTeam(id); if (st) return st; } if (typeof id === 'string' && id.startsWith('c:') && window.RLCareer) { const ct = window.RLCareer.teamObj(id); if (ct) return ct; } if (!tmap) tmap = teamMap(); return tmap[id] || { id, name: 'Unknown', tag: '??', color: '#555', players: [{ name: 'P1', rating: 60 }, { name: 'P2', rating: 60 }, { name: 'P3', rating: 60 }], region: 'EU' }; }
+  function invalidateTeams() { teamCache = null; tmap = null; sideCache = {}; natCache = {}; natPool = {}; }
+
+  /* ---------------- national teams (Esports Nations Cup, FIFAe World Cup) ----------------
+     "xn:<season>|<country>": the country's three best players across that season's rosters. */
+  let natCache = {}, natPool = {};
+  function nationPool(se) {
+    if (natPool[se]) return natPool[se];
+    const by = {}, seen = new Set();
+    rankedTeams(se).filter((t) => !t.custom).forEach((t) => t.players.forEach((p) => {
+      if (!p || !p.country || !p.name || seen.has(p.name) || !(window.RLFlags && window.RLFlags.url(p.flag))) return;
+      seen.add(p.name); (by[p.country] = by[p.country] || []).push(Object.assign({ club: t.name }, p));
+    }));
+    Object.values(by).forEach((l) => l.sort((a, b) => b.rating - a.rating));
+    return (natPool[se] = by);
+  }
+  function nationTeam(id) {
+    if (natCache[id]) return natCache[id];
+    const [se, country] = id.slice(3).split('|');
+    const ps = (nationPool(se)[country] || []).slice(0, 3);
+    if (ps.length < 3) return null;
+    const h = Array.from(country).reduce((x, c) => (x * 31 + c.charCodeAt(0)) >>> 0, 7);
+    const o = { id, nation: true, name: country, tag: ps[0].flag, season: se, region: '', club: ps.map((p) => p.name).join(' · '), color: `hsl(${h % 360} 65% 45%)`,
+      players: ps.map((p) => ({ name: p.name, country: p.country, flag: p.flag, rating: p.rating })) };
+    o.ovr = Math.round(E.teamStrength(o));
+    return (natCache[id] = o);
+  }
+  /** The strongest nations of a season (three players each), the host Saudi Arabia always in; sized to fit the groups. */
+  function nationField(size, groupSize, se) {
+    const all = Object.keys(nationPool(se)).map((c) => 'xn:' + se + '|' + c).filter((id) => nationTeam(id)).sort((a, b) => nationTeam(b).ovr - nationTeam(a).ovr);
+    let ids = all.slice(0, size);
+    const host = 'xn:' + se + '|Saudi Arabia';
+    if (all.includes(host) && !ids.includes(host)) ids = ids.slice(0, size - 1).concat(host);
+    const n = [size, 32, 24, 16, 12, 8].find((x) => x <= ids.length && x % groupSize === 0) || 0;
+    return ids.slice(0, n).sort((a, b) => nationTeam(b).ovr - nationTeam(a).ovr);
+  }
 
   /* ---------------- 1v1 & 2v2 Championships ----------------
      RLCS format: online 1v1 and 2v2 Opens in North America, Europe, South America and MENA after the second Major;
@@ -191,7 +225,7 @@
   };
   const flagsOf = (t) => t.players.slice(0, 3).map((p) => p.flag || '').join('');
   /** "16 teams", or "16 players" / "4 duos" in the 1v1 and 2v2 Championships. */
-  const entrants = (T) => { const ids = T.teams || []; const side = T.side ? T.side.n : (/^(x1:|c:~1:)/.test(ids[0] || '') ? 1 : /^(x2:|c:~2:)/.test(ids[0] || '') ? 2 : 0); return ids.length + (side === 1 ? ' players' : side === 2 ? ' duos' : /^c:~n:/.test(ids[0] || '') ? ' nations' : ' teams'); };
+  const entrants = (T) => { const ids = T.teams || []; const side = T.side ? T.side.n : (/^(x1:|c:~1:)/.test(ids[0] || '') ? 1 : /^(x2:|c:~2:)/.test(ids[0] || '') ? 2 : 0); return ids.length + (side === 1 ? ' players' : side === 2 ? ' duos' : /^(c:~n:|xn:)/.test(ids[0] || '') ? ' nations' : ' teams'); };
   const teamName = (id) => (id === 'BYE' ? 'BYE' : getTeam(id).name);
 
   /* ---------------- Toast & Modal ---------------- */
@@ -1353,6 +1387,15 @@
       info: { where: 'Riyadh, Saudi Arabia', date: 'August (club event, outside the RLCS)', winner: 'Karmine Corp (2025)', runnerUp: 'Geekay Esports (2025)' },
       teams: () => { let ids = []; Object.entries(EWC_SLOTS).forEach(([k, n]) => (ids = ids.concat(rankedTeams('2026').filter((t) => t.region === k).slice(0, n).map((t) => t.id)))); return ids; },
       fmtText: 'Four groups of four (the real event plays them double elimination; simulated here as a round robin), the top two of each group into an eight-team knockout (Bo7).' });
+    // national-team events, built from the newest rosters
+    const nse = SEASON_KEYS[0];
+    const enc = nationField(48, 4, nse), fifae = nationField(16, 8, nse);
+    list.push({ id: 'enc', nations: true, season: nse, theme: 'enc', mono: 'ENC', color: '#2148FF', name: 'Esports Nations Cup', sub: 'Riyadh · ' + enc.length + ' nations · $1,320,000', format: 'groups', groupSize: 4, advance: 2, size: enc.length, teams: () => enc,
+      info27: { where: 'Riyadh, Saudi Arabia', date: 'November (48 nations in the real 2026 event)', prize: '$1,320,000', status: 'National teams: each country\'s three best players' },
+      fmtText: 'Groups of four (Bo5), the top two of each group into the knockout. Every nation sends its three best players from the current rosters; the host, Saudi Arabia, is always in.' });
+    list.push({ id: 'fifae', nations: true, season: nse, theme: 'fifae', mono: 'FWC', color: '#00A3E0', name: 'FIFAe World Cup', sub: 'Riyadh · ' + fifae.length + ' nations · won by France (2025)', format: 'groups', groupSize: 8, advance: 4, size: fifae.length, teams: () => fifae,
+      info: { where: 'Riyadh, Saudi Arabia', date: 'December', winner: 'France (2025) · Saudi Arabia (2024)', runnerUp: '—' },
+      fmtText: 'Two groups of eight, the top four of each into an eight-nation knockout (Bo7). The real event plays each group pair twice in best-of-2 matches; simulated here as one Bo5 series.' });
     list.forEach((c) => (c.season = c.season || '2026'));
     list.forEach((c) => { const th = themeOf(c.theme); if (th) c.color = th.a; });
     if (HAS27) list.unshift(...competitions27());
@@ -1463,7 +1506,7 @@
             <button class="feat-card" data-action="comp" data-v="cf27" style="--c:#d4a017"><span class="feat-card-title">Club Finale</span><span class="feat-meta">2027 · 16 teams · $500,500</span><span class="feat-arrow">→</span></button>
           </div>
         </div>
-        <div class="tile-grid">${compList.filter((c) => c.season === '2027').map(compTile).join('') || '<p class="muted">No competitions match.</p>'}</div>`;
+        <div class="tile-grid">${compList.filter((c) => c.season === '2027' && !c.nations).map(compTile).join('') || '<p class="muted">No competitions match.</p>'}</div>`;
       })() : ''}
 
       <h2 class="home-h">RLCS 2026</h2>
@@ -1486,7 +1529,7 @@
         </div>
       </div>
 
-      <div class="tile-grid">${compList.filter((c) => c.season === '2026').map(compTile).join('') || '<p class="muted">No competitions match.</p>'}</div>
+      <div class="tile-grid">${compList.filter((c) => c.season === '2026' && !c.nations).map(compTile).join('') || '<p class="muted">No competitions match.</p>'}</div>
 
       ${HIST.length ? (() => {
         const ak = HIST.some((x) => x.key === state.ui.archive) ? state.ui.archive : HIST[0].key;
@@ -1501,6 +1544,9 @@
 
       <h2 class="home-h">1v1 &amp; 2v2 Championships</h2>
       ${sideHome()}
+
+      <div class="home-h-row"><h2 class="home-h">National teams</h2><span class="muted" style="font-size:13px">Each country's three best players · ${esc(seasonLabel(SEASON_KEYS[0]))} rosters</span></div>
+      <div class="tile-grid">${comps.filter((c) => c.nations).map(compTile).join('')}</div>
 
       <h2 class="home-h">More simulators</h2>
       <div class="sim-grid">
@@ -1525,13 +1571,13 @@
     const teams = ids.map(getTeam).sort((a, b) => b.ovr - a.ovr);
     const info = c.info, i27 = c.info27;
     const th = themeOf(c.theme);
-    openModal(`${th ? `<div class="event-banner${th.art ? ' has-art' : ''}" style="${themeVars(th)}${th.art ? `;background-image:linear-gradient(180deg, rgba(11,18,38,0.05), rgba(11,18,38,0.55)),url(${th.art});background-position:${th.pos || 'center'}${th.fit === 'h' ? `;background-size:cover,auto 100%;background-repeat:no-repeat;background-color:${th.edge}` : ''}` : ''}" ${th.art ? `role="img" aria-label="${esc(th.name)} key art"` : ''}><span class="event-swatches"><i style="background:${th.a}"></i><i style="background:${th.b}"></i><i style="background:${th.c}"></i></span></div>` : ''}${modalHead(c.name, esc(i27 ? 'RLCS 2027 · ' + i27.where + ' · ' + i27.date : info ? info.where + ' · ' + info.date : E.FORMATS[c.format].name + ' · top-rated ' + REGIONS[c.region] + ' teams (2026)'))}
+    openModal(`${th ? `<div class="event-banner${th.art ? ' has-art' : ''}" style="${themeVars(th)}${th.art ? `;background-image:linear-gradient(180deg, rgba(11,18,38,0.05), rgba(11,18,38,0.55)),url(${th.art});background-position:${th.pos || 'center'}${th.fit === 'h' ? `;background-size:cover,auto 100%;background-repeat:no-repeat;background-color:${th.edge}` : ''}` : ''}" ${th.art ? `role="img" aria-label="${esc(th.name)} key art"` : ''}><span class="event-swatches"><i style="background:${th.a}"></i><i style="background:${th.b}"></i><i style="background:${th.c}"></i></span></div>` : ''}${modalHead(c.name, esc(i27 ? (c.nations ? 'National teams · ' : 'RLCS 2027 · ') + i27.where + ' · ' + i27.date : info ? info.where + ' · ' + info.date : E.FORMATS[c.format].name + ' · top-rated ' + REGIONS[c.region] + ' teams (2026)'))}
       <div class="modal-body">
         ${info ? `<div class="kv"><span>Real champion</span><b>${esc(info.winner)}</b></div><div class="kv"><span>Runner-up</span><span>${esc(info.runnerUp)}</span></div>` : ''}
         ${i27 ? `<div class="kv"><span>Status</span><b>${esc(i27.status)}</b></div>${i27.prize ? `<div class="kv"><span>Prize pool</span><span>${esc(i27.prize)}</span></div>` : ''}` : ''}
         ${c.projected && c.projected.length ? `<div class="kv"><span>Projected</span><span class="muted">${esc(c.projected.join('; '))}</span></div>` : ''}
         <div class="kv"><span>Format</span><span>${esc(c.fmtText)}</span></div>
-        <div class="field-label" style="margin:14px 0 8px">Field · ${teams.length} teams (${se === '2027' ? 'RLCS 2027 rosters as of ' + esc(window.RL_DATA27.asOf) : seasonLabel(se) + ' rosters'})</div>
+        <div class="field-label" style="margin:14px 0 8px">Field · ${teams.length} ${c.nations ? 'nations' : 'teams'} (${se === '2027' ? 'RLCS 2027 rosters as of ' + esc(window.RL_DATA27.asOf) : seasonLabel(se) + ' rosters'})</div>
         <div class="team-grid">${teams.map((t) => `<div class="team-chip">${badge(t)}<div class="meta"><div class="name">${esc(t.name)}</div><div class="sub">OVR ${t.ovr} ${flagsOf(t)}</div></div></div>`).join('')}</div>
       </div>
       <div class="modal-foot"><button class="btn" data-action="comp-customise" data-v="${c.id}">Customise</button><button class="btn primary" data-action="comp-start" data-v="${c.id}">Start tournament →</button></div>`, { size: 'md', cls: th ? 'event-themed' : '', style: themeVars(th) });
