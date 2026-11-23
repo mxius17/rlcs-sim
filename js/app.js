@@ -353,6 +353,7 @@
       ['Official RLCS events', real.filter((k) => !/^worlds-/.test(k))],
       ['World Championships', ['career-worlds'].concat(real.filter((k) => /^worlds-/.test(k))).filter((k) => THEMES[k])],
       ['Host cities', by(/^host-/).sort((a, b) => THEMES[a].name.localeCompare(THEMES[b].name))],
+      ['Esports World Cup', by(/^ewc$/)],
       ['1v1 & 2v2 Championships', by(/^side-/)],
       ['Regions', by(/^region-/)],
     ].filter((g) => g[1].length);
@@ -1342,6 +1343,12 @@
       { id: 'paris', theme: 'paris', mono: 'PM', color: '#3b6cf6', name: 'Paris Major', sub: '2026 · 16 teams', info: ev[1], format: 'major', size: 16, teams: () => idsByNames(EVENT_FIELDS.paris), fmtText: 'Four groups of four (Bo5), then the Final Eight playoffs (Bo7).' },
       { id: 'boston', theme: 'boston', mono: 'BM', color: '#b91c1c', name: 'Boston Major', sub: '2026 · 16 teams', info: ev[2], format: 'major', size: 16, teams: () => idsByNames(EVENT_FIELDS.boston), fmtText: 'Four groups of four (Bo5), then the Final Eight playoffs (Bo7).' },
     ];
+    // Esports World Cup: the 16 best clubs of the season (Major regional slots), outside the RLCS
+    const EWC_SLOTS = { EU: 5, NA: 4, SAM: 2, MENA: 2, OCE: 1, APAC: 1, SSA: 1 };
+    list.push({ id: 'ewc', theme: 'ewc', mono: 'EWC', color: '#18E08A', name: 'Esports World Cup', sub: 'Riyadh · 16 clubs · $1,010,000', format: 'groups', groupSize: 4, advance: 2, size: 16,
+      info: { where: 'Riyadh, Saudi Arabia', date: 'August (club event, outside the RLCS)', winner: 'Karmine Corp (2025)', runnerUp: 'Geekay Esports (2025)' },
+      teams: () => { let ids = []; Object.entries(EWC_SLOTS).forEach(([k, n]) => (ids = ids.concat(rankedTeams('2026').filter((t) => t.region === k).slice(0, n).map((t) => t.id)))); return ids; },
+      fmtText: 'Four groups of four (the real event plays them double elimination; simulated here as a round robin), the top two of each group into an eight-team knockout (Bo7).' });
     list.forEach((c) => (c.season = c.season || '2026'));
     list.forEach((c) => { const th = themeOf(c.theme); if (th) c.color = th.a; });
     if (HAS27) list.unshift(...competitions27());

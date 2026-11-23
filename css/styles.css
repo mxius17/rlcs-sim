@@ -2873,3 +2873,7 @@ html.cer-open, html.cer-open body { overflow: hidden; }
   .cut-day { padding: 10px 12px; gap: 4px; } .cut-dl { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
 }
 .cut-dl .badge { overflow: hidden; font-size: 7px; letter-spacing: 0; }
+/* career season: 17 steps (Esports World Cup added) */
+.timeline { grid-template-columns: repeat(9, minmax(0, 1fr)); }
+@media (max-width: 720px) { .timeline { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.tl.ewc b { color: #18E08A; }

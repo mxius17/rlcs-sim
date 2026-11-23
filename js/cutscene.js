@@ -225,7 +225,7 @@
       <div class="cut-bands" aria-hidden="true"><i></i><i></i><i></i></div>
       ${sty && sty.open === 'shutter' ? `<div class="cut-shutter" aria-hidden="true">${[0, 1, 2, 3, 4, 5, 6, 7].map((k) => `<i style="--k:${k}"></i>`).join('')}</div>` : ''}
       <div class="cut-text">
-        ${o.worlds ? `<span class="cut-wc">${esc(o.chip || 'World Championship')}</span>` : ''}<span class="cut-kicker">${esc(o.kicker)}</span>
+        ${o.worlds || o.chip ? `<span class="cut-wc">${esc(o.chip || 'World Championship')}</span>` : ''}<span class="cut-kicker">${esc(o.kicker)}</span>
         <span class="cut-hello">${esc(hello)}</span>
         <h1 class="cut-name" aria-label="${esc(o.city)}" style="--len:${longest}">${letters}</h1>
         <span class="cut-country">${o.flag || ''} ${esc(o.country)}</span>
