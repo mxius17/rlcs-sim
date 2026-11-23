@@ -57,20 +57,27 @@
   }
   const N = (n) => 440 * Math.pow(2, (n - 69) / 12); // MIDI note → Hz
 
-  /* ---------- the sounds ---------- */
+  /* ---------- the sounds ----------
+     Interface sounds are clicky: very short band-passed noise transients (like a mouse button or a mechanical
+     switch), a tiny low "thump" for body and glassy pings, all decaying in a few milliseconds. */
+  const tick = (f, dur, gain, at, q) => noise(dur, { f0: f, q: q || 4, gain: Math.min(0.95, gain * 2.6), at, attack: 0.0006 });
+  const thump = (f, gain, at) => tone(f, f * 0.5, 0.03, { gain, at, attack: 0.001 });
+  const ping = (f, gain, at) => tone(f, f, 0.035, { gain, at, attack: 0.0008 });
   const SOUNDS = {
-    hover: () => tone(2600, 2400, 0.03, { gain: 0.025 }),
-    click: () => { tone(720, 520, 0.06, { type: 'triangle', gain: 0.16 }); noise(0.025, { f0: 3500, q: 2, gain: 0.05 }); },
-    tab: () => { tone(560, 560, 0.05, { type: 'triangle', gain: 0.12 }); tone(840, 840, 0.06, { type: 'triangle', gain: 0.1, at: 0.045 }); },
-    open: () => { tone(380, 880, 0.14, { type: 'sine', gain: 0.14 }); tone(1320, 1760, 0.12, { gain: 0.04, at: 0.06 }); },
-    close: () => tone(820, 360, 0.11, { type: 'sine', gain: 0.12 }),
-    toast: () => { tone(880, 880, 0.08, { gain: 0.12 }); tone(1320, 1320, 0.12, { gain: 0.09, at: 0.06 }); },
-    confirm: () => [72, 76, 79, 84].forEach((n, i) => tone(N(n), N(n), 0.18, { type: 'square', lp: 2400, gain: 0.07, at: i * 0.055 })),
-    sim: () => { tone(160, 1100, 0.32, { type: 'sawtooth', lp: 1800, gain: 0.07 }); noise(0.3, { f0: 600, f1: 4000, q: 3, gain: 0.05 }); tone(N(84), N(84), 0.14, { gain: 0.08, at: 0.3 }); },
-    deny: () => { tone(190, 170, 0.09, { type: 'square', lp: 900, gain: 0.09 }); tone(190, 160, 0.11, { type: 'square', lp: 900, gain: 0.09, at: 0.11 }); },
+    hover: () => tick(6000, 0.012, 0.12, 0, 3),
+    // press + release, like a mouse switch
+    click: () => { tick(3800, 0.014, 0.38, 0, 3); thump(220, 0.14); tick(5400, 0.01, 0.14, 0.055); },
+    tab: () => { tick(4200, 0.012, 0.3); thump(260, 0.08); tick(3000, 0.012, 0.22, 0.035); },
+    open: () => { tick(3600, 0.014, 0.32); thump(200, 0.12); tick(7000, 0.022, 0.1, 0.018, 1.5); ping(2400, 0.05, 0.03); },
+    close: () => { tick(2600, 0.016, 0.3); thump(160, 0.12); tick(4400, 0.01, 0.1, 0.04); },
+    toast: () => { tone(900, 2200, 0.022, { gain: 0.22, attack: 0.0008 }); tick(5200, 0.01, 0.22, 0.022); },
+    confirm: () => { thump(180, 0.2); tick(3200, 0.016, 0.42); tick(4800, 0.012, 0.26, 0.06); ping(1760, 0.07, 0.06); ping(2640, 0.06, 0.11); },
+    // a ratchet that speeds up, then a ping
+    sim: () => { let at = 0; for (let k = 0; k < 8; k++) { tick(3000 + k * 260, 0.01, 0.42, at); at += 0.05 - k * 0.004; } ping(2900, 0.07, at + 0.01); },
+    deny: () => { [0, 0.08].forEach((at) => { noise(0.03, { filter: 'lowpass', f0: 700, gain: 0.32, at, attack: 0.0006 }); thump(110, 0.15, at); }); },
+    count: () => { tick(4500, 0.012, 0.32); ping(3000, 0.04); },
     whoosh: () => noise(0.7, { f0: 300, f1: 3200, q: 0.8, gain: 0.16, attack: 0.25 }),
     impact: () => { tone(110, 38, 0.45, { gain: 0.45 }); noise(0.25, { filter: 'lowpass', f0: 1800, f1: 200, gain: 0.22 }); },
-    count: () => tone(1500, 1500, 0.05, { type: 'triangle', gain: 0.07 }),
     goal: () => {
       [N(57), N(61), N(64)].forEach((f) => tone(f, f, 0.9, { type: 'sawtooth', lp: 1400, gain: 0.07, attack: 0.03 }));
       noise(1.6, { f0: 900, q: 0.5, gain: 0.12, attack: 0.15 }); // crowd
