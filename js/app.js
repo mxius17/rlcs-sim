@@ -188,7 +188,7 @@
   };
   const flagsOf = (t) => t.players.slice(0, 3).map((p) => p.flag || '').join('');
   /** "16 teams", or "16 players" / "4 duos" in the 1v1 and 2v2 Championships. */
-  const entrants = (T) => { const ids = T.teams || []; const side = T.side ? T.side.n : (/^(x1:|c:~1:)/.test(ids[0] || '') ? 1 : /^(x2:|c:~2:)/.test(ids[0] || '') ? 2 : 0); return ids.length + (side === 1 ? ' players' : side === 2 ? ' duos' : ' teams'); };
+  const entrants = (T) => { const ids = T.teams || []; const side = T.side ? T.side.n : (/^(x1:|c:~1:)/.test(ids[0] || '') ? 1 : /^(x2:|c:~2:)/.test(ids[0] || '') ? 2 : 0); return ids.length + (side === 1 ? ' players' : side === 2 ? ' duos' : /^c:~n:/.test(ids[0] || '') ? ' nations' : ' teams'); };
   const teamName = (id) => (id === 'BYE' ? 'BYE' : getTeam(id).name);
 
   /* ---------------- Toast & Modal ---------------- */
@@ -353,7 +353,7 @@
       ['Official RLCS events', real.filter((k) => !/^worlds-/.test(k))],
       ['World Championships', ['career-worlds'].concat(real.filter((k) => /^worlds-/.test(k))).filter((k) => THEMES[k])],
       ['Host cities', by(/^host-/).sort((a, b) => THEMES[a].name.localeCompare(THEMES[b].name))],
-      ['Esports World Cup', by(/^ewc$/)],
+      ['Esports World Cup & national teams', by(/^(ewc|enc|fifae)$/)],
       ['1v1 & 2v2 Championships', by(/^side-/)],
       ['Regions', by(/^region-/)],
     ].filter((g) => g[1].length);
@@ -1212,7 +1212,8 @@
       out.line = '';
       return out;
     }
-    out.label = single ? 'Winners' : worlds ? 'World Champions' : 'Champions';
+    const NAMED = { enc: 'Nations Cup champions', fifae: 'FIFAe World Cup champions', ewc: 'Esports World Cup champions' };
+    out.label = single ? 'Winners' : worlds ? 'World Champions' : NAMED[T.theme] || 'Champions';
     // MVP: the champion's best player; goal of the tournament: fast shots, OT winners, late goals, the final
     const ms = rows.filter((x) => x.team === id).sort((a, b) => b.score - a.score)[0];
     if (ms) { const p = t.players.find((x) => x.name === ms.name) || {}; out.mvp = { name: ms.name, flag: p.flag || '', photo: photo(p.name ? p : { name: ms.name }), team: t.name, badge: badge(t, 'md'), stats: [['Goals', ms.g], ['Assists', ms.a], ['Saves', ms.sv], ['Score', ms.score]] }; }
