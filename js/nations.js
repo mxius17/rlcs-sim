@@ -59,6 +59,10 @@
     el.querySelector('.cut-go').addEventListener('click', finish);
     S.onKey = (ev) => { if (ev.key === 'Escape' || ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); ev.stopPropagation(); finish(); } };
     document.addEventListener('keydown', S.onKey, true);
+    const sfx = (n) => global.RLSfx && global.RLSfx.play(n);
+    sfx('whoosh');
+    S.timers.push(setTimeout(() => { if (!S.dead) sfx('impact'); }, 1050));
+    S.timers.push(setTimeout(() => { if (!S.dead) sfx('whoosh'); }, 4550));
     S.timers.push(setTimeout(() => { if (!S.dead) el.classList.add('beat2'); }, 4600));
     S.timers.push(setTimeout(() => { const g = el.querySelector('.cut-go'); if (g && !S.dead) { g.classList.add('on'); g.focus({ preventScroll: true }); } }, 6600));
   }

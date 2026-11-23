@@ -2959,3 +2959,7 @@ img.flag-emoji { display: inline-block; height: 1.25em; width: 1.25em; vertical-
 .badge.logo.nat img { filter: none; transform: scale(1.12); }
 /* big flags in the national-team intros */
 .ni-flag img.flag-emoji, .ni-row span img.flag-emoji, .ni-wall img.flag-emoji, .ni-orbit img.flag-emoji, .ni-march img.flag-emoji { height: 1.3em; width: 1.3em; vertical-align: middle; margin: 0; }
+/* sound settings */
+.sfx-row { display: flex; align-items: center; gap: 14px; }
+.sfx-switch { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; cursor: pointer; }
+.sfx-row input[type=range] { flex: 1; accent-color: var(--accent, #2f8cff); }

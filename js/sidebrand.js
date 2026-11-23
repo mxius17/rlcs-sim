@@ -116,6 +116,10 @@
     S.onKey = (ev) => { if (ev.key === 'Escape' || ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); ev.stopPropagation(); finish(); } };
     document.addEventListener('keydown', S.onKey, true);
     const b2 = mode === 1 ? 4000 : 4400;
+    const sfx = (n) => global.RLSfx && global.RLSfx.play(n);
+    sfx('whoosh');
+    S.timers.push(setTimeout(() => { if (!S.dead) sfx('impact'); }, mode === 1 ? 850 : 1500));
+    S.timers.push(setTimeout(() => { if (!S.dead) sfx('whoosh'); }, b2 - 50));
     S.timers.push(setTimeout(() => { if (!S.dead) el.classList.add('beat2'); }, b2));
     S.timers.push(setTimeout(() => { const g = el.querySelector('.cut-go'); if (g && !S.dead) { g.classList.add('on'); g.focus({ preventScroll: true }); } }, b2 + 1900));
   }

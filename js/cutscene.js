@@ -252,6 +252,11 @@
     S.onKey = (ev) => { if (ev.key === 'Escape' || ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); ev.stopPropagation(); finish(); } };
     document.addEventListener('keydown', S.onKey, true);
     // second beat: the city text moves up and the field flies in
+    const sfx = (n) => global.RLSfx && global.RLSfx.play(n);
+    sfx('whoosh');
+    S.timers.push(setTimeout(() => { if (!S.dead) sfx('impact'); }, 1600));
+    S.timers.push(setTimeout(() => { if (!S.dead) sfx('whoosh'); }, o.worlds ? 5150 : 4250));
+    if (o.week) S.timers.push(setTimeout(() => { if (!S.dead) sfx('whoosh'); }, 10150));
     S.timers.push(setTimeout(() => { if (!S.dead) el.classList.add('beat2'); }, o.worlds ? 5200 : 4300));
     // Worlds Week: the schedule of the three events first, then the World Championship field
     if (o.week) S.timers.push(setTimeout(() => { if (!S.dead) el.classList.add('beat3'); }, 10200));

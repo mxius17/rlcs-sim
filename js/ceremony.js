@@ -89,6 +89,8 @@
     const later = (ms, f) => S.timers.push(setTimeout(() => { if (!S.dead) f(); }, ms));
     const mark = (k) => el.querySelectorAll('.cer-steps span').forEach((x) => { x.classList.toggle('on', x.dataset.k === k); if (x.dataset.k === k) x.classList.add('seen'); });
     const C = o.champ, R = o.runner;
+    const sfx = (n) => global.RLSfx && global.RLSfx.play(n);
+    sfx('whoosh');
     const cols = [pal.a, pal.c, '#ffffff', mode === 2 ? '#5eead4' : mode === 1 ? '#ff6b81' : '#ffd34d'];
 
     const sceneFinal = async () => {
@@ -107,8 +109,8 @@
       let a = 0, b = 0;
       const step = games.length > 5 ? 430 : 520;
       const bump = (n) => { n.classList.remove('pop'); void n.offsetWidth; n.classList.add('pop'); };
-      games.forEach((g, i) => later(1100 + i * step, () => { chips[i].classList.add('on'); if (g.w > g.l) { sa.textContent = ++a; bump(sa); } else { sb.textContent = ++b; bump(sb); } if (i === games.length - 2) stage.querySelector('.sc-point').classList.add('on'); }));
-      later(1100 + games.length * step + 200, () => stage.querySelector('.sc-final').classList.add('decided'));
+      games.forEach((g, i) => later(1100 + i * step, () => { sfx('count'); chips[i].classList.add('on'); if (g.w > g.l) { sa.textContent = ++a; bump(sa); } else { sb.textContent = ++b; bump(sb); } if (i === games.length - 2) stage.querySelector('.sc-point').classList.add('on'); }));
+      later(1100 + games.length * step + 200, () => { sfx('impact'); stage.querySelector('.sc-final').classList.add('decided'); });
       await wait(1100 + games.length * step + 2600);
     };
     const sceneMvp = async () => {
@@ -125,6 +127,7 @@
           <div class="sc-club">${m.badge || ''}<span>${esc(m.flag || '')} ${esc(m.team || '')}</span></div>
           <div class="sc-rec sc-mstats">${(m.stats || []).map(([k, v], i) => `<div style="--i:${i}"><b data-to="${+v || 0}">0</b><small>${esc(k)}</small></div>`).join('')}</div>
         </div></div>`;
+      sfx('whoosh');
       later(900, () => countUp(stage, S));
       await wait(6000);
     };
@@ -150,11 +153,12 @@
         <div class="sc-label">${esc(o.label || 'Champions')}</div>
         ${o.line ? `<p class="sc-next">${esc(o.line)}</p>` : ''}${o.next ? `<p class="sc-next">${esc(o.next)}</p>` : ''}
       </div>`;
+      later(250, () => sfx('fanfare'));
       later(mode === 3 ? 1150 : mode === 1 ? 1000 : 850, () => confetti(S, cols));
       await wait(o.single ? 60000 : 7500);
     };
     const sceneRoad = async () => {
-      mark('road');
+      mark('road'); sfx('tab');
       const r = o.record || {}, ps = C.players || [];
       const tiles = [['Series', (r.sw || 0) + '–' + (r.sl || 0)], ['Games', (r.gw || 0) + '–' + (r.gl || 0)], ['Goals', ps.reduce((x, p) => x + (p.g || 0), 0)], ['Saves', ps.reduce((x, p) => x + (p.sv || 0), 0)]];
       stage.innerHTML = `<div class="sc-road">

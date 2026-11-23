@@ -1296,6 +1296,12 @@
   }
 
   /* ---------------- Settings & guide ---------------- */
+  /** The speaker button in the top bar mirrors the sound setting. */
+  function syncSfxBtn() {
+    const b = document.getElementById('sfxBtn'); if (!b || !window.RLSfx) return;
+    const on = window.RLSfx.on;
+    b.textContent = on ? '🔊' : '🔇'; b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.setAttribute('aria-label', on ? 'Sound effects on' : 'Sound effects off'); b.title = on ? 'Sound effects: on' : 'Sound effects: off';
+  }
   function openSettings() {
     const st = state.settings;
     openModal(`${modalHead('Settings', '')}
@@ -1303,6 +1309,7 @@
         
         <div class="field"><label for="setSpeed">Default playback speed</label><select class="select" id="setSpeed">${SPEEDS.map((s) => `<option value="${s}" ${st.speed === s ? 'selected' : ''}>${s}×</option>`).join('')}</select></div>
         <div class="field"><label for="setMode">Default viewer</label><select class="select" id="setMode">${[['extended', 'Extended (pitch + commentary)'], ['highlights', 'Highlights only'], ['commentary', 'Commentary only']].map(([k, v]) => `<option value="${k}" ${st.mode === k ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
+        <div class="field"><label for="setSfx">Sound effects</label><div class="sfx-row"><label class="sfx-switch"><input type="checkbox" id="setSfx" ${window.RLSfx && window.RLSfx.on ? 'checked' : ''} /> <span>Enabled</span></label><input type="range" id="setVol" min="0" max="100" value="${Math.round((window.RLSfx ? window.RLSfx.volume : 0.55) * 100)}" aria-label="Volume" /></div></div>
         <hr class="divider" />
         <p class="help">Data: ${esc(DATA.source)} · updated ${esc(DATA.updated)}.</p>
         <button class="btn danger" data-action="reset-all">Reset all saved data</button>
@@ -1895,7 +1902,8 @@
         break;
       }
       case 'open-settings': openSettings(); break;
-      case 'save-settings': state.settings.speed = +$('#setSpeed').value; state.settings.mode = $('#setMode').value; closeModal(); persistRender(); break;
+      case 'save-settings': state.settings.speed = +$('#setSpeed').value; state.settings.mode = $('#setMode').value; if (window.RLSfx && $('#setSfx')) window.RLSfx.set({ on: $('#setSfx').checked, vol: +$('#setVol').value / 100 }); syncSfxBtn(); closeModal(); persistRender(); break;
+      case 'sfx-toggle': if (window.RLSfx) { window.RLSfx.toggle(); syncSfxBtn(); toast(window.RLSfx.on ? 'Sound effects on' : 'Sound effects off'); } break;
       case 'reset-all':
         openModal(`${modalHead('Reset all saved data?', 'This deletes your setup, custom teams, roster edits and saved tournament in this browser.')}<div class="modal-foot"><button class="btn" data-action="close-modal">Cancel</button><button class="btn danger" data-action="reset-confirm">Delete everything</button></div>`, { size: 'sm' });
         break;
@@ -1957,6 +1965,7 @@
     state.setup.teams = (state.setup.teams || []).filter((id) => known.has(id));
     if (state.setup.managed && !known.has(state.setup.managed)) state.setup.managed = '';
   }
+  syncSfxBtn();
   window.RLCareer.init({
     E, state, esc, badge, toast, openModal, closeModal, modalHead, launch, go, render: () => render(), getTeam,
     regions: REGIONS, libraryTeams: () => rankedTeams(HAS27 ? '2027' : '2026').filter((t) => !t.custom).map((t) => Object.assign({}, t)),
