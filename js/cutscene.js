@@ -255,8 +255,8 @@
     // second beat: the city text moves up and the field flies in
     const sfx = (n) => global.RLSfx && global.RLSfx.play(n);
     sfx('whoosh');
-    // themed background music: the atmosphere's style (Worlds Week: the anthem), seeded by the host city
-    if (global.RLMusic) global.RLMusic.start(o.worlds ? 'anthem' : sty.mood, o.city);
+    // background music: every host city has its own anthem in its country's musical flavour (js/music.js)
+    if (global.RLMusic) global.RLMusic.start({ city: o.city, country: o.city === 'Edinburgh' ? 'Scotland' : o.country, worlds: !!o.worlds }); // the host city's own anthem
     S.timers.push(setTimeout(() => { if (!S.dead) sfx('impact'); }, 1600));
     S.timers.push(setTimeout(() => { if (!S.dead) sfx('whoosh'); }, o.worlds ? 5150 : 4250));
     if (o.week) S.timers.push(setTimeout(() => { if (!S.dead) sfx('whoosh'); }, 10150));
