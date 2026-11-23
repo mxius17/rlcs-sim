@@ -2963,3 +2963,271 @@ img.flag-emoji { display: inline-block; height: 1.25em; width: 1.25em; vertical-
 .sfx-row { display: flex; align-items: center; gap: 14px; }
 .sfx-switch { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; cursor: pointer; }
 .sfx-row input[type=range] { flex: 1; accent-color: var(--accent, #2f8cff); }
+
+/* ===== Broadcast openers (js/opener.js): a title sequence cut to the anthem's beat ===== */
+.cut .cut-ui { z-index: 9; }
+.op { position: absolute; inset: 0; z-index: 7; overflow: hidden; background: var(--b); transition: opacity .5s; }
+.op.gone { opacity: 0; pointer-events: none; }
+.op-defs { position: absolute; }
+.op .f0 { fill: var(--b); } .op .f1 { fill: var(--a); } .op .f2 { fill: var(--c); }
+.op .s1 { fill: none; stroke: var(--a); } .op .s2 { fill: none; stroke: var(--c); }
+.op .f0.s1, .op .f0.s2 { fill: var(--b); }
+.op-shot { position: absolute; inset: 0; display: none; overflow: hidden; }
+.op-shot.on { display: block; }
+/* every beat: a thin brand-coloured pulse on the frame */
+.op-pulse { position: absolute; inset: 0; pointer-events: none; z-index: 4; box-shadow: inset 0 0 0 0 var(--a); }
+.op.run .op-pulse { animation: opPulse var(--beat) ease-out infinite; }
+@keyframes opPulse { 0% { box-shadow: inset 0 0 0 10px color-mix(in srgb, var(--a) 70%, transparent), inset 0 0 120px color-mix(in srgb, var(--a) 35%, transparent); } 60%, 100% { box-shadow: inset 0 0 0 0 transparent, inset 0 0 60px transparent; } }
+/* broadcast furniture: live bug, ticker, progress */
+.op-hud { position: absolute; left: 24px; right: 24px; top: 20px; z-index: 5; display: flex; justify-content: space-between; gap: 12px; font: 800 12px var(--display); text-transform: uppercase; letter-spacing: .2em; pointer-events: none; }
+.op-live { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; background: var(--a); color: var(--b); border-radius: 4px; animation: opIn .4s .2s both; }
+.op-live i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: opBlink 1s steps(2) infinite; }
+.op-hk { padding: 6px 12px; background: rgba(0,0,0,.45); border-left: 3px solid var(--c); border-radius: 2px; animation: opIn .4s .35s both; }
+@keyframes opBlink { 50% { opacity: .2; } }
+@keyframes opIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+.op-tick { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; height: 34px; overflow: hidden; background: var(--a); color: var(--b); display: flex; align-items: center; pointer-events: none; }
+.op-tick div { display: flex; gap: 18px; white-space: nowrap; font: 800 14px var(--display); text-transform: uppercase; letter-spacing: .12em; animation: opTick 9s linear infinite; padding-left: 100%; }
+.op-tick i { font-style: normal; opacity: .55; }
+@keyframes opTick { to { transform: translateX(-100%); } }
+.op-bar { position: absolute; left: 0; right: 0; bottom: 34px; height: 3px; z-index: 5; background: rgba(255,255,255,.12); }
+.op-bar i { display: block; height: 100%; background: var(--c); transform-origin: 0 0; transform: scaleX(0); }
+.op.run .op-bar i { animation: opBar var(--total) linear forwards; }
+@keyframes opBar { to { transform: scaleX(1); } }
+
+/* transitions between shots */
+.op-tr { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
+.op-tr i { position: absolute; display: none; }
+.op-tr.t-flash { animation: trFlash .45s ease-out both; }
+@keyframes trFlash { 0% { background: transparent; } 35% { background: #fff; } 100% { background: transparent; } }
+.op-tr.t-wipe i { display: block; top: -30%; bottom: -30%; width: 60%; transform: skewX(-18deg); animation: trWipe .6s cubic-bezier(.7,0,.25,1) both; }
+.op-tr.t-wipe i:nth-child(1) { background: var(--a); } .op-tr.t-wipe i:nth-child(2) { background: var(--c); animation-delay: .05s; } .op-tr.t-wipe i:nth-child(n+3) { display: none; }
+@keyframes trWipe { 0% { left: -80%; } 100% { left: 150%; } }
+.op-tr.t-iris { animation: trIris .55s cubic-bezier(.7,0,.3,1) both; background: var(--a); }
+@keyframes trIris { 0% { clip-path: circle(0% at 50% 50%); } 45% { clip-path: circle(80% at 50% 50%); } 100% { clip-path: circle(80% at 50% 50%); opacity: 0; } }
+.op-tr.t-blinds i { display: block; top: 0; bottom: 0; width: 12.6%; background: var(--a); transform: scaleY(0); animation: trBlind .55s calc(var(--n, 0) * 0.025s) cubic-bezier(.7,0,.3,1) both; }
+.op-tr.t-blinds i:nth-child(1) { left: 0; --n: 0; } .op-tr.t-blinds i:nth-child(2) { left: 12.5%; --n: 1; } .op-tr.t-blinds i:nth-child(3) { left: 25%; --n: 2; } .op-tr.t-blinds i:nth-child(4) { left: 37.5%; --n: 3; }
+.op-tr.t-blinds i:nth-child(5) { left: 50%; --n: 4; } .op-tr.t-blinds i:nth-child(6) { left: 62.5%; --n: 5; } .op-tr.t-blinds i:nth-child(7) { left: 75%; --n: 6; } .op-tr.t-blinds i:nth-child(8) { left: 87.5%; --n: 7; }
+.op-tr.t-blinds i:nth-child(even) { background: var(--c); transform-origin: 50% 100%; }
+@keyframes trBlind { 0% { transform: scaleY(0); } 45%, 55% { transform: scaleY(1); } 100% { transform: scaleY(0); transform-origin: 50% 100%; } }
+.op-tr.t-glitch i { display: block; left: -5%; right: -5%; height: 9%; mix-blend-mode: screen; animation: trGlitch .4s steps(4) both; }
+.op-tr.t-glitch i:nth-child(odd) { background: var(--a); } .op-tr.t-glitch i:nth-child(even) { background: var(--c); }
+.op-tr.t-glitch i:nth-child(1) { top: 6%; } .op-tr.t-glitch i:nth-child(2) { top: 19%; } .op-tr.t-glitch i:nth-child(3) { top: 33%; } .op-tr.t-glitch i:nth-child(4) { top: 44%; }
+.op-tr.t-glitch i:nth-child(5) { top: 58%; } .op-tr.t-glitch i:nth-child(6) { top: 67%; } .op-tr.t-glitch i:nth-child(7) { top: 79%; } .op-tr.t-glitch i:nth-child(8) { top: 90%; }
+@keyframes trGlitch { 0% { transform: translateX(-30%); opacity: .9; } 33% { transform: translateX(22%); } 66% { transform: translateX(-12%); opacity: .8; } 100% { transform: translateX(40%); opacity: 0; } }
+.op-tr.t-zoom { animation: trZoom .5s ease-out both; background: radial-gradient(circle, #fff 0%, var(--c) 25%, transparent 60%); }
+@keyframes trZoom { 0% { transform: scale(.2); opacity: 0; } 40% { opacity: 1; } 100% { transform: scale(3); opacity: 0; } }
+.op-tr.t-out { animation: trOut .7s ease-in-out both; }
+.op-tr.t-out i { display: block; top: -30%; bottom: -30%; width: 70%; transform: skewX(-18deg); animation: trWipe .8s cubic-bezier(.7,0,.25,1) both; background: var(--a); }
+.op-tr.t-out i:nth-child(2) { background: var(--c); animation-delay: .06s; } .op-tr.t-out i:nth-child(n+3) { display: none; }
+@keyframes trOut { 0% { background: transparent; } 50% { background: transparent; } 100% { background: transparent; } }
+.op-shot.on > * { animation-play-state: running; }
+
+/* shot: emblem cold open */
+.s-pat { background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--a) 35%, var(--b)), var(--b) 70%); }
+.op-patl { position: absolute; inset: -8%; opacity: .55; }
+.op-patl svg { display: block; }
+.s-pat.on .op-patl { animation: opPatIn .9s cubic-bezier(.6,0,.2,1) both, opDrift calc(var(--d) + 1s) linear both; }
+@keyframes opPatIn { from { clip-path: circle(0% at 50% 47%); } to { clip-path: circle(80% at 50% 47%); } }
+.s-pat .op-patl::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 50% 47%, var(--b) 18%, transparent 55%); }
+.s-pat .op-ring { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
+.s-pat .op-ring i { position: absolute; left: -30vmin; top: -30vmin; width: 60vmin; height: 60vmin; border-radius: 50%; border: 2px solid var(--c); opacity: 0; }
+.s-pat.on .op-ring i { animation: opRing var(--beat) calc(0.4s + var(--beat) * var(--n, 0)) ease-out 3 both; }
+.s-pat .op-ring i:nth-child(2) { --n: .33; border-color: var(--a); } .s-pat .op-ring i:nth-child(3) { --n: .66; }
+@keyframes opRing { from { transform: scale(.3); opacity: .9; } to { transform: scale(2.4); opacity: 0; } }
+.op-embw { position: absolute; left: 50%; top: 47%; width: min(46vmin, 360px); aspect-ratio: 1; transform: translate(-50%, -50%); }
+.s-pat.on .op-embw { animation: opSlam .55s .25s cubic-bezier(.2,1.4,.3,1) both; }
+@keyframes opSlam { from { transform: translate(-50%, -50%) scale(2.6); opacity: 0; filter: blur(14px); } to { transform: translate(-50%, -50%) scale(1); opacity: 1; filter: none; } }
+.op-emblem { width: 100%; height: 100%; overflow: visible; }
+.op-emblem .em-fill { fill: color-mix(in srgb, var(--b) 85%, #000); }
+.op-emblem .em-line { fill: none; stroke: var(--a); stroke-width: 7; stroke-dasharray: 100; stroke-dashoffset: 0; stroke-linejoin: round; }
+.op-emblem .em-in { fill: none; stroke: var(--c); stroke-width: 2.5; stroke-dasharray: 100; stroke-linejoin: round; }
+.op-shot.on .op-emblem .em-line { animation: opDraw .9s .3s cubic-bezier(.5,0,.2,1) both; }
+.op-shot.on .op-emblem .em-in { animation: opDraw 1s .45s cubic-bezier(.5,0,.2,1) both; }
+@keyframes opDraw { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+.op-emblem .em-crown { fill: none; stroke: var(--c); stroke-width: 5; stroke-linejoin: round; stroke-linecap: round; }
+.op-emblem .em-code { fill: #fff; text-anchor: middle; font-family: var(--display); font-weight: 900; letter-spacing: -1px; }
+.op-emblem .em-sub { fill: var(--c); text-anchor: middle; font: 800 11px var(--display); letter-spacing: 2.5px; text-transform: uppercase; }
+.op-kick { position: absolute; left: 0; right: 0; top: calc(47% + min(25vmin, 190px)); text-align: center; font: 800 clamp(13px, 1.6vw, 18px) var(--display); text-transform: uppercase; letter-spacing: .3em; color: var(--c); padding: 0 20px; }
+.s-pat.on .op-kick { animation: cerUp .5s .7s both; }
+@keyframes opDrift { from { transform: scale(1.12) rotate(-2deg); } to { transform: scale(1) rotate(0); } }
+
+/* shot: kinetic type */
+.s-type { background: var(--b); }
+.s-type .op-word { position: absolute; inset: 0; display: grid; place-items: center; background: var(--bg); color: var(--fg); opacity: 0; z-index: var(--i); padding: 0 4vw; text-align: center; }
+.s-type .op-word b { display: block; font: 900 clamp(34px, min(12vw, calc(150vw / var(--len, 8))), 190px)/.88 var(--display); text-transform: uppercase; letter-spacing: -0.04em; overflow-wrap: anywhere; }
+.s-type.on .op-word { animation: opWord .38s calc(var(--i) * var(--beat)) cubic-bezier(.2,.9,.3,1) both; }
+.s-type.on .op-word b { animation: opWordB calc(var(--beat) * 1.4) calc(var(--i) * var(--beat)) ease-out both; }
+.s-type.on .op-word:nth-child(even) { animation-name: opWord2; }
+@keyframes opWord { from { opacity: 1; clip-path: inset(0 100% 0 0); } to { opacity: 1; clip-path: inset(0 0 0 0); } }
+@keyframes opWord2 { from { opacity: 1; clip-path: inset(100% 0 0 0); } to { opacity: 1; clip-path: inset(0 0 0 0); } }
+@keyframes opWordB { from { transform: scale(1.35); filter: blur(8px); letter-spacing: .1em; } 40% { filter: none; } to { transform: scale(1); letter-spacing: -0.04em; } }
+.s-type.m-stack { background: linear-gradient(120deg, var(--b) 40%, color-mix(in srgb, var(--a) 40%, var(--b))); }
+.s-type.m-stack .op-word { position: relative; inset: auto; display: block; background: none; text-align: left; padding: 0 6vw; }
+.s-type.m-stack { display: none; flex-direction: column; justify-content: center; gap: 1vh; }
+.s-type.m-stack.on { display: flex; }
+.s-type.m-stack .op-word b { font-size: clamp(30px, min(9.5vw, calc(130vw / var(--len, 8))), 150px); }
+.s-type.m-stack .op-word:nth-child(3n+2) b { color: var(--c); }
+.s-type.m-stack .op-word:nth-child(3n+3) b { -webkit-text-stroke: 2px #fff; color: transparent; }
+.s-type.m-split .op-word:nth-child(odd) { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
+.s-type.m-split .op-word b { transform-origin: 50% 50%; }
+.s-type.m-split.on .op-word { animation-name: opSplit; }
+@keyframes opSplit { from { opacity: 1; clip-path: polygon(0 0, 0 0, 0 100%, 0 100%); } 60% { clip-path: polygon(0 0, 110% 0, 90% 100%, 0 100%); } to { opacity: 1; clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); } }
+
+/* shot: trophy */
+.s-trophy { background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--a) 45%, var(--b)), var(--b) 65%, #000); }
+.op-rays { position: absolute; left: 50%; top: 45%; width: 220vmax; height: 220vmax; margin: -110vmax 0 0 -110vmax; background: repeating-conic-gradient(color-mix(in srgb, var(--c) 22%, transparent) 0 5deg, transparent 5deg 15deg); mask-image: radial-gradient(circle, #000 0, transparent 40%); -webkit-mask-image: radial-gradient(circle, #000 0, transparent 40%); }
+.s-trophy.on .op-rays { animation: opSpin 18s linear infinite; }
+@keyframes opSpin { to { transform: rotate(360deg); } }
+.op-glow { position: absolute; left: 50%; top: 45%; width: 60vmin; height: 60vmin; margin: -30vmin; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--c) 55%, transparent), transparent 65%); }
+.s-trophy.on .op-glow { animation: opGlow var(--beat) ease-out infinite; }
+@keyframes opGlow { from { transform: scale(1.12); opacity: 1; } to { transform: scale(.95); opacity: .65; } }
+.op-cup { position: absolute; left: 50%; top: 45%; height: min(52vh, 62vmin); transform: translate(-50%, -50%); overflow: visible; filter: drop-shadow(0 20px 40px rgba(0,0,0,.5)); }
+.s-trophy.on .op-cup { animation: opCup calc(var(--d) + .3s) cubic-bezier(.2,.8,.2,1) both; }
+@keyframes opCup { from { transform: translate(-50%, -30%) scale(.7) rotate(-6deg); opacity: 0; } 25% { opacity: 1; } to { transform: translate(-50%, -50%) scale(1.04); opacity: 1; } }
+.op-cup .cg0 { stop-color: color-mix(in srgb, var(--c) 60%, #5a4a20); } .op-cup .cg1 { stop-color: #fff6d8; } .op-cup .cg2 { stop-color: color-mix(in srgb, var(--c) 70%, #fff); }
+.op-cup .cup-h { fill: none; stroke: color-mix(in srgb, var(--c) 70%, #c9a53a); stroke-width: 9; stroke-linecap: round; }
+.op-cup .cup-base { fill: color-mix(in srgb, var(--b) 70%, #000); } .op-cup .cup-base2 { fill: var(--a); }
+.op-cup .cup-star { fill: var(--b); opacity: .55; }
+.op-cup .cup-shine { fill: rgba(255,255,255,.75); transform: skewX(-20deg); }
+.s-trophy.on .cup-shine { animation: opShine 1.2s .5s ease-in-out both; }
+@keyframes opShine { from { transform: translateX(0) skewX(-20deg); } to { transform: translateX(320px) skewX(-20deg); } }
+.op-sparks i { position: absolute; left: 50%; top: 40%; width: 6px; height: 6px; border-radius: 50%; background: #fff; box-shadow: 0 0 10px var(--c); opacity: 0; }
+.s-trophy.on .op-sparks i { animation: opSpark 1.4s calc(.4s + var(--k) * 0.09s) ease-out infinite; }
+@keyframes opSpark { 0% { opacity: 0; transform: rotate(calc(var(--k) * 26deg)) translateY(0) scale(.5); } 20% { opacity: 1; } 100% { opacity: 0; transform: rotate(calc(var(--k) * 26deg)) translateY(-34vmin) scale(1.2); } }
+.op-cap { position: absolute; left: 0; right: 0; bottom: 12vh; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; padding: 0 20px; }
+.op-cap small { font: 800 13px var(--display); letter-spacing: .3em; text-transform: uppercase; color: var(--c); }
+.op-cap b { font: 900 clamp(26px, 4.6vw, 64px)/1 var(--display); text-transform: uppercase; letter-spacing: -0.02em; }
+.op-shot.on .op-cap small { animation: cerUp .4s .5s both; } .op-shot.on .op-cap b { animation: opWordB .8s .6s both; }
+
+/* shot: kickoff */
+.s-car { background: linear-gradient(180deg, #000 0%, var(--b) 48%, color-mix(in srgb, var(--a) 30%, var(--b)) 100%); }
+.op-floor { position: absolute; left: -50%; right: -50%; top: 55%; height: 90%; transform: perspective(500px) rotateX(68deg); transform-origin: 50% 0; background-image: linear-gradient(color-mix(in srgb, var(--a) 70%, transparent) 2px, transparent 2px), linear-gradient(90deg, color-mix(in srgb, var(--a) 70%, transparent) 2px, transparent 2px); background-size: 80px 80px; mask-image: linear-gradient(transparent, #000 30%); -webkit-mask-image: linear-gradient(transparent, #000 30%); }
+.s-car.on .op-floor { animation: opFloor .5s linear infinite; }
+@keyframes opFloor { to { background-position: -80px 0; } }
+.op-speed i { position: absolute; right: -40vw; height: 2px; width: var(--w); background: linear-gradient(90deg, transparent, #fff); opacity: .7; }
+.s-car.on .op-speed i { animation: opSpeed .45s var(--d) linear infinite; }
+@keyframes opSpeed { from { transform: translateX(0); } to { transform: translateX(-180vw); } }
+.op-car { position: absolute; left: 0; top: 50%; width: min(42vw, 420px); }
+.op-carsvg { width: 100%; display: block; overflow: visible; filter: drop-shadow(0 12px 18px rgba(0,0,0,.6)); }
+.car-b { fill: color-mix(in srgb, var(--b) 60%, #10131c); stroke: var(--a); stroke-width: 3; } .car-w { fill: color-mix(in srgb, var(--c) 50%, #0a0f1d); } .car-l { stroke: var(--a); stroke-width: 3; }
+.car-t { fill: #07090f; stroke: #2a3142; stroke-width: 3; } .car-r { fill: var(--c); }
+.op-boost { position: absolute; right: 96%; top: 36%; width: 30vw; height: 26%; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--a) 80%, #fff 0%) 70%, #fff); border-radius: 50%; filter: blur(4px); }
+.s-car.on .op-boost { animation: opBoost .12s linear infinite alternate; }
+@keyframes opBoost { to { transform: scaleY(.65); opacity: .8; } }
+.s-car.on .op-car { animation: opDrive var(--d) cubic-bezier(.3,.6,.4,1) both; }
+@keyframes opDrive { 0% { transform: translate(-60vw, -50%); } 45% { transform: translate(calc(50vw - min(42vw, 420px) * 0.62), -50%); } 100% { transform: translate(calc(56vw - min(42vw, 420px) * 0.62), -50%); } }
+.op-ball { position: absolute; left: 60vw; top: calc(50% - 3vmin); width: 15vmin; height: 15vmin; margin: -7.5vmin; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, #c9d1e0 45%, #6b7487 80%); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 60%, transparent), 0 0 40px color-mix(in srgb, var(--c) 50%, transparent); }
+.s-car.on .op-ball { animation: opBall var(--d) cubic-bezier(.2,.7,.3,1) both; }
+@keyframes opBall { 0%, 44% { transform: none; } 100% { transform: translate(60vw, -70vh) scale(.4) rotate(540deg); } }
+.op-hit { position: absolute; left: 60vw; top: calc(50% - 3vmin); width: 10vmin; height: 10vmin; margin: -5vmin; border-radius: 50%; border: 6px solid var(--c); opacity: 0; }
+.s-car.on .op-hit { animation: opHit .7s calc(var(--d) * 0.45) ease-out both; }
+@keyframes opHit { from { opacity: 1; transform: scale(.5); } to { opacity: 0; transform: scale(9); border-width: 1px; } }
+.op-cap-l { left: 6vw; right: auto; top: 14vh; bottom: auto; align-items: flex-start; text-align: left; }
+.op-cap-l b { font-size: clamp(34px, 7vw, 110px); }
+
+/* shot: map */
+.s-map { background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--a) 18%, var(--b)), var(--b) 70%); }
+.op-mapcam { position: absolute; left: 0; top: calc(50vh - 25vw); width: 100vw; height: 50vw; }
+.op-mapcam svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.s-map.on .op-mapcam { animation: opMapZoom calc(var(--d) * 0.85) .2s cubic-bezier(.6,0,.2,1) both; }
+@keyframes opMapZoom { from { transform: none; } to { transform: translate(var(--dx), var(--dy)) scale(3.6); } }
+.mp-grid { fill: none; stroke: color-mix(in srgb, var(--c) 25%, transparent); stroke-width: .3; }
+.mp-dots { fill: color-mix(in srgb, var(--c) 70%, #fff); opacity: .55; }
+.mp-arcs path { fill: none; stroke: var(--a); stroke-width: .45; stroke-dasharray: 100; stroke-dashoffset: 100; stroke-linecap: round; }
+.s-map.on .mp-arcs path { animation: opDraw .8s calc(.2s + var(--k) * 0.12s) ease-out forwards; }
+.mp-me { fill: var(--c); }
+.s-map.on .mp-me { animation: opMe var(--beat) ease-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes opMe { from { transform: scale(1.8); } to { transform: scale(1); } }
+.op-cross { position: absolute; inset: 0; background: linear-gradient(var(--c), var(--c)) 50% 0 / 1px 100% no-repeat, linear-gradient(var(--c), var(--c)) 0 50% / 100% 1px no-repeat; opacity: 0; }
+.s-map.on .op-cross { animation: opCross var(--d) both; }
+@keyframes opCross { 0%, 50% { opacity: 0; } 70%, 100% { opacity: .35; } }
+.op-pin { position: absolute; left: 50%; top: 50%; width: 28px; height: 28px; margin: -42px 0 0 -14px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--a); border: 3px solid #fff; opacity: 0; }
+.op-pin i { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px; border-radius: 50%; background: #fff; }
+.s-map.on .op-pin { animation: opPin .5s calc(var(--d) * 0.72) cubic-bezier(.3,1.6,.4,1) both; }
+@keyframes opPin { from { opacity: 0; transform: translateY(-60px) rotate(-45deg); } to { opacity: 1; transform: rotate(-45deg); } }
+.op-coord { position: absolute; left: 6vw; bottom: 12vh; display: flex; flex-direction: column; gap: 4px; padding: 14px 18px; background: rgba(0,0,0,.55); border-left: 4px solid var(--a); }
+.op-coord small { font: 800 12px var(--display); letter-spacing: .3em; text-transform: uppercase; color: var(--c); }
+.op-coord b { font: 900 clamp(26px, 4vw, 54px)/1 var(--display); text-transform: uppercase; }
+.op-ll { font: 700 15px ui-monospace, Menlo, monospace; letter-spacing: .06em; font-variant-numeric: tabular-nums; }
+.s-map.on .op-coord { animation: opIn .4s .3s both; }
+
+/* shot: mosaic */
+.s-mosaic { background: var(--b); }
+.op-grid { position: absolute; inset: 64px 24px 52px; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); gap: 10px; }
+.s-mosaic.on .op-grid { animation: opGridZoom var(--d) ease-in both; }
+@keyframes opGridZoom { from { transform: scale(1); } to { transform: scale(1.06); } }
+.mo-t { position: relative; overflow: hidden; border-radius: 6px; display: grid; place-items: center; background: color-mix(in srgb, var(--a) 22%, var(--b)); text-align: center; padding: 10px; }
+.mo-t:nth-child(2) { background: linear-gradient(180deg, color-mix(in srgb, var(--a) 60%, var(--b)), var(--b)); } .mo-t:nth-child(4) { background: var(--a); } .mo-t:nth-child(5) { background: var(--c); }
+.s-mosaic.on .mo-t { animation: opTile .45s calc(var(--k) * min(var(--beat) * 0.5, .17s)) cubic-bezier(.2,.9,.3,1) both; }
+.s-mosaic.on .mo-t:nth-child(3n+1) { animation-name: opTileL; } .s-mosaic.on .mo-t:nth-child(3n+3) { animation-name: opTileR; }
+@keyframes opTile { from { transform: translateY(110%); } to { transform: none; } }
+@keyframes opTileL { from { transform: translateX(-110%); } to { transform: none; } }
+@keyframes opTileR { from { transform: translateY(-110%); } to { transform: none; } }
+.mo-flag { font-size: clamp(60px, 12vw, 150px); line-height: 1; } .mo-flag img.flag-emoji { width: clamp(90px, 16vw, 220px); height: auto; border-radius: 6px; box-shadow: 0 10px 30px rgba(0,0,0,.4); }
+.mo-lm { position: absolute; inset: 0; width: 100%; height: 100%; } .mo-lm path { fill: color-mix(in srgb, var(--b) 80%, #000); stroke: var(--c); stroke-width: 4; }
+.mo-t small { position: absolute; left: 10px; bottom: 8px; font: 800 11px var(--display); letter-spacing: .14em; text-transform: uppercase; background: rgba(0,0,0,.5); padding: 3px 7px; border-radius: 3px; }
+.mo-pat { position: absolute; inset: 0; }
+.mo-big { font: 900 clamp(24px, 4.4vw, 64px)/1 var(--display); color: var(--b); text-transform: uppercase; }
+.mo-nick { font: 900 clamp(18px, 3vw, 42px)/1.05 var(--display); color: var(--b); text-transform: uppercase; }
+.mo-t .op-emblem { width: 80%; height: 80%; }
+
+/* shot: arena */
+.s-arena { background: radial-gradient(ellipse at 50% 30%, color-mix(in srgb, var(--a) 30%, var(--b)), #000 75%); }
+.op-beams { position: absolute; left: 50%; bottom: 20%; width: 0; height: 0; }
+.op-beams i { position: absolute; left: -4vw; bottom: 0; width: 8vw; height: 140vh; transform-origin: 50% 100%; background: linear-gradient(0deg, color-mix(in srgb, var(--c) 60%, transparent), transparent 80%); filter: blur(6px); mix-blend-mode: screen; transform: rotate(calc(-55deg + var(--k) * 22deg)); }
+.op-beams i:nth-child(even) { background: linear-gradient(0deg, color-mix(in srgb, var(--a) 70%, transparent), transparent 80%); }
+.s-arena.on .op-beams i { animation: opBeam calc(var(--beat) * 2) calc(var(--k) * -0.2s) ease-in-out infinite alternate; }
+@keyframes opBeam { from { transform: rotate(calc(-55deg + var(--k) * 22deg)); } to { transform: rotate(calc(-35deg + var(--k) * 14deg)); } }
+.op-screen { position: absolute; left: 50%; top: 32%; width: min(44vw, 460px); aspect-ratio: 16 / 9; transform: translate(-50%, -50%); background: #000; border: 3px solid color-mix(in srgb, var(--c) 60%, #333); display: flex; align-items: center; justify-content: center; gap: 14px; padding: 10px; box-shadow: 0 0 60px color-mix(in srgb, var(--a) 50%, transparent); }
+.op-screen .op-emblem { height: 86%; width: auto; aspect-ratio: 1; }
+.op-screen span { font: 800 clamp(10px, 1.2vw, 15px)/1.3 var(--display); text-transform: uppercase; letter-spacing: .14em; color: var(--c); max-width: 50%; }
+.s-arena.on .op-screen { animation: opScreen .5s .15s steps(3) both; }
+@keyframes opScreen { from { opacity: 0; filter: brightness(3); } to { opacity: 1; filter: none; } }
+.op-pyro i { position: absolute; bottom: 30%; width: 3vw; height: 34vh; left: calc(12% + var(--k) * 25%); background: linear-gradient(0deg, #fff, var(--c) 30%, var(--a) 70%, transparent); border-radius: 50% 50% 0 0; filter: blur(3px); transform-origin: 50% 100%; transform: scaleY(0); mix-blend-mode: screen; }
+.s-arena.on .op-pyro i { animation: opPyro calc(var(--beat) * 2) calc(var(--beat) * (var(--k) % 2)) ease-out infinite; }
+@keyframes opPyro { 0% { transform: scaleY(0); opacity: 1; } 15% { transform: scaleY(1); opacity: 1; } 60% { transform: scaleY(.8); opacity: 0; } 100% { opacity: 0; } }
+.op-crowd { position: absolute; left: 0; right: 0; bottom: 34px; width: 100%; height: 42vh; }
+.op-crowd path { fill: #04060b; }
+.op-crowd circle { fill: #fff; opacity: .15; }
+.s-arena.on .op-crowd circle { animation: opPhone 1.6s var(--d) ease-in-out infinite alternate; }
+@keyframes opPhone { to { opacity: 1; filter: drop-shadow(0 0 4px #fff); } }
+.s-arena.on .op-crowd { animation: opBounce var(--beat) ease-in-out infinite; }
+@keyframes opBounce { 50% { transform: translateY(4px); } }
+
+/* shot: the teams, one per half beat */
+.s-teams { background: var(--b); }
+.op-tc { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: 2vh; background: var(--bg); color: var(--fg); opacity: 0; overflow: hidden; }
+.s-teams.on .op-tc { animation: opTc var(--step) calc(var(--i) * var(--step)) linear; }
+.s-teams.on .op-tc.last { animation: opTcLast .6s calc(var(--i) * var(--step)) ease-out forwards; }
+@keyframes opTc { 0%, 99.9% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes opTcLast { from { opacity: 1; } to { opacity: 1; } }
+.op-tc .tc-name { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); white-space: nowrap; font: 900 clamp(90px, 26vw, 400px)/1 var(--display); text-transform: uppercase; letter-spacing: -0.05em; opacity: .14; }
+.s-teams.on .op-tc .tc-name { animation: opTcName calc(var(--step) * 2) calc(var(--i) * var(--step)) linear both; }
+@keyframes opTcName { from { transform: translate(-46%, -50%); } to { transform: translate(-54%, -50%); } }
+.op-tc .tc-badge { position: relative; display: grid; place-items: center; }
+.op-tc .tc-badge .badge { width: min(26vmin, 200px) !important; height: min(26vmin, 200px) !important; font-size: min(9vmin, 64px) !important; border-radius: 18%; }
+.s-teams.on .op-tc .tc-badge { animation: opTcBadge calc(var(--step) * 1.2) calc(var(--i) * var(--step)) cubic-bezier(.2,.9,.3,1) both; }
+@keyframes opTcBadge { from { transform: scale(1.5); } to { transform: scale(1); } }
+.op-tc > b { position: relative; font: 900 clamp(22px, 3.6vw, 48px)/1 var(--display); text-transform: uppercase; letter-spacing: .02em; padding: 0 20px; text-align: center; }
+.op-tc.mine > b::after { content: " ★"; color: var(--fg); }
+.op-tcount { position: absolute; left: 0; right: 0; bottom: 60px; z-index: 30; text-align: center; font: 800 13px var(--display); letter-spacing: .3em; text-transform: uppercase; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,.6); }
+.s-teams .op-tc { z-index: calc(var(--i) + 1); }
+
+/* the city reveal runs after the opener */
+.cut.has-op:not(.main-on) .cut-ui .cut-go { display: none; }
+@media (max-width: 760px) {
+  .op-hud { left: 12px; right: 12px; top: 12px; font-size: 10px; letter-spacing: .14em; } .op-hk { display: none; }
+  .op-grid { inset: 52px 10px 46px; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(3, 1fr); gap: 6px; }
+  .op-car { width: 70vw; } @keyframes opDrive { 0% { transform: translate(-80vw, -50%); } 45% { transform: translate(calc(60vw - 70vw * 0.62), -50%); } 100% { transform: translate(calc(64vw - 70vw * 0.62), -50%); } }
+  .op-ball { left: 68vw; } .op-hit { left: 68vw; }
+  .op-screen { width: 78vw; top: 30%; }
+  .op-coord { left: 16px; right: 16px; bottom: 90px; }
+  .op-cap { bottom: 100px; }
+}
+.cut.has-op:not(.main-on) .cut-ui { bottom: 48px; }
+@media (max-width: 760px) {
+  .op-tick { bottom: auto; top: 46px; height: 26px; } .op-tick div { font-size: 11px; }
+  .op-bar { bottom: auto; top: 72px; }
+  .cut.has-op:not(.main-on) .cut-ui { bottom: calc(16px + env(safe-area-inset-bottom)); }
+  .op-tcount { bottom: 84px; }
+}

@@ -200,7 +200,7 @@
     el.className = 'cut' + (o.worlds ? ' cut-worlds' : ` mood-${sty.mood} open-${sty.open} title-${sty.title}`) + (o.week ? ' has-week' : '');
     el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Major intro: ' + o.city);
     el.style.cssText = `--a:${a};--b:${b};--c:${c}`;
-    el.innerHTML = `
+    const mainHtml = `
       <div class="cut-world">
       <div class="cut-sky"></div>
       <div class="cut-sun" aria-hidden="true"></div>
@@ -243,7 +243,12 @@
       ${o.week ? `<div class="cut-week" aria-label="Worlds Week schedule"><span class="cut-fh">Worlds Week · three world titles</span><div class="cut-days">${o.week.map((d, k) => `<div class="cut-day${d.now ? ' now' : ''}${d.done ? ' done' : ''}" style="--k:${k}">
           <small>${esc(d.day)}${d.now ? ' · <b>Up next</b>' : d.done ? ' · Played' : ''}</small><h3>${esc(d.name)}</h3><p>${esc(d.sub)}</p>
           ${d.list.length ? `<div class="cut-dl">${d.list.map((e) => `<span class="${e.mine ? 'mine' : ''}">${e.badge || ''}<b>${esc(e.name)}</b><i>${esc(e.region || '')}</i></span>`).join('')}</div>` : ''}</div>`).join('')}</div></div>` : ''}
-      <div class="cut-ui"><button class="cut-skip" type="button">Skip intro</button><button class="cut-go" type="button">Let’s go →</button></div>`;
+      `;
+    // the broadcast opener (js/opener.js): a title sequence cut to the anthem's beat, before the city is revealed
+    const song = global.RLMusic && global.RLMusic.compose ? global.RLMusic.compose(o.city, o.city === 'Edinburgh' ? 'Scotland' : o.country, !!o.worlds) : null;
+    const op = global.RLOpener ? global.RLOpener.build({ city: o.city, country: o.country, flag: o.flag, pal: o.palette, kicker: o.kicker, field: o.field, worlds: !!o.worlds, week: o.week, ewc: o.chip === 'Esports World Cup', flavour: song && song.fname, bpm: song && song.bpm, lm, lmName: info[1], nick: info[2], hello: hello.replace(/ (to|in|a|ao|à|w|v|till|go|ke|di|til)$/i, '') + (/[!?]$/.test(hello) ? '' : '!') }) : null;
+    el.innerHTML = (op ? op.html : '') + '<div class="cut-main"></div><div class="cut-ui"><button class="cut-skip" type="button">Skip intro</button><button class="cut-go" type="button">Let’s go →</button></div>';
+    if (op) el.classList.add('has-op');
     document.body.appendChild(el);
     document.documentElement.classList.add('cer-open');
     const S = (cur = { el, timers: [], dead: false });
@@ -252,11 +257,14 @@
     el.querySelector('.cut-go').addEventListener('click', finish);
     S.onKey = (ev) => { if (ev.key === 'Escape' || ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); ev.stopPropagation(); finish(); } };
     document.addEventListener('keydown', S.onKey, true);
-    // second beat: the city text moves up and the field flies in
     const sfx = (n) => global.RLSfx && global.RLSfx.play(n);
-    sfx('whoosh');
     // background music: every host city has its own anthem in its country's musical flavour (js/music.js)
-    if (global.RLMusic) global.RLMusic.start({ city: o.city, country: o.city === 'Edinburgh' ? 'Scotland' : o.country, worlds: !!o.worlds }); // the host city's own anthem
+    if (global.RLMusic) global.RLMusic.start({ city: o.city, country: o.city === 'Edinburgh' ? 'Scotland' : o.country, worlds: !!o.worlds });
+    S.later = (ms, f) => S.timers.push(setTimeout(() => { if (!S.dead) f(); }, ms));
+    const startMain = () => {
+    el.querySelector('.cut-main').innerHTML = mainHtml;
+    el.classList.add('main-on');
+    if (!op) sfx('whoosh');
     S.timers.push(setTimeout(() => { if (!S.dead) sfx('impact'); }, 1600));
     S.timers.push(setTimeout(() => { if (!S.dead) sfx('whoosh'); }, o.worlds ? 5150 : 4250));
     if (o.week) S.timers.push(setTimeout(() => { if (!S.dead) sfx('whoosh'); }, 10150));
@@ -264,7 +272,9 @@
     // Worlds Week: the schedule of the three events first, then the World Championship field
     if (o.week) S.timers.push(setTimeout(() => { if (!S.dead) el.classList.add('beat3'); }, 10200));
     S.timers.push(setTimeout(() => { const g = el.querySelector('.cut-go'); if (g && !S.dead) { g.classList.add('on'); g.focus({ preventScroll: true }); } }, o.week ? 12000 : o.worlds ? 7200 : 6200));
+    };
+    if (op) { sfx('whoosh'); global.RLOpener.run(el.querySelector('.op'), op, S, startMain); } else startMain();
   }
 
-  global.RLCutscene = { play, stop, has: (city) => !!SCENE[city], styleFor };
+  global.RLCutscene = { play, stop, has: (city) => !!SCENE[city], styleFor, cities: () => Object.keys(SCENE) };
 })(window);
