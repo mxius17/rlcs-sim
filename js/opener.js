@@ -196,6 +196,7 @@
       let dur;
       if (k === 'type') dur = obj.beats * beat;
       else if (k === 'teams') { const step = beat / 2 * obj.n <= 3.2 ? beat / 2 : beat / 4; dur = obj.n * step + beat; obj.step = step; }
+      else if (k === 'pat') dur = 4 * beat; // one bar: the first cut lands on the anthem's drop
       else dur = q({ pat: 2.3, trophy: 2.3, car: 2.2, map: 2.8, mosaic: 2.6, arena: 2.4 }[k]);
       plan.push({ k, dur, tr: i ? tr[i % 2] : null });
       parts.push(`<div class="op-shot s-${k} ${obj.cls || ''}" style="--d:${dur.toFixed(3)}s${obj.step ? `;--step:${obj.step.toFixed(3)}s` : ''}">${obj.html}</div>`);
@@ -227,22 +228,24 @@
     const sfx = (n) => global.RLSfx && global.RLSfx.play(n);
     const hit = (cls) => { tr.className = 'op-tr'; void tr.offsetWidth; tr.className = 'op-tr t-' + cls; };
     const later = (ms, f) => S.timers.push(setTimeout(() => { if (!S.dead) f(); }, Math.max(0, ms)));
-    let t = 0;
+    let t = 0.08; // the anthem's first bar starts 80 ms after play (js/music.js)
+    const music = () => global.RLMusic && global.RLMusic.playing;
     root.classList.add('run');
     spec.plan.forEach((p, k) => {
       const at = t * 1000;
       if (p.tr) later(at - 180, () => { hit(p.tr); sfx('whoosh'); });
       later(at, () => {
         shots.forEach((s, i) => s.classList.toggle('on', i === k));
+        if (k > 1 && music()) global.RLMusic.hit('cut'); // a boom on every cut (the first cut is the anthem's own drop)
         if (p.k === 'map') countCoords(shots[k], S);
-        if (p.k === 'pat') later(420, () => sfx('impact'));
+        if (p.k === 'pat' && !music()) later(420, () => sfx('impact'));
         if (p.k === 'car') later(p.dur * 450, () => sfx('impact'));
-        if (p.k === 'trophy') later(300, () => sfx('impact'));
+        if (p.k === 'trophy' && !music()) later(300, () => sfx('impact'));
       });
       t += p.dur;
     });
     later(t * 1000 - 180, () => { hit('out'); sfx('whoosh'); });
-    later(t * 1000, () => { root.classList.add('gone'); done(); });
+    later(t * 1000, () => { if (music()) global.RLMusic.hit('big'); root.classList.add('gone'); done(); });
     later(t * 1000 + 700, () => { if (root.parentNode) root.parentNode.removeChild(root); });
   }
 

@@ -7,7 +7,10 @@
  * Australia, kalimba and djembe for Africa, sitar and tabla for India, an orchestral epic for Worlds Week...).
  * The CITY seeds everything else, so every host city gets its own anthem: key, tempo, mode, chord progression,
  * a composed theme and answering phrase, the lead instrument and the accompaniment pattern.
- * Form: a one-bar intro swell, then the theme (4 bars) and its answer (4 bars, ending on the tonic), looping.
+ * Form: a one-bar build (low swell, ostinato, drum roll, riser) into a drop, then the theme (4 bars) and its answer
+ * (4 bars, ending on the tonic), looping. A cinematic layer runs under every flavour: sub booms and low brass hits
+ * on the phrase starts, a spiccato string ostinato, big drums in the country's style (taiko, doum, surdo, timpani),
+ * a build into each new phrase, a low brass doubling of the theme and a hall reverb, all chosen per city.
  * RLMusic.start({ city, country, worlds }) fades in; RLMusic.stop() fades out.
  */
 (function (global) {
@@ -100,6 +103,12 @@
       agogo: (t, p, high) => osc('sine', high ? 1320 : 990, t, 0.001, 0.12, p * 0.05),
       castanets: (t, p) => [0, 0.025].forEach((o) => noise(t + o, 0.001, 0.025, p * 0.07, 'bandpass', 2600, 0, 4)),
       jingle: (t, p) => [0, 0.015, 0.03].forEach((o) => noise(t + o, 0.001, 0.06, p * 0.025, 'bandpass', 9000, 0, 6)),
+      /* cinematic layer: sub booms, low brass "braams", risers, reverse cymbals, spiccato string ostinato */
+      boom: (t, p, m) => { osc('sine', hz(m || 33) * 2.6, t, 0.003, 1.5, p * 0.55, { bend: 0.36, bendT: 0.35 }); noise(t, 0.002, 0.6, p * 0.16, 'lowpass', 900, 120, 0.7); noise(t, 0.001, 0.08, p * 0.08, 'bandpass', 2500, 0, 0.8); },
+      braam: (ns, t, d, p) => ns.forEach((m) => [-14, 0, 14].forEach((dt) => osc('sawtooth', hz(m), t, 0.07, d, (p * 0.07) / ns.length, { detune: dt, lp: 260, lp2: 1500, q: 2 }))),
+      riser: (t, d, p, m) => { noise(t, d, 0.04, p * 0.09, 'bandpass', 250, 7000, 1.2); osc('sawtooth', hz(m), t, d, 0.04, p * 0.025, { from: 0.5, fromT: d, lp: 1800 }); },
+      revcym: (t, d, p) => noise(t, d, 0.03, p * 0.09, 'highpass', 4500, 7000, 0.6),
+      ost: (m, t, d, p) => [0, 12].forEach((o) => osc('sawtooth', hz(m + o), t, 0.004, Math.min(0.2, d), p * (o ? 0.03 : 0.05), { lp: 1500, lp2: 450 })),
       djembe: (t, p, slap) => (slap ? noise(t, 0.001, 0.07, p * 0.12, 'bandpass', 1400, 0, 1.5) : osc('sine', 180, t, 0.002, 0.22, p * 0.22, { bend: 0.75, bendT: 0.1 })),
     };
   }
@@ -213,11 +222,24 @@
     });
     const n = sc.length;
     const note = (d, oct) => key + sc[((d % n) + n) % n] + 12 * (Math.floor(d / n) + (oct || 0));
-    return { fname, fl, scaleName, prog, S, bpm, key, lead, drums, comp, arpInst, melody, note };
+    // the dramatic layer, also from the city's own seed
+    const dr = seeded((worlds ? 'worlds|' : '') + city + '|' + country + '|drama');
+    const OST = S === 16
+      ? [[0, 2, 4, 6, 8, 10, 12, 14], [0, 2, 3, 4, 6, 7, 8, 10, 11, 12, 14, 15], [0, 3, 6, 8, 11, 14], [0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14], [0, 4, 6, 8, 12, 14], [0, 2, 4, 5, 6, 8, 10, 12, 13, 14]]
+      : [[0, 3, 6, 9], [0, 2, 3, 5, 6, 8, 9, 11], [0, 1, 2, 6, 7, 8], [0, 3, 5, 6, 9, 11]];
+    const BIG = { japan: 'taiko', arab: 'doum', india: 'doum', balkan: 'doum', brazil: 'surdo', africa: 'surdo', oceania: 'surdo', dance: 'kick' };
+    const drama = {
+      ost: pickOf(dr, OST), ostOct: pickOf(dr, [-12, -12, 0]), big: BIG[fname] || 'timpani',
+      bigPat: pickOf(dr, [[0, 8], [0, 6, 8], [0, 10], [0, 8, 12]]).map((k) => (S === 12 ? Math.round((k * 12) / 16) : k)),
+      braam: pickOf(dr, [[0, 4], [0, 2, 4, 6], [0, 4, 6]]), boom: 30 + Math.floor(dr() * 8),
+      verb: (worlds ? 3.2 : 1.8 + dr() * 1.4), wet: (worlds ? 0.32 : 0.2 + dr() * 0.1), riserBars: pickOf(dr, [0.5, 1]),
+      lowDouble: dr() < 0.65,
+    };
+    return { fname, fl, scaleName, prog, S, bpm, key, lead, drums, comp, arpInst, melody, note, drama };
   }
 
   /* per-flavour levels (measured offline) so every anthem plays at about the same loudness */
-  const LEVEL = {japan: 0.85, eastasia: 0.98, sea: 1.21, india: 1.59, arab: 1.09, brazil: 1.26, tango: 1.69, mariachi: 0.95, andes: 1.07, spain: 1.08, italy: 0.97, balkan: 0.9, musette: 0.95, brass: 1.05, british: 0.88, scottish: 1.31, irish: 1.11, nordic: 1.03, usa: 0.77, dance: 0.65, canada: 1.06, oceania: 0.69, africa: 1.11, worlds: 0.6};
+  const LEVEL = {japan: 0.88, eastasia: 0.83, sea: 1.04, india: 1.16, arab: 0.89, brazil: 0.83, tango: 1.09, mariachi: 0.78, andes: 0.94, spain: 0.94, italy: 0.95, balkan: 1.05, musette: 0.86, brass: 1.01, british: 0.96, scottish: 1.22, irish: 0.94, nordic: 1.0, usa: 0.72, dance: 0.63, canada: 0.97, oceania: 0.71, africa: 0.85, worlds: 0.71};
   let cur = null;
   function start(o, seed) {
     stop(0.2);
@@ -226,20 +248,41 @@
     if (typeof o === 'string') o = { city: seed || o, country: '' };
     const P = compose(o.city || 'City', o.country || '', !!o.worlds);
     const { ctx, out, noise } = A;
-    const bus = ctx.createGain(); bus.gain.setValueAtTime(0.0001, ctx.currentTime); bus.gain.exponentialRampToValueAtTime(LEVEL[P.fname] || 1, ctx.currentTime + 1.2); bus.connect(out);
-    const I = kit(ctx, bus, noise);
+    const bus = ctx.createGain(); bus.gain.setValueAtTime(0.0001, ctx.currentTime); bus.gain.exponentialRampToValueAtTime(LEVEL[P.fname] || 1, ctx.currentTime + 0.4); bus.connect(out);
+    // a hall: every instrument plays into `pre`, which feeds the bus dry and through a reverb sized per city
+    const pre = ctx.createGain(); pre.connect(bus);
+    try {
+      const D = P.drama, n = Math.floor(ctx.sampleRate * D.verb), ir = ctx.createBuffer(2, n, ctx.sampleRate);
+      for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 3); }
+      const conv = ctx.createConvolver(); conv.buffer = ir; const wet = ctx.createGain(); wet.gain.value = D.wet;
+      pre.connect(conv); conv.connect(wet); wet.connect(bus);
+    } catch (e) { /* no convolver */ }
+    const I = kit(ctx, pre, noise);
+    const D = P.drama;
+    const bigHit = (t, p) => { if (D.big === 'taiko') I.tom(t, p * 1.3, 62); else if (D.big === 'doum') I.doum(t, p * 1.3); else if (D.big === 'surdo') I.surdo(t, p * 1.2); else if (D.big === 'kick') I.kick(t, p * 1.1); else I.timpani(t, p * 0.9, P.key - 24); };
     const st = P.S === 16 ? 60 / P.bpm / 4 : 60 / P.bpm / 3, L = st * P.S;
     let next = ctx.currentTime + 0.08, b = 0;
+    const T0 = next;
     const playBar = (t, bar) => {
-      if (bar === 0) { // intro: a swell on the tonic chord, then a fill into the theme
-        I.pad([P.note(0), P.note(2), P.note(4)], t, L, 0.9, 900); I.bass(P.key - 12, t, L, 0.6);
-        if (P.fl.timpani) for (let k = 0; k < 8; k++) I.timpani(t + L * 0.5 + k * (L / 16), 0.25 + k * 0.06, P.key - 24);
-        else I.crash(t + L * 0.25, 0.4);
+      if (bar === 0) { // intro: the build. A low swell, the ostinato creeping in, a drum roll and a riser into the drop
+        I.braam([P.key - 24, P.key - 12], t, L * 1.05, 0.6); I.pad([P.note(0), P.note(2), P.note(4)], t, L, 0.7, 700);
+        D.ost.forEach((k) => I.ost(P.key - 12 + D.ostOct, t + k * st, st * 2, 0.25 + (0.6 * k) / P.S));
+        for (let k = P.S / 2; k < P.S; k++) bigHit(t + k * st, 0.2 + (0.6 * (k - P.S / 2)) / P.S);
+        I.roll(t + L / 2, 1.6, L / 2); I.roll(t + L * 0.75, 2.2, L / 4);
+        I.riser(t, L, 1, P.key); I.revcym(t + L * 0.4, L * 0.6, 1.2);
         if (P.fl.didge) I.didge(P.key - 24, t, L * 1.05, 1);
         return;
       }
-      const pb = (bar - 1) % 8, d = P.prog[pb % 4];
+      const pb = (bar - 1) % 8, d = P.prog[pb % 4], loop = Math.floor((bar - 1) / 8);
       const ch = [P.note(d), P.note(d + 2), P.note(d + 4)];
+      // the drop at every phrase start, low brass hits, the driving ostinato, big drums and a build into the next phrase
+      if (pb === 0) { I.boom(t, 1.1, D.boom); I.crash(t, 1.3); }
+      if (D.braam.includes(pb)) I.braam([P.note(d) - 24, P.note(d) - 12, P.note(d + 4) - 12], t, L * 0.9, pb === 0 ? 1 : 0.7);
+      D.ost.forEach((k) => I.ost(P.note(d) - 12 + D.ostOct, t + k * st, st * 2, k % (P.S / 4) === 0 ? 0.95 : 0.6));
+      D.bigPat.forEach((k) => bigHit(t + k * st, k ? 0.7 : 1));
+      if (pb === 3 || pb === 7) for (let k = (3 * P.S) / 4; k < P.S; k++) bigHit(t + k * st, 0.3 + (0.5 * (k - (3 * P.S) / 4)) / (P.S / 4));
+      if (pb === 7) { I.riser(t + L * (1 - D.riserBars), L * D.riserBars, 0.9, P.key + 12); I.revcym(t + L * 0.5, L * 0.5, 1); }
+      if (loop > 0) I.choir([P.note(d) + 12, P.note(d + 2) + 12, P.note(d + 4) + 12], t, L, 0.8);
       COMP[P.comp](I, ch, P.note(d), t, L, st, P.S, P.arpInst);
       for (let k = 0; k < P.S; k++) DRUMS[P.drums](I, k, t + k * st, P.S, bar, pb, P.key, st);
       if (P.fl.castanets) [0, 3, 6, 10].forEach((k) => I.castanets(t + k * st, 0.9));
@@ -250,13 +293,20 @@
         const m = P.note(x.deg), at = t + x.k * st, len = x.len * st;
         I[P.lead](m, at, len, 1);
         if (P.fl.harmony) I[P.lead](P.note(x.deg - 2), at, len, 0.55); // second voice a third below (mariachi trumpets, Worlds brass)
+        if (D.lowDouble && (pb >= 4 || loop > 0)) I.brass(m - 12, at, len, 0.6); // the theme doubled by low brass for the lift
       });
     };
     const timer = setInterval(() => {
       if (!cur || cur.timer !== timer) return;
       while (next < ctx.currentTime + 0.45) { try { playBar(next, b); } catch (e) { /* audio node limits */ } next += L; b++; }
     }, 70);
-    cur = { timer, bus, ctx, info: { city: o.city, flavour: P.fname, scale: P.scaleName, bpm: P.bpm, key: P.key, lead: P.lead, drums: P.drums, comp: P.comp } };
+    /* a hit on the beat for the opener's cuts (js/opener.js): 'cut' a boom, 'big' a boom with a brass hit and crash */
+    const hit = (kind) => {
+      const now = ctx.currentTime, beat = st * (P.S / 4), q = Math.max(0, Math.round((now - T0) / beat) * beat + T0 - now);
+      const t = now + (q < 0.09 ? q : 0.01);
+      try { I.boom(t, kind === 'big' ? 1.1 : 0.7, D.boom); if (kind === 'big') { I.crash(t, 1.1); I.braam([P.key - 24, P.key - 12, P.key - 5], t, L * 0.7, 0.9); } } catch (e) { /* audio node limits */ }
+    };
+    cur = { timer, bus, ctx, hit, info: { city: o.city, flavour: P.fname, scale: P.scaleName, bpm: P.bpm, key: P.key, lead: P.lead, drums: P.drums, comp: P.comp } };
   }
   function stop(fade) {
     if (!cur) return;
@@ -267,5 +317,5 @@
     setTimeout(() => { try { bus.disconnect(); } catch (e) { /* gone */ } }, f * 1000 + 300);
   }
   document.addEventListener('visibilitychange', () => { if (document.hidden) stop(0.3); });
-  global.RLMusic = { start, stop, compose, LEVEL, get playing() { return !!cur; }, get info() { return cur && cur.info; } };
+  global.RLMusic = { start, stop, compose, LEVEL, hit: (k) => cur && cur.hit && cur.hit(k), get playing() { return !!cur; }, get info() { return cur && cur.info; } };
 })(window);
