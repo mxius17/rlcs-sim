@@ -259,8 +259,7 @@
     document.addEventListener('keydown', S.onKey, true);
     const sfx = (n) => global.RLSfx && global.RLSfx.play(n);
     // background music: every host city has its own anthem in its country's musical flavour (js/music.js)
-    const anthem = () => { if (global.RLMusic) global.RLMusic.start({ city: o.city, country: o.city === 'Edinburgh' ? 'Scotland' : o.country, worlds: !!o.worlds }); };
-    if (!op) anthem();
+    if (global.RLMusic) global.RLMusic.start({ city: o.city, country: o.city === 'Edinburgh' ? 'Scotland' : o.country, worlds: !!o.worlds });
     S.later = (ms, f) => S.timers.push(setTimeout(() => { if (!S.dead) f(); }, ms));
     const startMain = () => {
     el.querySelector('.cut-main').innerHTML = mainHtml;
@@ -274,16 +273,7 @@
     if (o.week) S.timers.push(setTimeout(() => { if (!S.dead) el.classList.add('beat3'); }, 10200));
     S.timers.push(setTimeout(() => { const g = el.querySelector('.cut-go'); if (g && !S.dead) { g.classList.add('on'); g.focus({ preventScroll: true }); } }, o.week ? 12000 : o.worlds ? 7200 : 6200));
     };
-    if (op) {
-      // show the opener's first frame, then build the 3D models (shader compiling can take a moment), and only
-      // then start the anthem and the cut sequence together, so the cuts stay on the beat
-      el.classList.add('op-wait');
-      requestAnimationFrame(() => S.later(30, () => {
-        global.RLOpener.prep(el.querySelector('.op'), op, S);
-        el.classList.remove('op-wait');
-        anthem(); sfx('whoosh'); global.RLOpener.run(el.querySelector('.op'), op, S, startMain);
-      }));
-    } else startMain();
+    if (op) { sfx('whoosh'); global.RLOpener.run(el.querySelector('.op'), op, S, startMain); } else startMain();
   }
 
   global.RLCutscene = { play, stop, has: (city) => !!SCENE[city], styleFor, cities: () => Object.keys(SCENE) };

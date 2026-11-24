@@ -117,14 +117,14 @@
 
   /* ---------- the shots ---------- */
   const SH = {};
-  SH.pat = (o) => `<div class="op-patl"><svg width="100%" height="100%"><rect width="100%" height="100%" fill="url(#opPat)"/></svg></div><div class="op-ring"><i></i><i></i><i></i></div><div class="op-gl"></div><div class="op-embw">${emblem(o.shape, o.code, o.sub)}</div><span class="op-kick">${esc(o.kicker)}</span>`;
+  SH.pat = (o) => `<div class="op-patl"><svg width="100%" height="100%"><rect width="100%" height="100%" fill="url(#opPat)"/></svg></div><div class="op-ring"><i></i><i></i><i></i></div><div class="op-embw">${emblem(o.shape, o.code, o.sub)}</div><span class="op-kick">${esc(o.kicker)}</span>`;
   SH.type = (o, r) => {
     const ws = words(o, r), mode = o.week ? 'panels' : pick(r, ['panels', 'stack', 'panels', 'split']);
     const bgs = shuffle(r, [o.pal.a, o.pal.b, o.pal.c]);
     return { cls: 'm-' + mode, html: ws.map((w, i) => { const bg = mode === 'stack' ? 'transparent' : bgs[i % 3]; return `<div class="op-word" style="--i:${i};--len:${Math.max(4, Math.max(...String(w).split(' ').map((x) => x.length)))};--bg:${bg};--fg:${mode === 'stack' ? '#fff' : ink(bg)}"><b>${esc(w)}</b></div>`; }).join(''), beats: ws.length + 1 };
   };
-  SH.trophy = (o) => `<div class="op-rays"></div><div class="op-glow"></div>${CUP}<div class="op-gl"></div><div class="op-sparks">${Array.from({ length: 14 }, (_, k) => `<i style="--k:${k}"></i>`).join('')}</div><div class="op-cap"><small>${o.worlds ? 'The World Championship' : o.ewc ? 'Esports World Cup' : 'One trophy'}</small><b>Who lifts it in ${esc(o.city)}?</b></div>`;
-  SH.car = (o, r) => `<div class="op-floor"></div><div class="op-speed">${Array.from({ length: 14 }, () => `<i style="top:${(8 + r() * 84).toFixed(1)}%;--d:${(r() * 0.5).toFixed(2)}s;--w:${Math.round(12 + r() * 26)}vw"></i>`).join('')}</div><div class="op-car"><div class="op-boost"></div>${CAR}</div><div class="op-gl"></div><div class="op-ball"></div><div class="op-hit"></div><div class="op-cap op-cap-l"><small>Kickoff</small><b>${esc(o.city)}</b></div>`;
+  SH.trophy = (o) => `<div class="op-rays"></div><div class="op-glow"></div>${CUP}<div class="op-sparks">${Array.from({ length: 14 }, (_, k) => `<i style="--k:${k}"></i>`).join('')}</div><div class="op-cap"><small>${o.worlds ? 'The World Championship' : o.ewc ? 'Esports World Cup' : 'One trophy'}</small><b>Who lifts it in ${esc(o.city)}?</b></div>`;
+  SH.car = (o, r) => `<div class="op-floor"></div><div class="op-speed">${Array.from({ length: 14 }, () => `<i style="top:${(8 + r() * 84).toFixed(1)}%;--d:${(r() * 0.5).toFixed(2)}s;--w:${Math.round(12 + r() * 26)}vw"></i>`).join('')}</div><div class="op-car"><div class="op-boost"></div>${CAR}</div><div class="op-ball"></div><div class="op-hit"></div><div class="op-cap op-cap-l"><small>Kickoff</small><b>${esc(o.city)}</b></div>`;
   SH.map = (o) => {
     const g = GEO[o.city], X = (lo) => lo + 180, Y = (la) => 90 - la;
     let grid = ''; for (let lo = -180; lo <= 180; lo += 30) grid += `M${X(lo)} 0V180`; for (let la = -60; la <= 60; la += 30) grid += `M0 ${Y(la)}H360`;
@@ -133,7 +133,7 @@
     const x0 = X(g[1]), y0 = Y(g[0]);
     const arcs = others.map((c, k) => { const x1 = X(GEO[c][1]), y1 = Y(GEO[c][0]); const mx = (x0 + x1) / 2, my = Math.min(y0, y1) - 12 - Math.abs(x1 - x0) * 0.18; return `<path d="M${x1.toFixed(1)} ${y1.toFixed(1)} Q${mx.toFixed(1)} ${my.toFixed(1)} ${x0.toFixed(1)} ${y0.toFixed(1)}" pathLength="100" style="--k:${k}"/>`; }).join('');
     const ox = (x0 / 3.6).toFixed(2), oy = (y0 / 3.6).toFixed(2);
-    return `<div class="op-mapcam" style="transform-origin:${ox}vw ${oy}vw;--dx:${(50 - x0 / 3.6).toFixed(2)}vw;--dy:calc(${(25 - y0 / 3.6).toFixed(2)}vw)"><svg viewBox="0 0 360 180" preserveAspectRatio="none" aria-hidden="true"><path d="${grid}" class="mp-grid"/><g class="mp-dots">${dots}</g><g class="mp-arcs">${arcs}</g><circle cx="${x0}" cy="${y0}" r="1.4" class="mp-me"/></svg></div><div class="op-gl"></div>
+    return `<div class="op-mapcam" style="transform-origin:${ox}vw ${oy}vw;--dx:${(50 - x0 / 3.6).toFixed(2)}vw;--dy:calc(${(25 - y0 / 3.6).toFixed(2)}vw)"><svg viewBox="0 0 360 180" preserveAspectRatio="none" aria-hidden="true"><path d="${grid}" class="mp-grid"/><g class="mp-dots">${dots}</g><g class="mp-arcs">${arcs}</g><circle cx="${x0}" cy="${y0}" r="1.4" class="mp-me"/></svg></div>
       <div class="op-cross"></div><div class="op-pin"><i></i></div>
       <div class="op-coord" data-lat="${g[0]}" data-lon="${g[1]}"><small>${o.worlds ? 'World Championship host' : 'Host city'}</small><b>${esc(o.city)}</b><span class="op-ll">0.00° N · 0.00° E</span></div>`;
   };
@@ -149,15 +149,15 @@
     return `<div class="op-grid">${tiles.map((t, k) => `<div class="mo-t" style="--k:${k}">${t}</div>`).join('')}</div>`;
   };
   SH.arena = (o, r) => {
-    let crowd = '', lights = '';
+    let crowd = '', nl = 0; const lights = ['', '']; // phone lights in two sets that twinkle in turn
     for (let row = 0; row < 11; row++) {
       const y = 70 + row * 22, n = 46 + row * 5, rad = 3 + row * 0.5;
-      for (let i = 0; i < n; i++) { const x = (i + 0.5 + (row % 2) * 0.5) * (1600 / n) + (r() - 0.5) * 8, yy = y + Math.sin((x / 1600) * Math.PI) * -30 + (r() - 0.5) * 4; crowd += `M${(x - rad).toFixed(0)} ${yy.toFixed(0)}a${rad} ${rad} 0 1 0 ${2 * rad} 0a${rad} ${rad} 0 1 0 ${-2 * rad} 0`; if (r() < 0.06) lights += `<circle cx="${x.toFixed(0)}" cy="${(yy - rad - 2).toFixed(0)}" r="2.6" style="--d:${(r() * 1.8).toFixed(2)}s"/>`; }
+      for (let i = 0; i < n; i++) { const x = (i + 0.5 + (row % 2) * 0.5) * (1600 / n) + (r() - 0.5) * 8, yy = y + Math.sin((x / 1600) * Math.PI) * -30 + (r() - 0.5) * 4; crowd += `M${(x - rad).toFixed(0)} ${yy.toFixed(0)}a${rad} ${rad} 0 1 0 ${2 * rad} 0a${rad} ${rad} 0 1 0 ${-2 * rad} 0`; if (r() < 0.06) lights[nl++ % 2] += `<circle cx="${x.toFixed(0)}" cy="${(yy - rad - 2).toFixed(0)}" r="2.6"/>`; }
     }
-    return `<div class="op-beams">${[0, 1, 2, 3, 4, 5].map((k) => `<i style="--k:${k}"></i>`).join('')}</div><div class="op-gl"></div>
+    return `<div class="op-beams">${[0, 1, 2, 3, 4, 5].map((k) => `<i style="--k:${k}"></i>`).join('')}</div>
       <div class="op-screen">${emblem(o.shape, o.code, o.sub)}<span>${esc(o.kicker)}</span></div>
       <div class="op-pyro">${[0, 1, 2, 3].map((k) => `<i style="--k:${k}"></i>`).join('')}</div>
-      <svg class="op-crowd" viewBox="0 0 1600 330" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><path d="${crowd}"/><g>${lights}</g></svg>`;
+      <div class="op-crowd">${[`<path d="${crowd}"/>`].concat(lights).map((g, k) => `<svg class="${k ? 'op-ph' : ''}" viewBox="0 0 1600 330" preserveAspectRatio="xMidYMax slice" aria-hidden="true">${g}</svg>`).join('')}</div>`;
   };
   SH.teams = (o) => {
     let f = (o.field || []).slice();
@@ -184,11 +184,7 @@
     const rot = o.worlds ? 0 : pick(r, [0, 0, 15, -20, 30, 45, -45]), scl = (0.8 + r() * 0.6).toFixed(2);
     let mid;
     if (o.worlds) mid = ['map', 'type', 'trophy'];
-    else {
-      // two of the 3D set-pieces (trophy, car, globe, arena) and one flat 2D shot (type, mosaic) per city
-      const d3 = shuffle(r, ['trophy', 'car', 'map', 'arena'].filter((k) => k !== 'map' || GEO[o.city])).slice(0, 2), d2 = pick(r, ['type', 'mosaic']);
-      mid = shuffle(r, d3.concat(d2)); if (o.ewc && !mid.includes('arena')) mid[mid.indexOf(d3[1])] = 'arena';
-    }
+    else { mid = shuffle(r, MID.filter((k) => k !== 'map' || GEO[o.city])).slice(0, 3); if (o.ewc && !mid.includes('arena')) mid[2] = 'arena'; }
     const order = ['pat'].concat(mid, ['teams']);
     const tr = shuffle(r, TRANS).slice(0, 2);
     const q = (s) => Math.max(2, Math.round(s / beat)) * beat; // shot lengths land on the beat
@@ -214,12 +210,7 @@
       <div class="op-hud"><span class="op-live"><i></i>${o.worlds ? 'Worlds' : 'Live'} · ${esc(o.city)}</span><span class="op-hk">${esc(o.kicker)}</span></div>
       <div class="op-tick"><div>${Array.from({ length: 2 }, () => [o.city, o.country, o.nick, o.hello, o.lmName].filter(Boolean).map((x) => `<span>${esc(x)}</span>`).join('<i>◆</i>')).join('<i>◆</i>')}</div></div>
       <div class="op-bar"><i></i></div></div>`;
-    // the 3D layer (js/opener3d.js): one render look per city, matched to the emblem and the globe arcs
-    const g = GEO[o.city], ra = seeded(o.city + '|arcs');
-    const others = g ? shuffle(ra, Object.keys(GEO).filter((c) => c !== o.city && Math.abs(GEO[c][1] - g[1]) > 25)).slice(0, 7).map((c) => GEO[c]) : [];
-    const look = o.worlds || o.ewc ? 'chrome' : pick(seeded(o.city + '|look'), ['toon', 'toon', 'chrome', 'clay', 'toon', 'chrome', 'clay']);
-    const three = { pal, beat, look, city: o.city, code: o.code, sub: o.sub, shape: o.shape, lat: g ? g[0] : null, lon: g ? g[1] : null, others, cities: Object.keys(GEO).map((c) => GEO[c]) };
-    return { html, plan, total, beat, pattern: patName, shots: order, transitions: tr, ink: ink(pal.a), three, look };
+    return { html, plan, total, beat, pattern: patName, shots: order, transitions: tr, ink: ink(pal.a) };
   }
 
   /** Count the map's coordinates up to the host city. */
@@ -231,20 +222,6 @@
     requestAnimationFrame(step);
   }
 
-  /** Set up the 3D layer (js/opener3d.js) and compile its scenes. Call it before the anthem starts: shader
-   *  compiling can take a moment and would otherwise push the cuts off the beat. */
-  function prep(root, spec, S) {
-    let gl = null;
-    try { gl = global.RLOp3D && spec.three ? global.RLOp3D.create(spec.three, S) : null; } catch (e) { gl = null; }
-    if (gl) {
-      const ready = gl.prepare(spec.plan.map((p) => p.k));
-      ready.forEach((k) => root.classList.add('gl-' + k)); // these shots swap their 2D artwork for the 3D model
-      root.classList.add('gl', 'look-' + gl.look);
-    }
-    spec.gl = gl;
-    return gl;
-  }
-
   /** Play the opener inside `root` (the .op element); calls done() when the last shot ends. */
   function run(root, spec, S, done) {
     const shots = root.querySelectorAll('.op-shot'), tr = root.querySelector('.op-tr');
@@ -253,14 +230,12 @@
     const later = (ms, f) => S.timers.push(setTimeout(() => { if (!S.dead) f(); }, Math.max(0, ms)));
     let t = 0.08; // the anthem's first bar starts 80 ms after play (js/music.js)
     const music = () => global.RLMusic && global.RLMusic.playing;
-    const gl = spec.gl !== undefined ? spec.gl : prep(root, spec, S);
     root.classList.add('run');
     spec.plan.forEach((p, k) => {
       const at = t * 1000;
       if (p.tr) later(at - 180, () => { hit(p.tr); sfx('whoosh'); });
       later(at, () => {
         shots.forEach((s, i) => s.classList.toggle('on', i === k));
-        if (gl) gl.enter(p.k, shots[k], p.dur);
         if (k > 1 && music()) global.RLMusic.hit('cut'); // a boom on every cut (the first cut is the anthem's own drop)
         if (p.k === 'map') countCoords(shots[k], S);
         if (p.k === 'pat' && !music()) later(420, () => sfx('impact'));
@@ -271,9 +246,8 @@
     });
     later(t * 1000 - 180, () => { hit('out'); sfx('whoosh'); });
     later(t * 1000, () => { if (music()) global.RLMusic.hit('big'); root.classList.add('gone'); done(); });
-    later(t * 1000 + 600, () => gl && gl.stop());
     later(t * 1000 + 700, () => { if (root.parentNode) root.parentNode.removeChild(root); });
   }
 
-  global.RLOpener = { build, prep, run, codeOf, GEO, PAT_OF };
+  global.RLOpener = { build, run, codeOf, GEO, PAT_OF };
 })(window);

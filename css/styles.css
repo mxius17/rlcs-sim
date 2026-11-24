@@ -2972,12 +2972,12 @@ img.flag-emoji { display: inline-block; height: 1.25em; width: 1.25em; vertical-
 .op .f0 { fill: var(--b); } .op .f1 { fill: var(--a); } .op .f2 { fill: var(--c); }
 .op .s1 { fill: none; stroke: var(--a); } .op .s2 { fill: none; stroke: var(--c); }
 .op .f0.s1, .op .f0.s2 { fill: var(--b); }
-.op-shot { position: absolute; inset: 0; display: none; overflow: hidden; }
+.op-shot { position: absolute; inset: 0; display: none; overflow: hidden; contain: strict; }
 .op-shot.on { display: block; }
 /* every beat: a thin brand-coloured pulse on the frame */
-.op-pulse { position: absolute; inset: 0; pointer-events: none; z-index: 4; box-shadow: inset 0 0 0 0 var(--a); }
+.op-pulse { position: absolute; inset: 0; pointer-events: none; z-index: 4; opacity: 0; will-change: opacity; box-shadow: inset 0 0 0 10px color-mix(in srgb, var(--a) 70%, transparent), inset 0 0 120px color-mix(in srgb, var(--a) 35%, transparent); }
 .op.run .op-pulse { animation: opPulse var(--beat) ease-out infinite; }
-@keyframes opPulse { 0% { box-shadow: inset 0 0 0 10px color-mix(in srgb, var(--a) 70%, transparent), inset 0 0 120px color-mix(in srgb, var(--a) 35%, transparent); } 60%, 100% { box-shadow: inset 0 0 0 0 transparent, inset 0 0 60px transparent; } }
+@keyframes opPulse { 0% { opacity: 1; } 60%, 100% { opacity: 0; } }
 /* broadcast furniture: live bug, ticker, progress */
 .op-hud { position: absolute; left: 24px; right: 24px; top: 20px; z-index: 5; display: flex; justify-content: space-between; gap: 12px; font: 800 12px var(--display); text-transform: uppercase; letter-spacing: .2em; pointer-events: none; }
 .op-live { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; background: var(--a); color: var(--b); border-radius: 4px; animation: opIn .4s .2s both; }
@@ -3024,19 +3024,19 @@ img.flag-emoji { display: inline-block; height: 1.25em; width: 1.25em; vertical-
 
 /* shot: emblem cold open */
 .s-pat { background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--a) 35%, var(--b)), var(--b) 70%); }
-.op-patl { position: absolute; inset: -8%; opacity: .55; }
+.op-patl { position: absolute; inset: -8%; opacity: .55; will-change: transform; }
 .op-patl svg { display: block; }
-.s-pat.on .op-patl { animation: opPatIn .9s cubic-bezier(.6,0,.2,1) both, opDrift calc(var(--d) + 1s) linear both; }
-@keyframes opPatIn { from { clip-path: circle(0% at 50% 47%); } to { clip-path: circle(80% at 50% 47%); } }
+.s-pat.on .op-patl { animation: opPatIn .6s ease-out both, opDrift calc(var(--d) + 1s) cubic-bezier(.2,.6,.3,1) both; }
+@keyframes opPatIn { from { opacity: 0; } to { opacity: .55; } }
 .s-pat .op-patl::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 50% 47%, var(--b) 18%, transparent 55%); }
 .s-pat .op-ring { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
-.s-pat .op-ring i { position: absolute; left: -30vmin; top: -30vmin; width: 60vmin; height: 60vmin; border-radius: 50%; border: 2px solid var(--c); opacity: 0; }
+.s-pat .op-ring i { position: absolute; left: -30vmin; top: -30vmin; width: 60vmin; height: 60vmin; border-radius: 50%; border: 2px solid var(--c); opacity: 0; will-change: transform, opacity; }
 .s-pat.on .op-ring i { animation: opRing var(--beat) calc(0.4s + var(--beat) * var(--n, 0)) ease-out 3 both; }
 .s-pat .op-ring i:nth-child(2) { --n: .33; border-color: var(--a); } .s-pat .op-ring i:nth-child(3) { --n: .66; }
 @keyframes opRing { from { transform: scale(.3); opacity: .9; } to { transform: scale(2.4); opacity: 0; } }
-.op-embw { position: absolute; left: 50%; top: 47%; width: min(46vmin, 360px); aspect-ratio: 1; transform: translate(-50%, -50%); }
+.op-embw { position: absolute; left: 50%; top: 47%; width: min(46vmin, 360px); aspect-ratio: 1; transform: translate(-50%, -50%); will-change: transform; }
 .s-pat.on .op-embw { animation: opSlam .55s .25s cubic-bezier(.2,1.4,.3,1) both; }
-@keyframes opSlam { from { transform: translate(-50%, -50%) scale(2.6); opacity: 0; filter: blur(14px); } to { transform: translate(-50%, -50%) scale(1); opacity: 1; filter: none; } }
+@keyframes opSlam { from { transform: translate(-50%, -50%) scale(2.6); opacity: 0; } 60% { opacity: 1; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
 .op-emblem { width: 100%; height: 100%; overflow: visible; }
 .op-emblem .em-fill { fill: color-mix(in srgb, var(--b) 85%, #000); }
 .op-emblem .em-line { fill: none; stroke: var(--a); stroke-width: 7; stroke-dasharray: 100; stroke-dashoffset: 0; stroke-linejoin: round; }
@@ -3049,18 +3049,18 @@ img.flag-emoji { display: inline-block; height: 1.25em; width: 1.25em; vertical-
 .op-emblem .em-sub { fill: var(--c); text-anchor: middle; font: 800 11px var(--display); letter-spacing: 2.5px; text-transform: uppercase; }
 .op-kick { position: absolute; left: 0; right: 0; top: calc(47% + min(25vmin, 190px)); text-align: center; font: 800 clamp(13px, 1.6vw, 18px) var(--display); text-transform: uppercase; letter-spacing: .3em; color: var(--c); padding: 0 20px; }
 .s-pat.on .op-kick { animation: cerUp .5s .7s both; }
-@keyframes opDrift { from { transform: scale(1.12) rotate(-2deg); } to { transform: scale(1) rotate(0); } }
+@keyframes opDrift { from { transform: scale(1.35) rotate(-4deg); } to { transform: scale(1) rotate(0); } }
 
 /* shot: kinetic type */
 .s-type { background: var(--b); }
 .s-type .op-word { position: absolute; inset: 0; display: grid; place-items: center; background: var(--bg); color: var(--fg); opacity: 0; z-index: var(--i); padding: 0 4vw; text-align: center; }
-.s-type .op-word b { display: block; font: 900 clamp(34px, min(12vw, calc(150vw / var(--len, 8))), 190px)/.88 var(--display); text-transform: uppercase; letter-spacing: -0.04em; overflow-wrap: anywhere; }
+.s-type .op-word b { display: block; will-change: transform; font: 900 clamp(34px, min(12vw, calc(150vw / var(--len, 8))), 190px)/.88 var(--display); text-transform: uppercase; letter-spacing: -0.04em; overflow-wrap: anywhere; }
 .s-type.on .op-word { animation: opWord .38s calc(var(--i) * var(--beat)) cubic-bezier(.2,.9,.3,1) both; }
 .s-type.on .op-word b { animation: opWordB calc(var(--beat) * 1.4) calc(var(--i) * var(--beat)) ease-out both; }
 .s-type.on .op-word:nth-child(even) { animation-name: opWord2; }
 @keyframes opWord { from { opacity: 1; clip-path: inset(0 100% 0 0); } to { opacity: 1; clip-path: inset(0 0 0 0); } }
 @keyframes opWord2 { from { opacity: 1; clip-path: inset(100% 0 0 0); } to { opacity: 1; clip-path: inset(0 0 0 0); } }
-@keyframes opWordB { from { transform: scale(1.35); filter: blur(8px); letter-spacing: .1em; } 40% { filter: none; } to { transform: scale(1); letter-spacing: -0.04em; } }
+@keyframes opWordB { from { transform: scale(1.35, 1.2); opacity: .35; } 35% { opacity: 1; } to { transform: scale(1); opacity: 1; } }
 .s-type.m-stack { background: linear-gradient(120deg, var(--b) 40%, color-mix(in srgb, var(--a) 40%, var(--b))); }
 .s-type.m-stack .op-word { position: relative; inset: auto; display: block; background: none; text-align: left; padding: 0 6vw; }
 .s-type.m-stack { display: none; flex-direction: column; justify-content: center; gap: 1vh; }
@@ -3075,13 +3075,14 @@ img.flag-emoji { display: inline-block; height: 1.25em; width: 1.25em; vertical-
 
 /* shot: trophy */
 .s-trophy { background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--a) 45%, var(--b)), var(--b) 65%, #000); }
-.op-rays { position: absolute; left: 50%; top: 45%; width: 220vmax; height: 220vmax; margin: -110vmax 0 0 -110vmax; background: repeating-conic-gradient(color-mix(in srgb, var(--c) 22%, transparent) 0 5deg, transparent 5deg 15deg); mask-image: radial-gradient(circle, #000 0, transparent 40%); -webkit-mask-image: radial-gradient(circle, #000 0, transparent 40%); }
+.op-rays { position: absolute; left: 50%; top: 45%; width: 100vmax; height: 100vmax; margin: -50vmax 0 0 -50vmax; background: repeating-conic-gradient(color-mix(in srgb, var(--c) 22%, transparent) 0 5deg, transparent 5deg 15deg); mask-image: radial-gradient(circle, #000 0, transparent 70%); -webkit-mask-image: radial-gradient(circle, #000 0, transparent 70%); will-change: transform; }
 .s-trophy.on .op-rays { animation: opSpin 18s linear infinite; }
 @keyframes opSpin { to { transform: rotate(360deg); } }
-.op-glow { position: absolute; left: 50%; top: 45%; width: 60vmin; height: 60vmin; margin: -30vmin; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--c) 55%, transparent), transparent 65%); }
+.op-glow { position: absolute; left: 50%; top: 45%; width: 60vmin; height: 60vmin; margin: -30vmin; border-radius: 50%; will-change: transform, opacity; background: radial-gradient(circle, color-mix(in srgb, var(--c) 55%, transparent), transparent 65%); }
 .s-trophy.on .op-glow { animation: opGlow var(--beat) ease-out infinite; }
 @keyframes opGlow { from { transform: scale(1.12); opacity: 1; } to { transform: scale(.95); opacity: .65; } }
-.op-cup { position: absolute; left: 50%; top: 45%; height: min(52vh, 62vmin); transform: translate(-50%, -50%); overflow: visible; filter: drop-shadow(0 20px 40px rgba(0,0,0,.5)); }
+.op-cup { position: absolute; left: 50%; top: 45%; height: min(52vh, 62vmin); transform: translate(-50%, -50%); overflow: visible; will-change: transform; }
+.s-trophy .op-glow::after { content: ""; position: absolute; left: 15%; right: 15%; top: 92%; height: 14%; border-radius: 50%; background: radial-gradient(closest-side, rgba(0,0,0,.55), transparent); }
 .s-trophy.on .op-cup { animation: opCup calc(var(--d) + .3s) cubic-bezier(.2,.8,.2,1) both; }
 @keyframes opCup { from { transform: translate(-50%, -30%) scale(.7) rotate(-6deg); opacity: 0; } 25% { opacity: 1; } to { transform: translate(-50%, -50%) scale(1.04); opacity: 1; } }
 .op-cup .cg0 { stop-color: color-mix(in srgb, var(--c) 60%, #5a4a20); } .op-cup .cg1 { stop-color: #fff6d8; } .op-cup .cg2 { stop-color: color-mix(in srgb, var(--c) 70%, #fff); }
@@ -3091,7 +3092,7 @@ img.flag-emoji { display: inline-block; height: 1.25em; width: 1.25em; vertical-
 .op-cup .cup-shine { fill: rgba(255,255,255,.75); transform: skewX(-20deg); }
 .s-trophy.on .cup-shine { animation: opShine 1.2s .5s ease-in-out both; }
 @keyframes opShine { from { transform: translateX(0) skewX(-20deg); } to { transform: translateX(320px) skewX(-20deg); } }
-.op-sparks i { position: absolute; left: 50%; top: 40%; width: 6px; height: 6px; border-radius: 50%; background: #fff; box-shadow: 0 0 10px var(--c); opacity: 0; }
+.op-sparks i { position: absolute; left: 50%; top: 40%; width: 8px; height: 8px; border-radius: 50%; background: radial-gradient(circle, #fff 35%, color-mix(in srgb, var(--c) 70%, transparent) 55%, transparent 72%); opacity: 0; will-change: transform, opacity; }
 .s-trophy.on .op-sparks i { animation: opSpark 1.4s calc(.4s + var(--k) * 0.09s) ease-out infinite; }
 @keyframes opSpark { 0% { opacity: 0; transform: rotate(calc(var(--k) * 26deg)) translateY(0) scale(.5); } 20% { opacity: 1; } 100% { opacity: 0; transform: rotate(calc(var(--k) * 26deg)) translateY(-34vmin) scale(1.2); } }
 .op-cap { position: absolute; left: 0; right: 0; bottom: 12vh; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; padding: 0 20px; }
@@ -3109,9 +3110,10 @@ img.flag-emoji { display: inline-block; height: 1.25em; width: 1.25em; vertical-
 @keyframes opSpeed { from { transform: translateX(0); } to { transform: translateX(-180vw); } }
 .op-car { position: absolute; left: 0; top: 50%; width: min(42vw, 420px); }
 .op-carsvg { width: 100%; display: block; overflow: visible; filter: drop-shadow(0 12px 18px rgba(0,0,0,.6)); }
+.op-car, .op-ball, .op-hit, .op-speed i { will-change: transform; }
 .car-b { fill: color-mix(in srgb, var(--b) 60%, #10131c); stroke: var(--a); stroke-width: 3; } .car-w { fill: color-mix(in srgb, var(--c) 50%, #0a0f1d); } .car-l { stroke: var(--a); stroke-width: 3; }
 .car-t { fill: #07090f; stroke: #2a3142; stroke-width: 3; } .car-r { fill: var(--c); }
-.op-boost { position: absolute; right: 96%; top: 36%; width: 30vw; height: 26%; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--a) 80%, #fff 0%) 70%, #fff); border-radius: 50%; filter: blur(4px); }
+.op-boost { position: absolute; right: 96%; top: 36%; width: 30vw; height: 26%; background: radial-gradient(ellipse 100% 50% at 100% 50%, #fff 0, color-mix(in srgb, var(--a) 80%, transparent) 40%, transparent 72%); will-change: transform, opacity; }
 .s-car.on .op-boost { animation: opBoost .12s linear infinite alternate; }
 @keyframes opBoost { to { transform: scaleY(.65); opacity: .8; } }
 .s-car.on .op-car { animation: opDrive var(--d) cubic-bezier(.3,.6,.4,1) both; }
@@ -3174,8 +3176,8 @@ img.flag-emoji { display: inline-block; height: 1.25em; width: 1.25em; vertical-
 /* shot: arena */
 .s-arena { background: radial-gradient(ellipse at 50% 30%, color-mix(in srgb, var(--a) 30%, var(--b)), #000 75%); }
 .op-beams { position: absolute; left: 50%; bottom: 20%; width: 0; height: 0; }
-.op-beams i { position: absolute; left: -4vw; bottom: 0; width: 8vw; height: 140vh; transform-origin: 50% 100%; background: linear-gradient(0deg, color-mix(in srgb, var(--c) 60%, transparent), transparent 80%); filter: blur(6px); mix-blend-mode: screen; transform: rotate(calc(-55deg + var(--k) * 22deg)); }
-.op-beams i:nth-child(even) { background: linear-gradient(0deg, color-mix(in srgb, var(--a) 70%, transparent), transparent 80%); }
+.op-beams i { position: absolute; left: -4vw; bottom: 0; width: 8vw; height: 140vh; transform-origin: 50% 100%; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--c) 45%, transparent) 50%, transparent); mask-image: linear-gradient(0deg, #000, transparent 80%); -webkit-mask-image: linear-gradient(0deg, #000, transparent 80%); transform: rotate(calc(-55deg + var(--k) * 22deg)); will-change: transform; }
+.op-beams i:nth-child(even) { background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--a) 55%, transparent) 50%, transparent); }
 .s-arena.on .op-beams i { animation: opBeam calc(var(--beat) * 2) calc(var(--k) * -0.2s) ease-in-out infinite alternate; }
 @keyframes opBeam { from { transform: rotate(calc(-55deg + var(--k) * 22deg)); } to { transform: rotate(calc(-35deg + var(--k) * 14deg)); } }
 .op-screen { position: absolute; left: 50%; top: 32%; width: min(44vw, 460px); aspect-ratio: 16 / 9; transform: translate(-50%, -50%); background: #000; border: 3px solid color-mix(in srgb, var(--c) 60%, #333); display: flex; align-items: center; justify-content: center; gap: 14px; padding: 10px; box-shadow: 0 0 60px color-mix(in srgb, var(--a) 50%, transparent); }
@@ -3183,14 +3185,17 @@ img.flag-emoji { display: inline-block; height: 1.25em; width: 1.25em; vertical-
 .op-screen span { font: 800 clamp(10px, 1.2vw, 15px)/1.3 var(--display); text-transform: uppercase; letter-spacing: .14em; color: var(--c); max-width: 50%; }
 .s-arena.on .op-screen { animation: opScreen .5s .15s steps(3) both; }
 @keyframes opScreen { from { opacity: 0; filter: brightness(3); } to { opacity: 1; filter: none; } }
-.op-pyro i { position: absolute; bottom: 30%; width: 3vw; height: 34vh; left: calc(12% + var(--k) * 25%); background: linear-gradient(0deg, #fff, var(--c) 30%, var(--a) 70%, transparent); border-radius: 50% 50% 0 0; filter: blur(3px); transform-origin: 50% 100%; transform: scaleY(0); mix-blend-mode: screen; }
+.op-pyro i { position: absolute; bottom: 30%; width: 3vw; height: 34vh; left: calc(12% + var(--k) * 25%); background: linear-gradient(0deg, #fff, var(--c) 30%, var(--a) 70%, transparent); border-radius: 50% 50% 0 0; transform-origin: 50% 100%; transform: scaleY(0); will-change: transform, opacity; }
 .s-arena.on .op-pyro i { animation: opPyro calc(var(--beat) * 2) calc(var(--beat) * (var(--k) % 2)) ease-out infinite; }
 @keyframes opPyro { 0% { transform: scaleY(0); opacity: 1; } 15% { transform: scaleY(1); opacity: 1; } 60% { transform: scaleY(.8); opacity: 0; } 100% { opacity: 0; } }
-.op-crowd { position: absolute; left: 0; right: 0; bottom: 34px; width: 100%; height: 42vh; }
+.op-crowd { position: absolute; left: 0; right: 0; bottom: 34px; height: 42vh; will-change: transform; }
+.op-crowd svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .op-crowd path { fill: #04060b; }
-.op-crowd circle { fill: #fff; opacity: .15; }
-.s-arena.on .op-crowd circle { animation: opPhone 1.6s var(--d) ease-in-out infinite alternate; }
-@keyframes opPhone { to { opacity: 1; filter: drop-shadow(0 0 4px #fff); } }
+.op-crowd circle { fill: #fff; }
+.op-crowd .op-ph { opacity: .15; will-change: opacity; }
+.s-arena.on .op-crowd .op-ph { animation: opPhone 1.6s ease-in-out infinite alternate; }
+.s-arena.on .op-crowd .op-ph + .op-ph { animation-delay: -.8s; }
+@keyframes opPhone { to { opacity: .95; } }
 .s-arena.on .op-crowd { animation: opBounce var(--beat) ease-in-out infinite; }
 @keyframes opBounce { 50% { transform: translateY(4px); } }
 
@@ -3231,22 +3236,3 @@ img.flag-emoji { display: inline-block; height: 1.25em; width: 1.25em; vertical-
   .cut.has-op:not(.main-on) .cut-ui { bottom: calc(16px + env(safe-area-inset-bottom)); }
   .op-tcount { bottom: 84px; }
 }
-
-/* ---------- opener: 3D layer (js/opener3d.js) ---------- */
-.op-gl { position: absolute; inset: 0; pointer-events: none; }
-.op-gl .op-glc { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.op.gl-pat .s-pat .op-embw,
-.op.gl-trophy .op-cup, .op.gl-trophy .op-sparks,
-.op.gl-car .op-car, .op.gl-car .op-ball, .op.gl-car .op-hit, .op.gl-car .op-floor, .op.gl-car .op-speed,
-.op.gl-map .op-mapcam, .op.gl-map .op-pin,
-.op.gl-arena .op-crowd, .op.gl-arena .op-screen, .op.gl-arena .op-beams { display: none; }
-.op.gl-pat .s-pat .op-gl { animation: opGlIn .5s .1s both; }
-.op.gl-map .op-cross { opacity: .5; }
-@keyframes opGlIn { from { opacity: 0; } to { opacity: 1; } }
-/* print finish over the 3D renders: film grain and a halftone edge, so models and flat graphics read as one piece */
-.op.gl::after { content: ""; position: absolute; inset: 0; z-index: 5; pointer-events: none; opacity: .09; mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
-.op.gl .op-shot.on .op-gl::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .22;
-  background: radial-gradient(circle, var(--c) 1.1px, transparent 1.6px) 0 0 / 9px 9px;
-  mask-image: radial-gradient(ellipse at 50% 50%, transparent 52%, #000 95%); -webkit-mask-image: radial-gradient(ellipse at 50% 50%, transparent 52%, #000 95%); }
-.cut.op-wait .op::before { content: ""; position: absolute; left: 50%; top: 50%; width: 34px; height: 34px; margin: -17px; border-radius: 50%; border: 3px solid color-mix(in srgb, var(--a) 40%, transparent); border-top-color: var(--a); animation: opSpin .8s linear infinite; z-index: 3; }
