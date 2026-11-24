@@ -801,5 +801,5 @@
     setTimeout(() => { try { bus.disconnect(); } catch (e) { /* gone */ } }, f * 1000 + 300);
   }
   document.addEventListener('visibilitychange', () => { if (document.hidden) stop(0.3); });
-  global.RLMusic = { start, stop, compose, kit, LEVEL, STYLE, CITY, hit: (k) => cur && cur.hit && cur.hit(k), get playing() { return !!cur; }, get info() { return cur && cur.info; } };
+  global.RLMusic = { start, stop, compose, kit, SC, DRUMS, BASS, LEVEL, STYLE, CITY, hit: (k) => cur && cur.hit && cur.hit(k), get playing() { return !!cur; }, get info() { return cur && cur.info; } };
 })(window);

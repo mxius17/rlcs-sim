@@ -1753,6 +1753,12 @@
     const th = state.view === 'tournament' && state.T ? themeOf(state.T.theme) : null;
     // whole-screen event palette: tournament theme, or the career hub's upcoming event
     const pth = th || (state.view === 'setup' ? themeOf(state.setup.theme) : null) || (state.view === 'career' && window.RLCareer && window.RLCareer.theme ? window.RLCareer.theme() : null);
+    // background music for where we are (js/bgm.js): the event's own track, or the house loop
+    if (window.RLBgm) {
+      const bk = state.view === 'tournament' && state.T ? state.T.theme : state.view === 'setup' ? state.setup.theme : state.view === 'career' && window.RLCareer && window.RLCareer.themeKey ? window.RLCareer.themeKey() : null;
+      const bth = themeOf(bk);
+      window.RLBgm.setContext({ key: bk || '', name: (bth && bth.name) || (state.view === 'tournament' && state.T ? state.T.title || '' : '') });
+    }
     const root = document.documentElement;
     root.classList.toggle('ev', !!pth);
     root.classList.toggle('ev-art', !!(pth && pth.art));

@@ -2034,6 +2034,8 @@
 
   global.RLCareer = {
     theme() { try { return C && api && api.state.view === 'career' ? hostTheme(step()) : null; } catch (e) { return null; } },
+    /** The theme key of the upcoming event (for its background music, js/bgm.js). */
+    themeKey() { try { return C && api && api.state.view === 'career' ? themeKeyFor(step()) : null; } catch (e) { return null; } },
     init(a) {
       api = a; E = a.E; load();
       document.addEventListener('keydown', (ev) => {
