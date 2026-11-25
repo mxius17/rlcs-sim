@@ -1373,7 +1373,7 @@
   /** true when a colour is light enough to need dark text on it */
   const lightHex = (hex) => { if (!/^#[0-9a-f]{6}$/i.test(hex || '')) return false; const v = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4))); return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2] > 0.45; };
   const themeOf = (key) => (key && THEMES[key]) || null;
-  const themeVars = (th) => (th ? `--c:${th.a};--e1:${th.a};--e2:${th.b};--e3:${th.c};--e-on:${th.on || '#fff'}` : '');
+  const themeVars = (th) => (th ? `--c:${th.a};--e1:${th.a};--e2:${th.b};--e3:${th.c};--e-on:${th.on || '#fff'};--mn-hl:${lightHex(th.c) ? th.a : th.c}` : '');
   function compTile(c) {
     const th = themeOf(c.theme);
     return `<button class="comp-tile${th ? ' themed' : ''}" data-action="comp" data-v="${c.id}" style="${th ? themeVars(th) : '--c:' + c.color}"><span class="comp-ico">${esc(c.mono)}</span><span class="comp-txt"><b>${esc(c.name)}</b><small>${esc(c.sub)}</small></span></button>`;
@@ -1960,6 +1960,8 @@
     root.classList.toggle('ev-art', !!(pth && pth.art));
     ['--e1', '--e2', '--e3', '--e-on'].forEach((k, i) => (pth ? root.style.setProperty(k, [pth.a, pth.b, pth.c, pth.on || '#fff'][i]) : root.style.removeProperty(k)));
     if (pth) root.style.setProperty('--e3-on', lightHex(pth.c) ? '#0b1022' : '#fff'); else root.style.removeProperty('--e3-on');
+    // strict event palettes: the menu's highlight colour becomes the event's own (its accent, or its main colour when the accent is too pale)
+    if (pth) root.style.setProperty('--mn-hl', lightHex(pth.c) ? pth.a : pth.c); else root.style.removeProperty('--mn-hl');
     if (pth && pth.art) root.style.setProperty('--ev-art', `url(${pth.art})`); else root.style.removeProperty('--ev-art');
     app.classList.toggle('event-theme', !!th);
     app.classList.toggle('has-art', !!(th && th.art));

@@ -3422,7 +3422,7 @@ html.menu-home .hub { min-height: calc(100vh - 24px); min-height: calc(100dvh - 
 }
 
 /* ================= menu skin for every other page: same type, shapes and selection states ================= */
-:root { --cond: "Barlow Condensed", "Inter Tight", var(--display); --mn-pri-bg: #ffffff; --mn-pri-fg: #10204f; --mn-sel-bg: #f6f6f4; --mn-sel-fg: #1a3a96; --mn-orange: #ff8a1f; }
+:root { --mn-hl: #ff8a1f; --cond: "Barlow Condensed", "Inter Tight", var(--display); --mn-pri-bg: #ffffff; --mn-pri-fg: #10204f; --mn-sel-bg: #f6f6f4; --mn-sel-fg: #1a3a96; --mn-orange: var(--mn-hl); }
 :root[data-theme="light"] { --mn-pri-bg: #121a2e; --mn-pri-fg: #fff; --mn-sel-bg: #121a2e; --mn-sel-fg: #fff; }
 /* backdrop: the menu's neon stage, quietly, behind the dark pages (event pages keep their own palette) */
 @media (prefers-color-scheme: dark) { html:not(.ev):not([data-theme="light"]) body { background: radial-gradient(60% 40% at 50% 105%, rgba(255,45,120,.16), transparent 70%) fixed, radial-gradient(45% 50% at 12% 0%, rgba(70,110,255,.20), transparent 70%) fixed, radial-gradient(40% 45% at 92% 0%, rgba(255,60,130,.12), transparent 70%) fixed, linear-gradient(180deg, #0a1030, #0c0b26 55%, #06071a) fixed; } }
@@ -3477,7 +3477,7 @@ html.menu-home .hub-grid { grid-auto-rows: clamp(118px, 13vh, 170px); }
 /* ----- overview aids: grouped tabs with counts, an "inside" list in the preview, sub-menu sections ----- */
 .hub-tabs { display: flex; gap: 14px; grid-auto-flow: initial; }
 .htg { flex: var(--n) 1 0; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
-.htg-l { font: 800 11px var(--font); letter-spacing: .18em; text-transform: uppercase; color: rgba(255,255,255,.6); padding-left: 2px; border-left: 3px solid #ff8a1f; padding-left: 8px; }
+.htg-l { font: 800 11px var(--font); letter-spacing: .18em; text-transform: uppercase; color: rgba(255,255,255,.6); padding-left: 2px; border-left: 3px solid var(--mn-hl); padding-left: 8px; }
 .htg-tabs { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; }
 .hub-tab { flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; }
 .hub-tab small { position: relative; z-index: 1; font: 600 11.5px var(--font); letter-spacing: .02em; opacity: .7; white-space: nowrap; }
@@ -3495,7 +3495,7 @@ html.menu-home .hub-grid { grid-auto-rows: clamp(118px, 13vh, 170px); }
 .hf-item:hover, .hf-item:focus-visible { background: #fff; color: #10204f; transform: translateX(3px); outline: none; }
 .hf-item:hover small, .hf-item:focus-visible small { color: #3a4466; }
 .hf-item:disabled { opacity: .5; cursor: not-allowed; }
-.hf-more { border-left-color: #ff8a1f; background: rgba(255,138,31,.12); }
+.hf-more { border-left-color: var(--mn-hl); background: rgba(255,138,31,.12); }
 .mg { display: flex; flex-direction: column; gap: 8px; }
 .mg + .mg { margin-top: 6px; }
 .mg-h { margin: 0; display: flex; align-items: center; gap: 10px; font: 800 12px var(--font); letter-spacing: .18em; text-transform: uppercase; color: rgba(255,255,255,.75); }
@@ -3513,7 +3513,7 @@ html.menu-home .hub-grid { grid-auto-rows: clamp(118px, 13vh, 170px); }
 .hp-eye { display: inline-block; align-self: flex-start; margin-bottom: 8px; padding: 3px 8px; background: #11183a; color: #fff; font: 800 10.5px var(--font); letter-spacing: .18em; text-transform: uppercase; }
 
 /* ================= tournament + career pages: the menu's look ================= */
-html:is([data-view="tournament"], [data-view="career"], [data-view="setup"], [data-view="teams"], [data-view="team"]) { --mn-panel: linear-gradient(150deg, rgba(255,255,255,.07), rgba(6,9,26,.55) 70%); --mn-acc: var(--e1, #ff8a1f); }
+html:is([data-view="tournament"], [data-view="career"], [data-view="setup"], [data-view="teams"], [data-view="team"]) { --mn-panel: linear-gradient(150deg, rgba(255,255,255,.07), rgba(6,9,26,.55) 70%); --mn-acc: var(--e1, var(--mn-hl)); }
 /* the neon stage behind everything: light bars and LED dots over the page (and over event palettes) */
 html:is([data-view="tournament"], [data-view="career"], [data-view="setup"], [data-view="teams"], [data-view="team"]) body::after { content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
   background: linear-gradient(90deg, transparent 0 9%, rgba(255,60,130,.13) 9.4%, transparent 10.4%, transparent 22%, rgba(90,130,255,.13) 22.3%, transparent 23.3%, transparent 74%, rgba(255,60,130,.10) 74.4%, transparent 75.2%, transparent 91%, rgba(90,130,255,.13) 91.4%, transparent 92.2%),
@@ -3541,11 +3541,11 @@ html:is([data-view="tournament"], [data-view="career"], [data-view="setup"], [da
 html:is([data-view="tournament"], [data-view="setup"], [data-view="teams"], [data-view="team"]) body .tabs { gap: 4px; }
 html:is([data-view="tournament"], [data-view="setup"], [data-view="teams"], [data-view="team"]) body .tabs button { min-width: 150px; height: 56px; padding: 0 18px; text-align: left; font-size: 21px; background: rgba(28,38,72,.82); color: #fff; border-bottom: 5px solid transparent; }
 html:is([data-view="tournament"], [data-view="setup"], [data-view="teams"], [data-view="team"]) body .tabs button:hover:not(.active) { background: rgba(48,62,110,.92); transform: translateY(-2px); }
-html:is([data-view="tournament"], [data-view="setup"], [data-view="teams"], [data-view="team"]) body .tabs button.active { background: #f6f6f4 !important; color: #1a3a96 !important; border-bottom-color: #ff8a1f; transform: translateY(-3px); }
+html:is([data-view="tournament"], [data-view="setup"], [data-view="teams"], [data-view="team"]) body .tabs button.active { background: #f6f6f4 !important; color: #1a3a96 !important; border-bottom-color: var(--mn-hl); transform: translateY(-3px); }
 /* fixtures → menu tiles: sharp cards that light up with the white outline and the orange bar */
 html:is([data-view="tournament"], [data-view="setup"], [data-view="teams"], [data-view="team"]) body .fx { border-radius: 2px; background: linear-gradient(150deg, rgba(255,255,255,.06), rgba(6,9,26,.5)); border: 1px solid rgba(255,255,255,.08); border-bottom: 3px solid transparent; transition: transform .14s, box-shadow .14s, border-color .14s; }
-html:is([data-view="tournament"], [data-view="setup"], [data-view="teams"], [data-view="team"]) body .fx:hover, html:is([data-view="tournament"], [data-view="setup"], [data-view="teams"], [data-view="team"]) body .fx:focus-visible { transform: translateY(-2px); border-bottom-color: #ff8a1f; box-shadow: 0 0 0 2px #fff; outline: none; }
-html:is([data-view="tournament"], [data-view="setup"], [data-view="teams"], [data-view="team"]) body .fx.featured { box-shadow: inset 3px 0 0 #ff8a1f; border-color: rgba(255,138,31,.5); }
+html:is([data-view="tournament"], [data-view="setup"], [data-view="teams"], [data-view="team"]) body .fx:hover, html:is([data-view="tournament"], [data-view="setup"], [data-view="teams"], [data-view="team"]) body .fx:focus-visible { transform: translateY(-2px); border-bottom-color: var(--mn-hl); box-shadow: 0 0 0 2px #fff; outline: none; }
+html:is([data-view="tournament"], [data-view="setup"], [data-view="teams"], [data-view="team"]) body .fx.featured { box-shadow: inset 3px 0 0 var(--mn-hl); border-color: rgba(255,138,31,.5); }
 html:is([data-view="tournament"], [data-view="setup"], [data-view="teams"], [data-view="team"]) body .fx-top { font: 800 10.5px var(--font); letter-spacing: .14em; text-transform: uppercase; }
 html:is([data-view="tournament"], [data-view="setup"], [data-view="teams"], [data-view="team"]) body :is(table.st, table.scorecard) thead th { font: 800 10.5px var(--font); letter-spacing: .14em; text-transform: uppercase; }
 html:is([data-view="tournament"], [data-view="setup"], [data-view="teams"], [data-view="team"]) body :is(table.st, table.scorecard) tbody tr:hover td { background: rgba(255,255,255,.06); }
@@ -3555,11 +3555,11 @@ html:is([data-view="tournament"], [data-view="setup"], [data-view="teams"], [dat
 /* career: the hub's own tabs and tiles in exactly the menu's style */
 html[data-view="career"] body .fc-tabs button { font: italic 800 22px/1 var(--cond); text-transform: uppercase; letter-spacing: .02em; padding: 14px 24px 10px; margin-right: 4px; border-radius: 0; background: rgba(28,38,72,.82); border-bottom: 5px solid transparent; }
 html[data-view="career"] body .fc-tabs button:hover:not(.on) { background: rgba(48,62,110,.92); }
-html[data-view="career"] body .fc-tabs button.on { background: #f6f6f4; color: #1a3a96; border-bottom-color: #ff8a1f; }
+html[data-view="career"] body .fc-tabs button.on { background: #f6f6f4; color: #1a3a96; border-bottom-color: var(--mn-hl); }
 html[data-view="career"] body .fc-tile { border-radius: 0; background: linear-gradient(150deg, rgba(48,62,110,.95), rgba(14,20,48,.95)); border-bottom: 5px solid transparent; transition: transform .14s, box-shadow .14s; }
 html[data-view="career"] body .fc-tile b { font-family: var(--cond); font-weight: 800; text-transform: uppercase; font-size: clamp(22px, 2vw, 28px); }
 html[data-view="career"] body .fc-tile:hover { transform: translateY(-3px); box-shadow: 0 0 0 3px #fff; }
-html[data-view="career"] body .fc-tile.on { background: #f6f6f4; color: #1a3a96; border-bottom-color: #ff8a1f; }
+html[data-view="career"] body .fc-tile.on { background: #f6f6f4; color: #1a3a96; border-bottom-color: var(--mn-hl); }
 html[data-view="career"] body .fc-panel { border-radius: 2px; background: linear-gradient(150deg, rgba(255,255,255,.07), rgba(6,9,26,.75) 70%); border: 1px solid rgba(255,255,255,.08); box-shadow: 0 18px 36px -22px rgba(0,0,0,.8); }
 html[data-view="career"] body .fc-h { font-family: var(--cond); font-weight: 800; text-transform: uppercase; font-size: clamp(24px, 2.4vw, 34px); line-height: .95; }
 html[data-view="career"] body :is(.cs-title h1, .fc-club b, .fc-club span) { font-family: var(--cond); font-style: italic; font-weight: 800; text-transform: uppercase; }
@@ -3576,13 +3576,13 @@ html:is([data-view="setup"], [data-view="teams"]) body .tile { padding: 18px 20p
 html[data-view="setup"] body .format-btn { border-radius: 2px; border-left: 3px solid transparent; }
 html[data-view="setup"] body .format-btn > :first-child, html[data-view="setup"] body .format-btn b { font-family: var(--cond); font-style: italic; font-weight: 800; text-transform: uppercase; font-size: 15px; line-height: 1.05; }
 html[data-view="setup"] body .format-btn:hover:not(.active) { background: rgba(255,255,255,.07); border-left-color: rgba(255,138,31,.6); }
-html[data-view="setup"] body .format-btn.active { background: #f6f6f4; color: #1a3a96; border-color: transparent; border-left-color: #ff8a1f; box-shadow: inset 0 -3px 0 #ff8a1f; }
+html[data-view="setup"] body .format-btn.active { background: #f6f6f4; color: #1a3a96; border-color: transparent; border-left-color: var(--mn-hl); box-shadow: inset 0 -3px 0 var(--mn-hl); }
 html[data-view="setup"] body .format-btn.active * { color: inherit; }
 html[data-view="setup"] body .format-btn.active small, html[data-view="setup"] body .format-btn.active span:last-child { color: #3a4466; }
 html[data-view="setup"] body :is(.team-row, .slot, .stat-card, .b-card) { border-radius: 2px; }
 /* team page: sharp menu panels and the menu's type */
 html[data-view="team"] body :is(.tp-hero, .tp-sec, .tp-player, .tp-result, .tp-season, .tp-ovr, .tp-stats > *) { border-radius: 2px; }
-html[data-view="team"] body .tp-hero { box-shadow: inset 4px 0 0 var(--tc, #ff8a1f); }
+html[data-view="team"] body .tp-hero { box-shadow: inset 4px 0 0 var(--tc, var(--mn-hl)); }
 html[data-view="team"] body .tp-sec { background: linear-gradient(150deg, rgba(255,255,255,.07), rgba(6,9,26,.55) 70%); border-color: rgba(255,255,255,.08); }
 html[data-view="team"] body .tp-name h1 { font-family: var(--cond); font-style: italic; font-weight: 800; text-transform: uppercase; font-size: clamp(40px, 5.4vw, 72px); line-height: .9; letter-spacing: .005em; }
 html[data-view="team"] body .tp-eyebrow { font: 800 11.5px var(--font); letter-spacing: .18em; }
@@ -3592,16 +3592,16 @@ html[data-view="team"] body :is(.tp-result, .tp-season, .tp-player) { transition
 html[data-view="team"] body :is(.tp-result, .tp-season, .tp-player):hover { transform: translateY(-2px); box-shadow: 0 0 0 2px rgba(255,255,255,.85); }
 /* rankings table rows light up like menu rows */
 html[data-view="teams"] body table tbody tr:hover td { background: rgba(255,255,255,.07); }
-html[data-view="teams"] body table tbody tr:hover td:first-child { box-shadow: inset 3px 0 0 #ff8a1f; }
+html[data-view="teams"] body table tbody tr:hover td:first-child { box-shadow: inset 3px 0 0 var(--mn-hl); }
 html[data-view="teams"] body table tbody .tcell b, html[data-view="teams"] body table tbody td.l .nm { font-family: var(--cond); font-style: italic; font-weight: 800; text-transform: uppercase; }
 
 /* ================= modals, pop-ups and toasts: menu panels ================= */
 html body .modal-backdrop { background: radial-gradient(60% 50% at 50% 100%, rgba(255,45,120,.16), transparent 70%), rgba(4, 6, 20, .72); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
-html body .modal { border-radius: 2px; border: 1px solid rgba(255,255,255,.1); box-shadow: inset 4px 0 0 var(--e1, #ff8a1f), 0 40px 90px -20px rgba(0,0,0,.8); }
+html body .modal { border-radius: 2px; border: 1px solid rgba(255,255,255,.1); box-shadow: inset 4px 0 0 var(--e1, var(--mn-hl)), 0 40px 90px -20px rgba(0,0,0,.8); }
 html body .modal { background: linear-gradient(160deg, #111a44 0%, #0b1030 45%, #07081a 100%); color: #eef3ff; }
 /* header: a small "menu" eyebrow over the big italic title, and the menu's square close button */
 html body .modal-head { position: relative; padding: 26px 24px 14px 26px; border-bottom: 1px solid rgba(255,255,255,.08); }
-html body .modal-head::before { content: "Menu"; position: absolute; left: 26px; top: 10px; font: 800 10px var(--font); letter-spacing: .2em; text-transform: uppercase; color: var(--e1, #ff8a1f); }
+html body .modal-head::before { content: "Menu"; position: absolute; left: 26px; top: 10px; font: 800 10px var(--font); letter-spacing: .2em; text-transform: uppercase; color: var(--e1, var(--mn-hl)); }
 html body .modal-head h2 { font-size: clamp(28px, 3vw, 38px); line-height: .92; }
 html body .modal-head p { margin-top: 6px; }
 html body .close-x { width: 38px; height: 38px; border-radius: 2px; border: 1px solid rgba(255,255,255,.2); background: rgba(10,16,40,.6); color: inherit; font-size: 20px; line-height: 1; transition: background .12s, color .12s; }
@@ -3616,18 +3616,18 @@ html body .modal .field-label, html body .modal .tile-kicker, html body .modal .
 html body .modal .field-label::after { content: ""; flex: 1; height: 1px; background: currentColor; opacity: .15; }
 html body .modal :is(.team-chip, .browse-item, .preview-round, .award, .kv, .sfx-row, .leader, .tl) { border-radius: 2px; }
 html body .modal :is(.team-chip, .browse-item) { transition: transform .12s, box-shadow .12s, background .12s; }
-html body .modal :is(.team-chip, .browse-item):hover { background: rgba(255,255,255,.07); box-shadow: inset 3px 0 0 #ff8a1f; }
+html body .modal :is(.team-chip, .browse-item):hover { background: rgba(255,255,255,.07); box-shadow: inset 3px 0 0 var(--mn-hl); }
 html body .modal .kv span:first-child { font: 700 11px var(--font); letter-spacing: .14em; text-transform: uppercase; opacity: .7; }
 html body .modal .kv b { font-family: var(--cond); font-style: italic; font-weight: 800; text-transform: uppercase; font-size: 1.15em; }
 html body .modal .team-chip .name, html body .modal .browse-item b { font-family: var(--cond); font-style: italic; font-weight: 800; text-transform: uppercase; }
 html body .modal .event-banner { border-radius: 0; }
 html body .modal .champion h3, html body .modal h3 { font-family: var(--cond); font-style: italic; font-weight: 800; text-transform: uppercase; }
 /* toasts: a menu notification with the orange bar */
-html body .toast { border-radius: 2px; background: linear-gradient(150deg, #16204e, #0b1030); color: #fff; border: 1px solid rgba(255,255,255,.12); box-shadow: inset 4px 0 0 #ff8a1f, 0 18px 40px -12px rgba(0,0,0,.7); font: italic 800 17px/1.1 var(--cond); text-transform: uppercase; letter-spacing: .02em; padding: 12px 18px 12px 20px; }
-html body .toast button { color: #ff8a1f; font: inherit; }
+html body .toast { border-radius: 2px; background: linear-gradient(150deg, #16204e, #0b1030); color: #fff; border: 1px solid rgba(255,255,255,.12); box-shadow: inset 4px 0 0 var(--mn-hl), 0 18px 40px -12px rgba(0,0,0,.7); font: italic 800 17px/1.1 var(--cond); text-transform: uppercase; letter-spacing: .02em; padding: 12px 18px 12px 20px; }
+html body .toast button { color: var(--mn-hl); font: inherit; }
 
 /* ================= live match viewer: the menu's broadcast look, each match keeping its teams' colours ================= */
-.mc { --side-a: #2f8cff; --side-b: #ff8a1f; }
+.mc { --side-a: #2f8cff; --side-b: #FF8A1F; }
 .mc .mc-label { display: inline-flex; align-items: center; gap: 8px; font: 800 11px var(--font); letter-spacing: .18em; color: rgba(235,242,255,.8); }
 .mc .mc-label::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #ff3d5a; box-shadow: 0 0 0 3px rgba(255,61,90,.25); animation: opBlink 1.2s steps(2) infinite; }
 /* scorebug: two team tiles in the teams' own colours, the score on the white "selected" tile with the orange bar */
@@ -3640,9 +3640,9 @@ html body .toast button { color: #ff8a1f; font: inherit; }
 .mc .sb-team .nm { font: italic 800 clamp(20px, 2.6vw, 34px)/.95 var(--cond); text-transform: uppercase; color: #fff !important; text-shadow: 0 2px 10px rgba(0,0,0,.4); }
 .mc .sb-team .rt { color: rgba(255,255,255,.75); }
 .mc .sb-team .badge.lg { box-shadow: 0 10px 24px rgba(0,0,0,.45); }
-.mc .sb-mid { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: clamp(130px, 14vw, 190px); padding: 10px 14px; border-radius: 2px; background: #f6f6f4; color: #0d1430; box-shadow: inset 0 -5px 0 #ff8a1f; }
+.mc .sb-mid { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: clamp(130px, 14vw, 190px); padding: 10px 14px; border-radius: 2px; background: #f6f6f4; color: #0d1430; box-shadow: inset 0 -5px 0 var(--mn-hl); }
 .mc .sb-score { font: italic 800 clamp(46px, 6vw, 74px)/.9 var(--cond); letter-spacing: 0; color: #0d1430; }
-.mc .sb-score .dash { color: #ff8a1f; }
+.mc .sb-score .dash { color: var(--mn-hl); }
 .mc .sb-sub { font: 800 10.5px var(--font); letter-spacing: .18em; color: #3a4466; }
 /* game pips: menu labels; the live one blinks */
 .mc .game-pips { margin-top: 8px; gap: 4px; }
@@ -3651,11 +3651,11 @@ html body .toast button { color: #ff8a1f; font: inherit; }
 .mc .game-pip.live { background: #f6f6f4; color: #0d1430; border-bottom-color: #ff3d5a; }
 .mc .game-pip.live::before { content: "● "; color: #ff3d5a; animation: opBlink 1.2s steps(2) infinite; }
 /* clock: a broadcast clock tile */
-.mc .clock { border-radius: 0; background: #0b1030; border: 1px solid rgba(255,255,255,.14); box-shadow: inset 0 -3px 0 var(--e1, #ff8a1f); font: italic 800 26px/1 var(--cond); padding: 6px 14px; min-width: 90px; }
-.mc .clock.ot { color: #ff8a1f; }
+.mc .clock { border-radius: 0; background: #0b1030; border: 1px solid rgba(255,255,255,.14); box-shadow: inset 0 -3px 0 var(--e1, var(--mn-hl)); font: italic 800 26px/1 var(--cond); padding: 6px 14px; min-width: 90px; }
+.mc .clock.ot { color: var(--mn-hl); }
 .mc #gameScore { font: 800 11px var(--font) !important; letter-spacing: .16em; text-transform: uppercase; }
 /* commentary: the menu's notification bar, in the event's colour */
-.mc .commentary { border-radius: 0; border: 0; text-align: left; padding: 12px 18px; background: linear-gradient(90deg, color-mix(in srgb, var(--e1, #1a2b6b) 35%, #0b1030), rgba(8,12,34,.85)); box-shadow: inset 5px 0 0 var(--e1, #ff8a1f); font: italic 800 clamp(17px, 1.7vw, 22px)/1.15 var(--cond); text-transform: uppercase; letter-spacing: .01em; color: #fff; }
+.mc .commentary { border-radius: 0; border: 0; text-align: left; padding: 12px 18px; background: linear-gradient(90deg, color-mix(in srgb, var(--e1, #1a2b6b) 35%, #0b1030), rgba(8,12,34,.85)); box-shadow: inset 5px 0 0 var(--e1, var(--mn-hl)); font: italic 800 clamp(17px, 1.7vw, 22px)/1.15 var(--cond); text-transform: uppercase; letter-spacing: .01em; color: #fff; }
 /* pitch: a sharp broadcast frame with HUD corners and a LIVE tag (the pitch itself keeps the event's look) */
 .mc .pitch-wrap { border-radius: 2px; border: 1px solid rgba(255,255,255,.12); box-shadow: 0 0 0 1px rgba(0,0,0,.4), 0 24px 50px -24px rgba(0,0,0,.8); }
 .mc .pitch-wrap::before { content: "● LIVE"; position: absolute; left: 10px; top: 10px; z-index: 2; padding: 4px 9px; background: #ff3d5a; color: #fff; font: italic 800 13px/1 var(--cond); letter-spacing: .06em; pointer-events: none; }
@@ -3824,4 +3824,48 @@ html body .toast button { color: #ff8a1f; font: inherit; }
   .htg-l { display: none; }
   html.menu-home .hub-tab { height: 50px; }
   .hub-foot { display: none; }
+}
+
+/* ================= strict event palettes: on Major / event pages nothing outside the event's colours ================= */
+/* the menu backdrop's light bars and LED dots take the event colours */
+html.ev:is([data-view="tournament"], [data-view="career"], [data-view="setup"], [data-view="teams"], [data-view="team"]) body::after {
+  background: linear-gradient(90deg, transparent 0 9%, color-mix(in srgb, var(--e1) 22%, transparent) 9.4%, transparent 10.4%, transparent 22%, color-mix(in srgb, var(--e3) 16%, transparent) 22.3%, transparent 23.3%, transparent 74%, color-mix(in srgb, var(--e1) 18%, transparent) 74.4%, transparent 75.2%, transparent 91%, color-mix(in srgb, var(--e3) 16%, transparent) 91.4%, transparent 92.2%),
+    radial-gradient(circle, color-mix(in srgb, var(--e3) 55%, transparent) 1.4px, transparent 2.2px) 0 0 / 14px 14px; }
+html.ev body .modal-backdrop { background: radial-gradient(60% 50% at 50% 100%, color-mix(in srgb, var(--e1) 22%, transparent), transparent 70%), rgba(4, 6, 20, .72); }
+/* on-air tags and the live pip use the event's highlight instead of broadcast red */
+html.ev .mc .mc-label::before { background: var(--mn-hl); box-shadow: 0 0 0 3px color-mix(in srgb, var(--mn-hl) 30%, transparent); }
+html.ev .mc .pitch-wrap::before, html.ev .cer-rec { background: var(--mn-hl); color: var(--e-on, #fff); }
+html.ev .mc .game-pip.live { border-bottom-color: var(--mn-hl); }
+html.ev .mc .game-pip.live::before { color: var(--mn-hl); }
+/* event pop-ups (themed modals) follow their event too */
+.modal.event-themed .btn.primary { box-shadow: inset 0 -4px 0 var(--mn-hl); }
+.modal.event-themed { box-shadow: inset 4px 0 0 var(--e1), 0 40px 90px -20px rgba(0,0,0,.8); }
+/* the tournament's "Simulate all" and similar loud buttons use the event colour, not a generic orange/red */
+html.ev body .btn.orange { background: var(--e1); color: var(--e-on, #fff); border-color: transparent; box-shadow: inset 0 -4px 0 var(--mn-hl); }
+/* the menu's selected tiles keep white but their bar is the event colour (already via --mn-hl); stat/score accents too */
+html.ev .mc .clock { box-shadow: inset 0 -3px 0 var(--mn-hl); }
+html.ev .mc .sb-mid { box-shadow: inset 0 -5px 0 var(--mn-hl); }
+html.ev .mc .sb-score .dash { color: var(--mn-hl); }
+html.ev .mc .feed .ev.goal .t { color: color-mix(in srgb, var(--mn-hl) 70%, #0d1430); }
+
+/* ================= career: responsive ================= */
+@media (max-width: 760px) {
+  /* bottom bar: icon + full short label; selected tab is the menu's white tile with the event/menu bar */
+  html[data-view="career"] body .fc-tabs button, html[data-view="career"] body .fc-tabs button.on { margin: 0; padding: 4px 2px; min-height: 54px; border-radius: 0; border: 0; font: italic 800 12px/1 var(--cond); letter-spacing: .02em; background: transparent; color: rgba(235,242,255,.75); box-shadow: none; }
+  html[data-view="career"] body .fc-tabs button.on { background: #f6f6f4; color: #1a3a96; box-shadow: inset 0 -3px 0 var(--mn-hl); }
+  html[data-view="career"] body .fc-tabs .fc-tab-l { display: block; font-size: 11.5px; }
+  html[data-view="career"] body .fc-tabs .fc-tab-ico { font-size: 18px; font-style: normal; }
+  html[data-view="career"] body .fc-tile b { font-size: 20px; }
+  html[data-view="career"] body .fc-h { font-size: 24px; }
+  html[data-view="career"] body .cs-title h1 { font-size: 34px; }
+  /* the sticky start bar on "choose your club" sits above the bottom edge */
+  .cs-go { position: sticky; bottom: calc(8px + env(safe-area-inset-bottom)); z-index: 5; }
+}
+@media (max-width: 420px) { html[data-view="career"] body .fc-tabs .fc-tab-l { font-size: 10.5px; } }
+/* short landscape screens: the top bar scrolls away, tabs and panels compact so content gets the room */
+@media (max-height: 560px) and (min-width: 600px) {
+  html[data-view] body .topbar { position: relative; }
+  html[data-view="career"] body .fc-tabs button { font-size: 17px; padding: 9px 14px 7px; }
+  html[data-view="career"] body .fc-tile { min-height: 70px; }
+  .tp-photo, .sq-photo { max-height: 46vh; }
 }
