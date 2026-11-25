@@ -3595,3 +3595,34 @@ html[data-view="team"] body :is(.tp-result, .tp-season, .tp-player):hover { tran
 html[data-view="teams"] body table tbody tr:hover td { background: rgba(255,255,255,.07); }
 html[data-view="teams"] body table tbody tr:hover td:first-child { box-shadow: inset 3px 0 0 #ff8a1f; }
 html[data-view="teams"] body table tbody .tcell b, html[data-view="teams"] body table tbody td.l .nm { font-family: var(--cond); font-style: italic; font-weight: 800; text-transform: uppercase; }
+
+/* ================= modals, pop-ups and toasts: menu panels ================= */
+html body .modal-backdrop { background: radial-gradient(60% 50% at 50% 100%, rgba(255,45,120,.16), transparent 70%), rgba(4, 6, 20, .72); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+html body .modal { border-radius: 2px; border: 1px solid rgba(255,255,255,.1); box-shadow: inset 4px 0 0 var(--e1, #ff8a1f), 0 40px 90px -20px rgba(0,0,0,.8); }
+html body .modal { background: linear-gradient(160deg, #111a44 0%, #0b1030 45%, #07081a 100%); color: #eef3ff; }
+/* header: a small "menu" eyebrow over the big italic title, and the menu's square close button */
+html body .modal-head { position: relative; padding: 26px 24px 14px 26px; border-bottom: 1px solid rgba(255,255,255,.08); }
+html body .modal-head::before { content: "Menu"; position: absolute; left: 26px; top: 10px; font: 800 10px var(--font); letter-spacing: .2em; text-transform: uppercase; color: var(--e1, #ff8a1f); }
+html body .modal-head h2 { font-size: clamp(28px, 3vw, 38px); line-height: .92; }
+html body .modal-head p { margin-top: 6px; }
+html body .close-x { width: 38px; height: 38px; border-radius: 2px; border: 1px solid rgba(255,255,255,.2); background: rgba(10,16,40,.6); color: inherit; font-size: 20px; line-height: 1; transition: background .12s, color .12s; }
+html body .close-x:hover, html body .close-x:focus-visible { background: #fff; color: #10204f; outline: none; }
+/* footer: the menu's hint row ("Esc Close") on the left, buttons on the right */
+html body .modal-foot { position: relative; align-items: center; background: rgba(0,0,0,.22); border-top: 1px solid rgba(255,255,255,.08); padding-left: 104px; }
+html body .modal-foot::before { content: "Esc"; position: absolute; left: 22px; top: 50%; transform: translateY(-50%); display: inline-grid; place-items: center; height: 22px; padding: 0 7px; border-radius: 11px; background: rgba(255,255,255,.9); color: #0b1230; font: 800 11px var(--font); }
+html body .modal-foot::after { content: "Close"; position: absolute; left: 58px; top: 50%; transform: translateY(-50%); font: 600 13px var(--font); opacity: .8; }
+@media (max-width: 600px) { html body .modal-foot { padding-left: 16px; } html body .modal-foot::before, html body .modal-foot::after { display: none; } }
+/* contents: section labels with a rule, sharp rows that light up like menu items */
+html body .modal .field-label, html body .modal .tile-kicker, html body .modal .b-section-title { display: flex; align-items: center; gap: 10px; font: 800 11px var(--font); letter-spacing: .18em; text-transform: uppercase; opacity: .85; }
+html body .modal .field-label::after { content: ""; flex: 1; height: 1px; background: currentColor; opacity: .15; }
+html body .modal :is(.team-chip, .browse-item, .preview-round, .award, .kv, .sfx-row, .leader, .tl) { border-radius: 2px; }
+html body .modal :is(.team-chip, .browse-item) { transition: transform .12s, box-shadow .12s, background .12s; }
+html body .modal :is(.team-chip, .browse-item):hover { background: rgba(255,255,255,.07); box-shadow: inset 3px 0 0 #ff8a1f; }
+html body .modal .kv span:first-child { font: 700 11px var(--font); letter-spacing: .14em; text-transform: uppercase; opacity: .7; }
+html body .modal .kv b { font-family: var(--cond); font-style: italic; font-weight: 800; text-transform: uppercase; font-size: 1.15em; }
+html body .modal .team-chip .name, html body .modal .browse-item b { font-family: var(--cond); font-style: italic; font-weight: 800; text-transform: uppercase; }
+html body .modal .event-banner { border-radius: 0; }
+html body .modal .champion h3, html body .modal h3 { font-family: var(--cond); font-style: italic; font-weight: 800; text-transform: uppercase; }
+/* toasts: a menu notification with the orange bar */
+html body .toast { border-radius: 2px; background: linear-gradient(150deg, #16204e, #0b1030); color: #fff; border: 1px solid rgba(255,255,255,.12); box-shadow: inset 4px 0 0 #ff8a1f, 0 18px 40px -12px rgba(0,0,0,.7); font: italic 800 17px/1.1 var(--cond); text-transform: uppercase; letter-spacing: .02em; padding: 12px 18px 12px 20px; }
+html body .toast button { color: #ff8a1f; font: inherit; }
