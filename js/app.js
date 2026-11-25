@@ -306,7 +306,7 @@
 
     app.innerHTML = `
       <div class="page-head">
-        <button class="btn sm" data-action="go-home">← Back to modes</button>
+        <button class="btn sm" data-action="go-home">← Main menu</button>
         <h1>${esc(s.title || 'Custom tournament')}</h1>
         <div class="head-actions">
           <button class="btn sm" data-action="save-preset" title="Download this setup as a preset file">↓ Save preset</button>
@@ -1294,6 +1294,7 @@
   function syncSfxBtn() {
     const b = document.getElementById('sfxBtn'); if (!b || !window.RLSfx) return;
     const on = window.RLSfx.on;
+    document.querySelectorAll('.hub-sfx').forEach((x) => { x.textContent = on ? '🔊' : '🔇'; x.setAttribute('aria-label', on ? 'Sound effects on' : 'Sound effects off'); });
     b.textContent = on ? '🔊' : '🔇'; b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.setAttribute('aria-label', on ? 'Sound effects on' : 'Sound effects off'); b.title = on ? 'Sound effects: on' : 'Sound effects: off';
   }
   function openSettings() {
@@ -1477,7 +1478,7 @@
     <path d="M90 164 H110 L114 214 H86Z" fill="url(#hubGold)"/><path d="M62 214 H138 L146 246 H54Z" fill="url(#hubGold)"/><rect x="44" y="246" width="112" height="34" rx="3" fill="#0b1230"/><rect x="44" y="254" width="112" height="6" fill="var(--hc)"/>
     <path d="M100 62 l9 18 20 3 -14 14 3 20 -18 -9 -18 9 3 -20 -14 -14 20 -3z" fill="#fff6d8" opacity=".55"/><path d="M60 40 Q66 110 96 150" fill="none" stroke="#fff" stroke-width="5" opacity=".35" stroke-linecap="round"/></svg>`;
   const HUB_CAR = `<svg viewBox="0 0 300 150" class="hub-fig-svg car" aria-hidden="true"><path d="M20 98 L14 74 L40 74 L48 92Z" fill="var(--hc)"/><path d="M8 112 L14 92 L58 86 L112 80 L150 50 L214 46 L254 78 L290 86 L296 104 L288 118Z" fill="#101a3d" stroke="var(--hc)" stroke-width="4" stroke-linejoin="round"/><path d="M158 57 L210 54 L238 78 L146 80Z" fill="#9fc3ff" opacity=".55"/><path d="M18 104 H290" stroke="var(--hc)" stroke-width="4"/><circle cx="74" cy="118" r="22" fill="#05070f" stroke="#2a3142" stroke-width="4"/><circle cx="238" cy="118" r="22" fill="#05070f" stroke="#2a3142" stroke-width="4"/><circle cx="74" cy="118" r="8" fill="var(--hc)"/><circle cx="238" cy="118" r="8" fill="var(--hc)"/></svg>`;
-  const HUB_TABS = ['career', 'rlcs27', 'rlcs26', 'side', 'regions', 'nations', 'archive', 'more'];
+  const HUB_TABS = ['career', 'rlcs27', 'rlcs26', 'side', 'regions', 'nations', 'archive', 'teams', 'more', 'settings'];
   let hubTimer = null, hubSlide = 0;
   const hubTabsOn = () => HUB_TABS.filter((k) => k !== 'rlcs27' || HAS27).filter((k) => k !== 'archive' || HIST.length);
   function hubTab() {
@@ -1554,6 +1555,21 @@
         sub: (key) => { const s2 = HIST.find((x) => x.key === key); if (!s2) return null; state.ui.archive = key;
           return { title: s2.label, head: `Real fields and rosters from ${s2.key === 'S9' ? 'the regional championships (the Season 9 Finals were cancelled because of COVID-19)' : s2.key === 'SX' ? 'the online regional Majors of each split and the regional Championships (RLCS X had no LAN events)' : /^S\d$/.test(s2.key) ? 'the season Finals (the World Championship of its day)' : 'every Major and the World Championship'}. Pick one to simulate it again.`,
             tiles: comps.filter((c) => c.season === key).map((c, i) => ct(c, { big: i === 0 })) }; } },
+      teams: { label: 'Teams', icon: '#', c: '#38bdf8', fig: HUB_CUP, eyebrow: seasonLabel(se) + ' rosters', title: 'Teams <em>&amp; rankings</em>',
+        text: 'Every roster and rating, ranked. Open a team to see its players, edit it, or build your own.',
+        art: `<div class="hub-art-flags">${rankedTeams().slice(0, 12).map((t) => badge(t, 'md')).join('')}</div>`, head: 'Rankings by region', tool: seasonSeg(),
+        tiles: () => [{ t: 'All teams', s: `${rankedTeams().length} teams · ${seasonLabel(se)}`, m: 'ALL', c: '#38bdf8', a: 'hub-teams', v: 'all', big: true, art: strip(rankedTeams()) }]
+          .concat(Object.entries(REGIONS).map(([k, v]) => ({ t: v, s: `${regionCounts[k] || 0} teams`, m: k, c: REGION_COLORS[k], a: 'hub-teams', v: k }))) },
+      settings: { label: 'Settings', icon: '⚙', c: '#94a3b8', fig: HUB_CAR, eyebrow: 'Options & help', title: 'Settings <em>&amp; help</em>',
+        text: 'Simulation speed and style, sound effects, intro music and background music, light or dark theme. Plus how the simulator works and where the data comes from.',
+        art: `<div class="hub-art-modes"><span>Speed</span><span>Sound</span><span>Music</span><span>Theme</span></div>`, head: 'Options, help and credits',
+        tiles: () => [
+          { t: 'Settings', s: 'Speed, simulation style, sound, music and theme.', m: 'OPT', c: '#64748b', a: 'open-settings', v: '', big: true },
+          { t: 'Sound effects', s: window.RLSfx && window.RLSfx.on ? 'On · click to mute' : 'Off · click to turn on', m: window.RLSfx && window.RLSfx.on ? 'ON' : 'OFF', c: '#0ea5e9', a: 'sfx-toggle', v: '' },
+          { t: 'How it works', s: 'Ratings, formats and how series are simulated.', m: '?', c: '#6366f1', a: 'open-guide', v: '' },
+          { t: 'Data: Liquipedia', s: 'Rosters and event data (CC-BY-SA 3.0).', m: 'LP', c: '#475569', href: 'https://liquipedia.net/rocketleague/Main_Page' },
+          { t: 'Flags: Twemoji', s: 'Flag images (CC-BY 4.0).', m: 'FL', c: '#475569', href: 'https://github.com/jdecked/twemoji' },
+        ] },
       more: { label: 'More modes', icon: '+', c: '#8b5cf6', fig: HUB_CAR, eyebrow: 'Simulators', title: 'More <em>modes</em>',
         text: 'Build your own tournament, play one series, run a 128-team knockout or a full league season.',
         art: `<div class="hub-art-modes"><span>Bracket</span><span>Bo7</span><span>128</span><span>League</span></div>`, head: 'Simulators and help',
@@ -1635,6 +1651,14 @@
     app.innerHTML = `<div class="home hubbed">
       <section class="hub lvl-${level}" style="--hc:${F.c}" aria-label="Home menu">
         <div class="hub-bg" aria-hidden="true"><i class="hb-bars"></i><i class="hb-dots l"></i><i class="hb-dots r"></i><i class="hb-streak"></i><i class="hb-floor"></i></div>
+        <div class="hub-top">
+          <button class="hub-brand" data-action="hub-crumb" data-v="0" aria-label="RL Esports Simulator: main menu"><span class="brand-mark">RL</span><b>ESPORTS <em>SIMULATOR</em></b></button>
+          <div class="hub-top-r">
+            <button class="hub-ico" data-action="open-guide" title="How it works" aria-label="How it works">?</button>
+            <button class="hub-ico hub-sfx" data-action="sfx-toggle" title="Sound effects" aria-label="Sound effects">${window.RLSfx && !window.RLSfx.on ? '🔇' : '🔊'}</button>
+            <button class="hub-ico" data-action="open-settings" title="Settings" aria-label="Settings">⚙</button>
+          </div>
+        </div>
         ${stage}
         <nav class="hub-tabs" aria-label="Home sections">
           ${tabs.map((k) => `<button class="hub-tab${k === tab ? ' on' : ''}${k === tab && path.length ? ' in' : ''}" id="hubTab-${k}" ${k === tab ? 'aria-current="true"' : ''} data-action="hub-tab" data-v="${k}" style="--tc:${TABS[k].c}"><span>${TABS[k].label}</span><i aria-hidden="true">${TABS[k].icon}</i></button>`).join('')}
@@ -1643,6 +1667,7 @@
           <span class="hub-hint"><kbd>⏎</kbd>${path.length || q ? 'Select' : 'Open'}</span><span class="hub-hint"><kbd>←</kbd><kbd>→</kbd>Browse</span>${path.length || q ? '<span class="hub-hint"><kbd>Esc</kbd>Back</span>' : ''}<span class="hub-hint"><kbd>/</kbd>Search</span>
           <div class="search hub-search"><input class="input" id="compQuery" placeholder="Search competitions…" value="${esc(state.ui.compQuery || '')}" aria-label="Search competitions" /></div>
         </div>
+        <p class="hub-credits">Unofficial fan simulator · Data: <a href="https://liquipedia.net/rocketleague/Main_Page" target="_blank" rel="noopener">Liquipedia</a> (CC-BY-SA 3.0) · Flags: <a href="https://github.com/jdecked/twemoji" target="_blank" rel="noopener">Twemoji</a> (CC-BY 4.0) · ${esc(dataStamp())}</p>
       </section>
     </div>`;
     const cq = $('#compQuery');
@@ -1694,6 +1719,7 @@
       if (hubPath().length && !(typing && ev.key === 'Backspace')) { ev.preventDefault(); const p = hubPath().slice(0, -1); hubGo(p); if (!p.length) { const b = document.getElementById('hubTab-' + hubTab()); if (b) b.focus(); } }
     }
   });
+  function dataStamp() { return 'Rosters: ' + (HAS27 ? 'RLCS 2027 (as of ' + window.RL_DATA27.asOf + ') · ' : '') + 'RLCS 2026: ' + DATA.updated + (HIST.length ? ' · archive: RLCS ' + HIST.map((x) => x.key).reverse().join(', ') : ''); }
   function showPromo(i) {
     hubSlide = i;
     const promo = app.querySelector('.hub-promo'); if (!promo) return;
@@ -1865,7 +1891,7 @@
     const reg = state.ui.rankRegion || 'all';
     const list = rankedTeams().map((t, i) => Object.assign({ rank: i + 1 }, t)).filter((t) => (reg === 'all' || t.region === reg) && (!q || t.name.toLowerCase().includes(q) || t.players.some((p) => p.name.toLowerCase().includes(q))));
     app.innerHTML = `
-      <div class="page-head"><button class="btn sm" data-action="nav" data-v="home">← Back to modes</button><h1>Team rankings</h1><div class="head-actions">${seasonSeg()}<span class="count-pill">${rankedTeams().length} teams</span></div></div>
+      <div class="page-head"><button class="btn sm" data-action="nav" data-v="home">← Main menu</button><h1>Team rankings</h1><div class="head-actions">${seasonSeg()}<span class="count-pill">${rankedTeams().length} teams</span></div></div>
       <div class="bento">
         <section class="tile c-12">
           <div class="tile-head"><div><h2>${seasonLabel(curSeason())} rosters</h2><p>${curSeason() === '2027' ? 'Current rosters as of ' + esc((window.RL_DATA27 || {}).asOf || '') + '. ' : HIST.some((x) => x.key === curSeason()) ? 'Rosters from that season\'s ' + (/^S\d$/.test(curSeason()) ? 'Finals' : curSeason() === 'S9' ? 'regional championships' : curSeason() === 'SX' ? 'regional Majors and Championships' : 'Majors and World Championship') + '. ' : ''}Ratings are estimates from ${curSeason() === '2027' || curSeason() === '2026' ? '2026' : 'that season\'s'} results. Select a team to edit its name, players or ratings.</p></div>
@@ -1894,6 +1920,7 @@
       window.RLBgm.setContext({ key: bk || '', name: (bth && bth.name) || (state.view === 'tournament' && state.T ? state.T.title || '' : '') });
     }
     const root = document.documentElement;
+    root.classList.toggle('menu-home', state.view === 'home'); // the home menu carries its own top bar, tabs and credits
     root.classList.toggle('ev', !!pth);
     root.classList.toggle('ev-art', !!(pth && pth.art));
     ['--e1', '--e2', '--e3', '--e-on'].forEach((k, i) => (pth ? root.style.setProperty(k, [pth.a, pth.b, pth.c, pth.on || '#fff'][i]) : root.style.removeProperty(k)));
@@ -1946,6 +1973,7 @@
       case 'hub-back': hubGo(hubPath().slice(0, -1)); break;
       case 'hub-crumb': hubGo(hubPath().slice(0, +v)); break;
       case 'hub-promo': showPromo(+v); break;
+      case 'hub-teams': state.ui.rankRegion = v; go('teams'); break;
       case 'hub-clear': state.ui.compQuery = ''; renderHome(); break;
       case 'comp-customise': { const c = competitions().find((x) => x.id === v); presetSetup(c); closeModal(); go('setup'); break; }
       case 'comp-start': { const c = competitions().find((x) => x.id === v); presetSetup(c); launch(state.setup, c.name, c.theme ? { theme: c.theme } : null); break; }
@@ -2045,7 +2073,7 @@
       }
       case 'open-settings': openSettings(); break;
       case 'save-settings': state.settings.speed = +$('#setSpeed').value; state.settings.mode = $('#setMode').value; if (window.RLSfx && $('#setSfx')) window.RLSfx.set({ on: $('#setSfx').checked, vol: +$('#setVol').value / 100, music: $('#setMusic').checked, mvol: +$('#setMVol').value / 100, bgm: $('#setBgm').checked, bvol: +$('#setBVol').value / 100 }); syncSfxBtn(); closeModal(); persistRender(); break;
-      case 'sfx-toggle': if (window.RLSfx) { window.RLSfx.toggle(); syncSfxBtn(); toast(window.RLSfx.on ? 'Sound effects on' : 'Sound effects off'); } break;
+      case 'sfx-toggle': if (window.RLSfx) { window.RLSfx.toggle(); syncSfxBtn(); toast(window.RLSfx.on ? 'Sound effects on' : 'Sound effects off'); if (state.view === 'home') renderHome(); } break;
       case 'reset-all':
         openModal(`${modalHead('Reset all saved data?', 'This deletes your setup, custom teams, roster edits and saved tournament in this browser.')}<div class="modal-foot"><button class="btn" data-action="close-modal">Cancel</button><button class="btn danger" data-action="reset-confirm">Delete everything</button></div>`, { size: 'sm' });
         break;
@@ -2120,7 +2148,7 @@
     state.setup.quickFill = 'top';
     autoFill(false);
   }
-  $('#dataStamp').textContent = 'Rosters: ' + (HAS27 ? 'RLCS 2027 (as of ' + window.RL_DATA27.asOf + ') · ' : '') + 'RLCS 2026: ' + DATA.updated + (HIST.length ? ' · archive: RLCS ' + HIST.map((x) => x.key).reverse().join(', ') : '');
+  $('#dataStamp').textContent = dataStamp();
   const fromHash = () => { const h = (location.hash || '').replace('#', ''); if (h.startsWith('team/')) { state.ui.teamId = decodeURIComponent(h.slice(5)); return 'team'; } return h === 'custom-tournament' ? 'setup' : h === 'tournament' && state.T ? 'tournament' : h === 'teams' ? 'teams' : h === 'career' ? 'career' : 'home'; };
   state.view = fromHash();
   window.addEventListener('hashchange', () => { const v = fromHash(); if (v !== state.view) { stopLive(); state.view = v; render(); } });
