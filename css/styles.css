@@ -3463,3 +3463,15 @@ html body .seg button, html body .tabs button { border-radius: 0; font: italic 7
 :root[data-theme="light"] body .seg button, :root[data-theme="light"] body .tabs button { background: rgba(20,40,100,.06); }
 html body .seg button:hover:not(.active), html body .tabs button:hover:not(.active) { color: var(--text); }
 html body .seg button.active, html body .seg button.active:hover, html body .tabs button.active { background: var(--mn-sel-bg) !important; color: var(--mn-sel-fg) !important; border-bottom-color: var(--mn-orange); box-shadow: none; }
+/* the home menu fills the whole screen, edge to edge */
+html.menu-home .app { padding: 0 !important; margin: 0; max-width: none; width: 100%; }
+html.menu-home .home.hubbed { max-width: none; width: 100%; gap: 0; padding: 0; }
+html.menu-home .hub { border-radius: 0; box-shadow: none; min-height: 100vh; min-height: 100dvh; padding: clamp(16px, 2.2vw, 36px) clamp(16px, 3vw, 56px) 14px; }
+html.menu-home .hub-feat { min-height: clamp(280px, 50vh, 600px); }
+html.menu-home .hub-promo { min-height: clamp(320px, 50vh, 600px); }
+html.menu-home .hub-fig-svg { max-width: clamp(200px, 14vw, 300px); max-height: 52vh; }
+html.menu-home .hf-title { font-size: clamp(32px, min(3.6vw, 7vh), 76px); }
+html.menu-home .hf-text { font-size: clamp(14px, 1.6vh, 17px); }
+html.menu-home .hub-tab { height: clamp(70px, 8.5vh, 96px); }
+html.menu-home .hub-grid { grid-auto-rows: clamp(118px, 13vh, 170px); }
+@media (max-width: 720px) { html.menu-home .hub-feat, html.menu-home .hub-promo { min-height: 0; } html.menu-home .hub-promo { min-height: 190px; } html.menu-home .hub-tab { height: 64px; } }
