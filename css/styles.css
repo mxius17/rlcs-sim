@@ -3675,3 +3675,68 @@ html body .toast button { color: #ff8a1f; font: inherit; }
 .mc .feed .ev.goal.b { background: #f6f6f4; color: #0d1430; box-shadow: inset 5px 0 0 var(--side-b); }
 .mc .feed .ev.goal .t { color: #3a4466; }
 @media (max-width: 600px) { .mc .sb-mid { min-width: 96px; padding: 8px; } .mc .sb-team { padding: 12px 6px; } }
+
+/* ================= intros + ceremonies: the menu's type, tiles and hints; every event keeps its own palette =================
+   (accent bars use the event's own colour, var(--c) / var(--a), instead of the menu orange) */
+.cut, .cer, .side-cer { --cond: "Barlow Condensed", "Inter Tight", var(--display); }
+/* --- broadcast opener --- */
+.op-live, .op-hk { border-radius: 0; font: italic 800 15px/1 var(--cond); letter-spacing: .06em; padding: 7px 12px; }
+.op-live { box-shadow: inset 0 -3px 0 var(--c); }
+.op-hk { border-left: 0; box-shadow: inset 4px 0 0 var(--c); background: rgba(0,0,0,.55); }
+.op-tick div { font: italic 800 17px/1 var(--cond); letter-spacing: .06em; }
+.op-kick { font: italic 800 clamp(16px, 1.9vw, 22px)/1 var(--cond); letter-spacing: .16em; }
+.op-cap small { font: 800 12px var(--font); letter-spacing: .24em; }
+.op-cap b { font: italic 800 clamp(34px, 5.6vw, 80px)/.92 var(--cond); }
+.s-type .op-word b { font-family: var(--cond); font-style: italic; font-weight: 800; letter-spacing: -0.01em; font-size: clamp(44px, min(15vw, calc(185vw / var(--len, 8))), 240px); }
+.s-type.m-stack .op-word b { font-size: clamp(40px, min(12vw, calc(160vw / var(--len, 8))), 190px); }
+.op-coord { border-left: 0; box-shadow: inset 5px 0 0 var(--a); border-radius: 0; }
+.op-coord b { font: italic 800 clamp(34px, 5vw, 70px)/.9 var(--cond); }
+.op-emblem .em-code { font-family: var(--cond); font-style: italic; font-weight: 800; }
+.op-tc b, .op-tc .tc-name { font-family: var(--cond); font-style: italic; font-weight: 800; }
+.mo-big, .mo-nick { font-family: var(--cond) !important; font-style: italic; font-weight: 800 !important; }
+.mo-t, .op-screen { border-radius: 0 !important; }
+/* --- city reveal --- */
+.cut-name { font-family: var(--cond); font-style: italic; font-weight: 800; letter-spacing: -0.005em; font-size: clamp(44px, min(14vw, calc(118vw / var(--len, 8))), 220px); line-height: .88; }
+.cut-kicker { display: inline-flex; align-items: center; gap: 10px; font: 800 13px var(--font); letter-spacing: .24em; }
+.cut-kicker::before { content: ""; width: 26px; height: 4px; background: var(--c); }
+.cut-hello { font: italic 700 clamp(20px, 2.4vw, 32px)/1 var(--cond); text-transform: uppercase; letter-spacing: .04em; }
+.cut-country { font: italic 800 clamp(18px, 2vw, 26px)/1 var(--cond); letter-spacing: .08em; }
+.cut-fh { display: flex; align-items: center; gap: 10px; font: 800 11.5px var(--font); letter-spacing: .2em; text-transform: uppercase; }
+.cut-team { border-radius: 0; border: 0; border-bottom: 3px solid transparent; background: rgba(8,12,34,.82); }
+.cut-team small { font: italic 800 14px/1 var(--cond); letter-spacing: .02em; text-transform: uppercase; }
+.cut-team.mine { background: #f6f6f4; color: #0d1430; border-bottom-color: var(--c); box-shadow: 0 0 30px color-mix(in srgb, var(--c) 45%, transparent); }
+.cut-note, .cut-holder, .cut-local { border-radius: 0 !important; }
+.cut-note { box-shadow: inset 3px 0 0 var(--c); font: italic 700 16px/1.1 var(--cond); text-transform: uppercase; letter-spacing: .03em; }
+.cut-day { border-radius: 0; border-color: rgba(255,255,255,.1); }
+.cut-day h3 { font-family: var(--cond); font-style: italic; font-weight: 800; text-transform: uppercase; font-size: 26px; line-height: .95; }
+.cut-day.now { background: #f6f6f4; color: #0d1430; box-shadow: inset 0 -4px 0 var(--c); }
+.cut-day.now :is(p, small, i) { color: #3a4466; }
+/* the intro's buttons: the menu's buttons with key hints; "Let's go" is the white tile in the event's colour */
+.cut-ui button { border-radius: 0; min-height: 44px; display: inline-flex; align-items: center; gap: 8px; font: italic 800 18px/1 var(--cond) !important; text-transform: uppercase; letter-spacing: .03em; background: rgba(8,12,34,.8); }
+.cut-ui .cut-skip::before { content: "Esc"; display: inline-grid; place-items: center; height: 20px; padding: 0 6px; border-radius: 10px; background: rgba(255,255,255,.9); color: #0b1230; font: 800 10.5px var(--font); font-style: normal; }
+.cut-ui .cut-go { background: #f6f6f4 !important; color: #0d1430 !important; border: 0 !important; box-shadow: inset 0 -5px 0 var(--c); }
+.cut-ui .cut-go::before { content: "⏎"; display: inline-grid; place-items: center; height: 20px; min-width: 22px; padding: 0 5px; border-radius: 10px; background: #0d1430; color: #fff; font: 800 11px var(--font); font-style: normal; }
+/* --- ceremonies --- */
+.cer-ui { background: linear-gradient(0deg, rgba(4,6,18,.92), rgba(4,6,18,.55)); }
+.cer-steps { gap: 4px; }
+.cer-steps span { padding: 9px 14px 7px; border: 0; border-bottom: 4px solid transparent; background: rgba(28,38,72,.7); font: italic 800 15px/1 var(--cond); letter-spacing: .04em; color: rgba(255,255,255,.5); }
+.cer-steps span.seen { color: rgba(255,255,255,.8); }
+.cer-steps span.on { background: #f6f6f4; color: #0d1430; border-bottom-color: var(--c3); }
+.cer-btns button { border-radius: 0; display: inline-flex; align-items: center; gap: 8px; font: italic 800 17px/1 var(--cond); text-transform: uppercase; letter-spacing: .03em; background: rgba(8,12,34,.8); }
+.cer-btns .cer-next { background: #f6f6f4; color: #0d1430; border-color: transparent; box-shadow: inset 0 -4px 0 var(--c3); }
+.cer-btns .cer-next::before { content: "⏎"; display: inline-grid; place-items: center; height: 20px; min-width: 22px; border-radius: 10px; background: #0d1430; color: #fff; font: 800 11px var(--font); }
+.cer-btns .cer-skip::before { content: "Esc"; display: inline-grid; place-items: center; height: 20px; padding: 0 6px; border-radius: 10px; background: rgba(255,255,255,.9); color: #0b1230; font: 800 10.5px var(--font); }
+.cer-rec { border-radius: 0; background: #ff3d5a; font: italic 800 15px/1 var(--cond); letter-spacing: .06em; }
+.cer-rec i { background: #fff; }
+/* big words in the menu's condensed italic */
+.side-cer :is(.sc-fhead h2, .sc-word, .sc-tname, .sc-mname, .sc-name, .cer-goal-title, .sc-sn) { font-family: var(--cond) !important; font-style: italic; font-weight: 800 !important; }
+.side-cer .sc-label { border-radius: 0; font: italic 800 clamp(15px, 2.2vmin, 21px) var(--cond); letter-spacing: .1em; box-shadow: inset 4px 0 0 var(--c3); }
+/* the final: team panels as tiles, the score on the white tile with the event-coloured bar */
+.side-cer .sc-side { border-radius: 0; }
+.side-cer .sc-score { padding: 6px 22px 10px; background: #f6f6f4; color: #0d1430; box-shadow: inset 0 -6px 0 var(--c3); font-family: var(--cond); font-style: italic; }
+.side-cer .sc-score i { opacity: 1; color: var(--c3); }
+.side-cer .sc-games span { border-radius: 0; font: italic 800 15px/1 var(--cond); text-transform: uppercase; }
+.side-cer :is(.sc-mstats div, .sc-pstats div, .cer-chips span, .cer-board) { border-radius: 0 !important; }
+.side-cer :is(.sc-mstats, .sc-pstats) b { font-family: var(--cond); font-style: italic; font-weight: 800; }
+.side-cer .sc-mphoto, .side-cer .sc-face { border-radius: 2px !important; }
+.side-cer .cer-rp-cap :is(b, strong, h3), .side-cer .cer-rp-cap > :first-child { font-family: var(--cond); font-style: italic; font-weight: 800; text-transform: uppercase; }
