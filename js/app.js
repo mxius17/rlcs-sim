@@ -776,8 +776,8 @@
     const isLive = live && live.mid === (fm && fm.id);
 
     app.innerHTML = `
-      <div class="page-head">
-        ${T.career ? '<button class="btn sm" data-action="nav" data-v="career">← Career</button>' : `<button class="btn sm" data-action="go-setup">← ${(T.cfg && T.cfg.custom) || T.side ? 'Back to modes' : 'Back to settings'}</button>`}
+      <div class="page-head" data-crumb="${esc((T.career ? 'Career  ›  ' : '') + (T.title || E.FORMATS[T.format].name))}">
+        ${T.career ? '<button class="btn sm" data-action="nav" data-v="career">← Career</button>' : `<button class="btn sm" data-action="go-setup">← ${(T.cfg && T.cfg.custom) || T.side ? 'Main menu' : 'Back to settings'}</button>`}
         <h1>${esc(T.title || E.FORMATS[T.format].name)} <span class="muted" style="font-size:.55em;font-family:var(--font)">· ${entrants(T)}</span></h1>
         <div class="head-actions">
           <div style="min-width:140px"><div class="progress" title="${pct}% complete"><i style="width:${pct}%"></i></div><div class="muted mono" style="font-size:11px;margin-top:4px">${played} series played · ${esc(cs.name)}</div></div>
@@ -1955,6 +1955,7 @@
     }
     const root = document.documentElement;
     root.classList.toggle('menu-home', state.view === 'home'); // the home menu carries its own top bar, tabs and credits
+    root.dataset.view = state.view; // menu-styled pages (tournament, career) hook their look on this
     root.classList.toggle('ev', !!pth);
     root.classList.toggle('ev-art', !!(pth && pth.art));
     ['--e1', '--e2', '--e3', '--e-on'].forEach((k, i) => (pth ? root.style.setProperty(k, [pth.a, pth.b, pth.c, pth.on || '#fff'][i]) : root.style.removeProperty(k)));
