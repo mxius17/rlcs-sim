@@ -305,7 +305,7 @@
     const stageSummary = buildStageSummary(s, preview);
 
     app.innerHTML = `
-      <div class="page-head">
+      <div class="page-head" data-crumb="${esc(s.title || 'Custom tournament')}">
         <button class="btn sm" data-action="go-home">← Main menu</button>
         <h1>${esc(s.title || 'Custom tournament')}</h1>
         <div class="head-actions">
@@ -1925,7 +1925,7 @@
     const reg = state.ui.rankRegion || 'all';
     const list = rankedTeams().map((t, i) => Object.assign({ rank: i + 1 }, t)).filter((t) => (reg === 'all' || t.region === reg) && (!q || t.name.toLowerCase().includes(q) || t.players.some((p) => p.name.toLowerCase().includes(q))));
     app.innerHTML = `
-      <div class="page-head"><button class="btn sm" data-action="nav" data-v="home">← Main menu</button><h1>Team rankings</h1><div class="head-actions">${seasonSeg()}<span class="count-pill">${rankedTeams().length} teams</span></div></div>
+      <div class="page-head" data-crumb="Teams  ›  Team rankings"><button class="btn sm" data-action="nav" data-v="home">← Main menu</button><h1>Team rankings</h1><div class="head-actions">${seasonSeg()}<span class="count-pill">${rankedTeams().length} teams</span></div></div>
       <div class="bento">
         <section class="tile c-12">
           <div class="tile-head"><div><h2>${seasonLabel(curSeason())} rosters</h2><p>${curSeason() === '2027' ? 'Current rosters as of ' + esc((window.RL_DATA27 || {}).asOf || '') + '. ' : HIST.some((x) => x.key === curSeason()) ? 'Rosters from that season\'s ' + (/^S\d$/.test(curSeason()) ? 'Finals' : curSeason() === 'S9' ? 'regional championships' : curSeason() === 'SX' ? 'regional Majors and Championships' : 'Majors and World Championship') + '. ' : ''}Ratings are estimates from ${curSeason() === '2027' || curSeason() === '2026' ? '2026' : 'that season\'s'} results. Select a team to edit its name, players or ratings.</p></div>
