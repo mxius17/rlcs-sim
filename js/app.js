@@ -939,9 +939,9 @@
         <div class="seg" aria-label="Viewer mode">${[['commentary', 'Commentary only'], ['highlights', 'Highlights only'], ['extended', 'Extended']].map(([k, v]) => `<button class="${mode === k ? 'active' : ''}" data-action="view-mode" data-v="${k}">${v}</button>`).join('')}</div>
       </div>
       <div class="scoreboard">
-        <div class="sb-team blue">${badge(A, 'lg')}<span class="nm">${esc(A.name)}</span><span class="rt">OVR ${A.ovr} ${flagsOf(A)}</span></div>
+        <div class="sb-team blue" style="--tc:${esc(A.color || '#2f8cff')}">${badge(A, 'lg')}<span class="nm">${esc(A.name)}</span><span class="rt">OVR ${A.ovr} ${flagsOf(A)}</span></div>
         <div class="sb-mid"><div class="sb-score"><span id="scA">${scoreA}</span><span class="dash">-</span><span id="scB">${scoreB}</span></div><div class="sb-sub" id="sbSub">${isLive ? 'GAME ' + (live.gi + 1) : res ? 'FINAL' : 'SERIES'}</div></div>
-        <div class="sb-team orange">${badge(B, 'lg')}<span class="nm">${esc(B.name)}</span><span class="rt">OVR ${B.ovr} ${flagsOf(B)}</span></div>
+        <div class="sb-team orange" style="--tc:${esc(B.color || '#ff8a1f')}">${badge(B, 'lg')}<span class="nm">${esc(B.name)}</span><span class="rt">OVR ${B.ovr} ${flagsOf(B)}</span></div>
       </div>
       <div class="game-pips" id="pips">${pips}</div>
       ${isLive ? `

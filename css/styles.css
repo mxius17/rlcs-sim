@@ -3423,7 +3423,6 @@ html.menu-home .hub { min-height: calc(100vh - 24px); min-height: calc(100dvh - 
 
 /* ================= menu skin for every other page: same type, shapes and selection states ================= */
 :root { --cond: "Barlow Condensed", "Inter Tight", var(--display); --mn-pri-bg: #ffffff; --mn-pri-fg: #10204f; --mn-sel-bg: #f6f6f4; --mn-sel-fg: #1a3a96; --mn-orange: #ff8a1f; }
-@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --mn-pri-bg: #121a2e; --mn-pri-fg: #fff; --mn-sel-bg: #121a2e; --mn-sel-fg: #fff; } }
 :root[data-theme="light"] { --mn-pri-bg: #121a2e; --mn-pri-fg: #fff; --mn-sel-bg: #121a2e; --mn-sel-fg: #fff; }
 /* backdrop: the menu's neon stage, quietly, behind the dark pages (event pages keep their own palette) */
 @media (prefers-color-scheme: dark) { html:not(.ev):not([data-theme="light"]) body { background: radial-gradient(60% 40% at 50% 105%, rgba(255,45,120,.16), transparent 70%) fixed, radial-gradient(45% 50% at 12% 0%, rgba(70,110,255,.20), transparent 70%) fixed, radial-gradient(40% 45% at 92% 0%, rgba(255,60,130,.12), transparent 70%) fixed, linear-gradient(180deg, #0a1030, #0c0b26 55%, #06071a) fixed; } }
@@ -3626,3 +3625,53 @@ html body .modal .champion h3, html body .modal h3 { font-family: var(--cond); f
 /* toasts: a menu notification with the orange bar */
 html body .toast { border-radius: 2px; background: linear-gradient(150deg, #16204e, #0b1030); color: #fff; border: 1px solid rgba(255,255,255,.12); box-shadow: inset 4px 0 0 #ff8a1f, 0 18px 40px -12px rgba(0,0,0,.7); font: italic 800 17px/1.1 var(--cond); text-transform: uppercase; letter-spacing: .02em; padding: 12px 18px 12px 20px; }
 html body .toast button { color: #ff8a1f; font: inherit; }
+
+/* ================= live match viewer: the menu's broadcast look, each match keeping its teams' colours ================= */
+.mc { --side-a: #2f8cff; --side-b: #ff8a1f; }
+.mc .mc-label { display: inline-flex; align-items: center; gap: 8px; font: 800 11px var(--font); letter-spacing: .18em; color: rgba(235,242,255,.8); }
+.mc .mc-label::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #ff3d5a; box-shadow: 0 0 0 3px rgba(255,61,90,.25); animation: opBlink 1.2s steps(2) infinite; }
+/* scorebug: two team tiles in the teams' own colours, the score on the white "selected" tile with the orange bar */
+.mc .scoreboard { gap: 6px; align-items: stretch; margin-top: 10px; }
+.mc .sb-team { position: relative; overflow: hidden; justify-content: center; padding: 16px 12px 14px; border-radius: 2px; isolation: isolate;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--tc) 55%, #0b1230) 0%, color-mix(in srgb, var(--tc) 18%, #080c22) 70%); }
+.mc .sb-team.blue { box-shadow: inset 4px 0 0 var(--side-a); }
+.mc .sb-team.orange { box-shadow: inset -4px 0 0 var(--side-b); }
+.mc .sb-team::after { content: ""; position: absolute; inset: 0; z-index: -1; background: radial-gradient(circle, rgba(255,255,255,.22) 1.2px, transparent 1.8px) 0 0 / 12px 12px; -webkit-mask-image: linear-gradient(180deg, #000, transparent 70%); mask-image: linear-gradient(180deg, #000, transparent 70%); opacity: .5; }
+.mc .sb-team .nm { font: italic 800 clamp(20px, 2.6vw, 34px)/.95 var(--cond); text-transform: uppercase; color: #fff !important; text-shadow: 0 2px 10px rgba(0,0,0,.4); }
+.mc .sb-team .rt { color: rgba(255,255,255,.75); }
+.mc .sb-team .badge.lg { box-shadow: 0 10px 24px rgba(0,0,0,.45); }
+.mc .sb-mid { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: clamp(130px, 14vw, 190px); padding: 10px 14px; border-radius: 2px; background: #f6f6f4; color: #0d1430; box-shadow: inset 0 -5px 0 #ff8a1f; }
+.mc .sb-score { font: italic 800 clamp(46px, 6vw, 74px)/.9 var(--cond); letter-spacing: 0; color: #0d1430; }
+.mc .sb-score .dash { color: #ff8a1f; }
+.mc .sb-sub { font: 800 10.5px var(--font); letter-spacing: .18em; color: #3a4466; }
+/* game pips: menu labels; the live one blinks */
+.mc .game-pips { margin-top: 8px; gap: 4px; }
+.mc .game-pip { border-radius: 0; font: italic 800 13px/1 var(--cond); text-transform: uppercase; letter-spacing: .04em; padding: 6px 10px; background: rgba(28,38,72,.82); border: 0; border-bottom: 3px solid transparent; color: #fff; }
+.mc .game-pip.a { border-bottom-color: var(--side-a); } .mc .game-pip.b { border-bottom-color: var(--side-b); }
+.mc .game-pip.live { background: #f6f6f4; color: #0d1430; border-bottom-color: #ff3d5a; }
+.mc .game-pip.live::before { content: "● "; color: #ff3d5a; animation: opBlink 1.2s steps(2) infinite; }
+/* clock: a broadcast clock tile */
+.mc .clock { border-radius: 0; background: #0b1030; border: 1px solid rgba(255,255,255,.14); box-shadow: inset 0 -3px 0 var(--e1, #ff8a1f); font: italic 800 26px/1 var(--cond); padding: 6px 14px; min-width: 90px; }
+.mc .clock.ot { color: #ff8a1f; }
+.mc #gameScore { font: 800 11px var(--font) !important; letter-spacing: .16em; text-transform: uppercase; }
+/* commentary: the menu's notification bar, in the event's colour */
+.mc .commentary { border-radius: 0; border: 0; text-align: left; padding: 12px 18px; background: linear-gradient(90deg, color-mix(in srgb, var(--e1, #1a2b6b) 35%, #0b1030), rgba(8,12,34,.85)); box-shadow: inset 5px 0 0 var(--e1, #ff8a1f); font: italic 800 clamp(17px, 1.7vw, 22px)/1.15 var(--cond); text-transform: uppercase; letter-spacing: .01em; color: #fff; }
+/* pitch: a sharp broadcast frame with HUD corners and a LIVE tag (the pitch itself keeps the event's look) */
+.mc .pitch-wrap { border-radius: 2px; border: 1px solid rgba(255,255,255,.12); box-shadow: 0 0 0 1px rgba(0,0,0,.4), 0 24px 50px -24px rgba(0,0,0,.8); }
+.mc .pitch-wrap::before { content: "● LIVE"; position: absolute; left: 10px; top: 10px; z-index: 2; padding: 4px 9px; background: #ff3d5a; color: #fff; font: italic 800 13px/1 var(--cond); letter-spacing: .06em; pointer-events: none; }
+.mc .pitch-wrap::after { content: ""; position: absolute; inset: 6px; pointer-events: none; z-index: 1;
+  background: linear-gradient(#fff, #fff) 0 0 / 22px 2px no-repeat, linear-gradient(#fff, #fff) 0 0 / 2px 22px no-repeat, linear-gradient(#fff, #fff) 100% 0 / 22px 2px no-repeat, linear-gradient(#fff, #fff) 100% 0 / 2px 22px no-repeat,
+    linear-gradient(#fff, #fff) 0 100% / 22px 2px no-repeat, linear-gradient(#fff, #fff) 0 100% / 2px 22px no-repeat, linear-gradient(#fff, #fff) 100% 100% / 22px 2px no-repeat, linear-gradient(#fff, #fff) 100% 100% / 2px 22px no-repeat; opacity: .55; }
+/* playback controls read like the menu's hint row */
+.mc .live-bar + .feed, .mc .pitch-wrap + .live-bar { margin-top: 4px; }
+.mc .pitch-wrap + .live-bar { padding: 8px; background: rgba(0,0,0,.25); border: 1px solid rgba(255,255,255,.06); }
+.mc .pitch-wrap + .live-bar .seg::before { content: "Speed"; align-self: center; margin-right: 6px; font: 800 10.5px var(--font); letter-spacing: .18em; text-transform: uppercase; opacity: .7; }
+/* feed: menu rows with the scoring side's colour bar; goals stand out as white tiles */
+.mc .feed { gap: 3px; }
+.mc .feed .ev { border-radius: 0; background: rgba(255,255,255,.04); box-shadow: inset 3px 0 0 color-mix(in srgb, var(--side-a) 70%, transparent); padding: 7px 10px; }
+.mc .feed .ev.b { box-shadow: inset 3px 0 0 color-mix(in srgb, var(--side-b) 70%, transparent); }
+.mc .feed .ev .t { font: italic 800 15px/1.2 var(--cond); color: rgba(235,242,255,.6); }
+.mc .feed .ev.goal { background: #f6f6f4; color: #0d1430; font: italic 800 16px/1.2 var(--cond); text-transform: uppercase; box-shadow: inset 5px 0 0 var(--side-a); }
+.mc .feed .ev.goal.b { background: #f6f6f4; color: #0d1430; box-shadow: inset 5px 0 0 var(--side-b); }
+.mc .feed .ev.goal .t { color: #3a4466; }
+@media (max-width: 600px) { .mc .sb-mid { min-width: 96px; padding: 8px; } .mc .sb-team { padding: 12px 6px; } }
