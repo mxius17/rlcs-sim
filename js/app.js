@@ -1471,7 +1471,7 @@
     window.scrollTo({ top: 0 });
   }
 
-  /* ---------- home: a console-style hub (feature panel, centre-piece, promo card, big tabs) ---------- */
+  /* ---------- home: a console-style menu. Bottom tabs → sub-menu tiles → deeper tiles, all on one stage ---------- */
   const HUB_CUP = `<svg viewBox="0 0 200 300" class="hub-fig-svg" aria-hidden="true"><defs><linearGradient id="hubGold" x1="0" x2="1"><stop offset="0" stop-color="#7a5a14"/><stop offset=".35" stop-color="#ffe9a8"/><stop offset=".6" stop-color="#f2c14e"/><stop offset="1" stop-color="#6b4a10"/></linearGradient></defs>
     <path d="M44 34 H156 L150 92 Q144 150 100 166 Q56 150 50 92Z" fill="url(#hubGold)"/><path d="M50 50 Q14 52 20 88 Q26 116 58 120" fill="none" stroke="#d9a93a" stroke-width="9" stroke-linecap="round"/><path d="M150 50 Q186 52 180 88 Q174 116 142 120" fill="none" stroke="#d9a93a" stroke-width="9" stroke-linecap="round"/>
     <path d="M90 164 H110 L114 214 H86Z" fill="url(#hubGold)"/><path d="M62 214 H138 L146 246 H54Z" fill="url(#hubGold)"/><rect x="44" y="246" width="112" height="34" rx="3" fill="#0b1230"/><rect x="44" y="254" width="112" height="6" fill="var(--hc)"/>
@@ -1479,185 +1479,220 @@
   const HUB_CAR = `<svg viewBox="0 0 300 150" class="hub-fig-svg car" aria-hidden="true"><path d="M20 98 L14 74 L40 74 L48 92Z" fill="var(--hc)"/><path d="M8 112 L14 92 L58 86 L112 80 L150 50 L214 46 L254 78 L290 86 L296 104 L288 118Z" fill="#101a3d" stroke="var(--hc)" stroke-width="4" stroke-linejoin="round"/><path d="M158 57 L210 54 L238 78 L146 80Z" fill="#9fc3ff" opacity=".55"/><path d="M18 104 H290" stroke="var(--hc)" stroke-width="4"/><circle cx="74" cy="118" r="22" fill="#05070f" stroke="#2a3142" stroke-width="4"/><circle cx="238" cy="118" r="22" fill="#05070f" stroke="#2a3142" stroke-width="4"/><circle cx="74" cy="118" r="8" fill="var(--hc)"/><circle cx="238" cy="118" r="8" fill="var(--hc)"/></svg>`;
   const HUB_TABS = ['career', 'rlcs27', 'rlcs26', 'side', 'regions', 'nations', 'archive', 'more'];
   let hubTimer = null, hubSlide = 0;
+  const hubTabsOn = () => HUB_TABS.filter((k) => k !== 'rlcs27' || HAS27).filter((k) => k !== 'archive' || HIST.length);
   function hubTab() {
     let t = state.ui.homeTab;
     if (!t) { try { t = localStorage.getItem('rlsim.homeTab'); } catch (e) { t = null; } }
-    const ok = HUB_TABS.filter((k) => k !== 'rlcs27' || HAS27).filter((k) => k !== 'archive' || HIST.length);
-    return ok.includes(t) ? t : (HAS27 ? 'rlcs27' : 'rlcs26');
+    return hubTabsOn().includes(t) ? t : (HAS27 ? 'rlcs27' : 'rlcs26');
   }
   function setHubTab(t) { state.ui.homeTab = t; try { localStorage.setItem('rlsim.homeTab', t); } catch (e) { /* private mode */ } }
+  /** Where the menu is: [] = the top level (tabs + feature), [tab] = a sub-menu, [tab, key] = one level deeper. */
+  const hubPath = () => state.ui.homePath || (state.ui.homePath = []);
+  function hubGo(path) { state.ui.homePath = path; state.ui.compQuery = ''; if (path[0]) setHubTab(path[0]); renderHome(); const f = app.querySelector('.hub-grid .mt, .hub-tab.on'); if (f) f.focus({ preventScroll: true }); }
 
-  function renderHome() {
-    const T = state.T;
-    const comps = competitions();
-    const q = (state.ui.compQuery || '').toLowerCase();
-    const compList = comps.filter((c) => !q || (c.name + ' ' + c.sub).toLowerCase().includes(q));
+  /** Everything the menu shows, built fresh on each render. */
+  function hubModel() {
+    const T = state.T, comps = competitions();
     const worlds = allTeams().filter((t) => t.worlds && t.season === '2026').sort((a, b) => parseInt(a.worlds, 10) - parseInt(b.worlds, 10) || b.ovr - a.ovr);
     const regionCounts = {}; rankedTeams().forEach((t) => (regionCounts[t.region] = (regionCounts[t.region] || 0) + 1));
-    const live = T && !T.finished;
+    const live = T && !T.finished, played = T ? Object.values(T.matches).filter((m) => m.result && !m.result.bye).length : 0;
     const has = window.RLCareer.has(), cs = window.RLCareer.summary();
-    const tab = hubTab();
-    const none = '<p class="muted">No competitions match.</p>';
-    const board = (title, list, six) => `<div class="feat-board hub-board" aria-hidden="true"><div class="feat-board-head"><span>${title}</span><span class="mono">OVR</span></div><div class="feat-grid${six ? ' feat-grid-6' : ''}">${list.map((t) => `<div class="fb-cell" title="${esc(t.name)}">${badge(t, 'sm')}<span>${esc(t.tag)}</span><i>${t.ovr}</i></div>`).join('')}</div></div>`;
-    const resumeBanner = live
-      ? `<section class="home-banner"><div><b>Resume tournament</b><p>${esc(T.title || E.FORMATS[T.format].name)} · ${entrants(T)} · ${Object.values(T.matches).filter((m) => m.result && !m.result.bye).length} series played</p></div><button class="btn sm" data-action="resume">View →</button></section>`
-      : `<section class="home-banner"><div><b>Resume tournaments</b><p>Tournaments you start are saved on this device so you can pick them up later.</p></div><button class="btn sm" data-action="nav" data-v="setup">New tournament →</button></section>`;
-    const careerBanner = `<div class="career-banner"><div class="cb-text"><span class="eyebrow">Career mode</span><b>${has ? 'Your career' : 'Run an RLCS organisation'}</b><span>${cs ? esc(cs.team.name) + ' · RLCS ' + cs.season + ' · ' + esc(cs.step) : 'Seasons, Opens, Majors, Worlds, transfers, contracts and player development. Manage a club or follow it all as a neutral viewer.'}</span></div>
-        <div class="cb-actions"><button class="btn primary cb-go" data-action="nav" data-v="career" ${has ? '' : 'disabled title="No career to continue yet"'}>▶ Continue career</button><button class="btn cb-new" data-action="home-career-new">+ Start new career</button></div></div>`;
     const ko = HAS27 ? comps.find((c) => c.id === 'k27') : null;
     const koTeams = ko ? ko.teams().map(getTeam).sort((a, b) => b.ovr - a.ovr) : [];
     const days = Math.max(0, Math.ceil((new Date('2026-12-09T00:00:00Z') - new Date()) / 86400000));
-    const ak = HIST.length ? (HIST.some((x) => x.key === state.ui.archive) ? state.ui.archive : HIST[0].key) : null;
-    const se = HIST.find((x) => x.key === ak);
     const nat = comps.filter((c) => c.nations);
     const natTeams = allTeams().filter((t) => t.nation).sort((a, b) => b.ovr - a.ovr).slice(0, 12);
-    const regionTile = ([k, v]) => { const th = themeOf('region-' + k.toLowerCase()); return `<button class="comp-tile${th ? ' themed' : ''}" data-action="region-league" data-v="${k}" style="${th ? themeVars(th) : '--c:' + REGION_COLORS[k]}"><span class="comp-ico">${k}</span><span class="comp-txt"><b>${esc(v)}</b><small>${regionCounts[k] || 0} teams · ${seasonLabel(curSeason())} · league + playoffs</small></span></button>`; };
-
-    /* every tab: its hub feature (left panel) and its section (below the hub) */
-    const TABS = {
-      career: { label: 'Career', icon: '★', c: '#f2b632', fig: HUB_CAR,
-        eyebrow: 'Career mode', title: has ? 'Your career' : 'Run an RLCS organisation',
-        text: cs ? `${esc(cs.team.name)} · RLCS ${cs.season} · ${esc(cs.step)}` : 'Seasons, Opens, Majors, Worlds, transfers, contracts and player development. Manage a club or follow it all as a neutral viewer.',
-        acts: `<button class="btn primary" data-action="nav" data-v="career" ${has ? '' : 'disabled title="No career to continue yet"'}>▶ Continue career</button><button class="btn" data-action="home-career-new">+ Start new career</button>`,
-        art: cs && cs.team ? `<div class="hub-art-badge">${badge(cs.team, 'xl')}</div>` : `<div class="hub-art-mono">GM</div>`,
-        body: () => careerBanner + resumeBanner },
-      rlcs27: { label: 'RLCS 2027', icon: '27', c: '#e11d48', fig: HUB_CUP,
-        eyebrow: 'Copper Box Arena, London · 9–13 Dec 2026', title: 'Club Championship <em>Kick-Off</em>',
-        text: `24 teams · double elimination · $300,000<br>${days > 0 ? '<b>' + days + ' days away</b> · ' : ''}20 partner teams + 4 Open qualifiers`,
-        acts: `<button class="btn primary" data-action="comp" data-v="k27">Open the Kick-Off →</button>`,
-        art: board('Kick-Off field', koTeams, true),
-        body: () => `<div class="home-h-row"><h2 class="home-h">RLCS 2027 <span class="pill good" style="vertical-align:middle;font-family:var(--font)">Current season</span></h2><span class="muted" style="font-size:13px">Rosters as of ${esc(window.RL_DATA27.asOf)}</span></div>
-          <div class="feat-side hub-cards">
-            <button class="feat-card" data-action="comp" data-v="ko-EU" style="--c:#2A5BD7"><span class="feat-card-title">Europe Kick-Off Open</span><span class="feat-meta">Live · playoffs 20–22 Nov · last Kick-Off spot</span><span class="feat-arrow">→</span></button>
-            <button class="feat-card" data-action="comp" data-v="cf27" style="--c:#d4a017"><span class="feat-card-title">Club Finale</span><span class="feat-meta">2027 · 16 teams · $500,500</span><span class="feat-arrow">→</span></button>
-          </div>
-          <div class="tile-grid">${comps.filter((c) => c.season === '2027' && !c.nations).map(compTile).join('') || none}</div>` },
-      rlcs26: { label: 'RLCS 2026', icon: '26', c: '#d4a017', fig: HUB_CUP,
-        eyebrow: 'Fort Worth · Sep 2026', title: 'RLCS World <em>Championship</em>',
-        text: `20 teams · <span class="chip">Real 2026 field</span><br>Won by <b>${esc(DATA.events[0].winner)}</b> over ${esc(DATA.events[0].runnerUp)}`,
-        acts: `<button class="btn primary" data-action="comp" data-v="worlds">Open Worlds →</button>`,
-        art: board('Worlds field', worlds),
-        body: () => `<h2 class="home-h">RLCS 2026</h2>
-          <div class="feat-side hub-cards">
-            <button class="feat-card" data-action="comp" data-v="paris" style="--c:#3b6cf6"><span class="feat-card-title">Paris Major</span><span class="feat-meta">May 2026 · won by ${esc(DATA.events[1].winner)}</span><span class="feat-arrow">→</span></button>
-            <button class="feat-card" data-action="comp" data-v="boston" style="--c:#b91c1c"><span class="feat-card-title">Boston Major</span><span class="feat-meta">Feb 2026 · won by ${esc(DATA.events[2].winner)}</span><span class="feat-arrow">→</span></button>
-          </div>
-          <div class="tile-grid">${comps.filter((c) => c.season === '2026' && !c.nations).map(compTile).join('') || none}</div>` },
-      side: { label: '1v1 & 2v2', icon: '1·2', c: '#22d3ee', fig: HUB_CUP,
-        eyebrow: 'Side championships', title: '1v1 &amp; 2v2 <em>Championships</em>',
-        text: 'Four regional Opens each, then a World Championship. The best duellists and duos in the world.',
-        acts: `<button class="btn primary" data-action="side-mode" data-v="1">1v1 Championship →</button><button class="btn" data-action="side-mode" data-v="2">2v2 Championship →</button>`,
-        art: `<div class="hub-art-duo"><b>1v1</b><b>2v2</b></div>`,
-        body: () => `<h2 class="home-h">1v1 &amp; 2v2 Championships</h2>${sideHome()}` },
-      regions: { label: 'Regions', icon: '◎', c: '#34d399', fig: HUB_CUP,
-        eyebrow: seasonLabel(curSeason()) + ' rosters', title: 'Regional <em>leagues</em>',
-        text: 'Seven regions, a full league season and playoffs each. Pick a region and play out its season.',
-        acts: `<button class="btn primary" data-action="region-league" data-v="EU">Europe →</button><button class="btn" data-action="region-league" data-v="NA">North America →</button>`,
-        art: `<div class="hub-art-regions">${Object.keys(REGIONS).map((k) => `<span style="--c:${REGION_COLORS[k]}">${k}<i>${regionCounts[k] || 0}</i></span>`).join('')}</div>`,
-        body: () => `<div class="home-h-row"><h2 class="home-h">Regional leagues</h2>${seasonSeg()}</div><div class="tile-grid">${Object.entries(REGIONS).map(regionTile).join('')}</div>` },
-      nations: { label: 'Nations', icon: '⚑', c: '#60a5fa', fig: HUB_CUP,
-        eyebrow: 'National teams', title: 'Nations <em>cups</em>',
-        text: `Each country's three best players · ${esc(seasonLabel(SEASON_KEYS[0]))} rosters. The Esports Nations Cup and the FIFAe World Cup rotate their host cities every year.`,
-        acts: nat.slice(0, 2).map((c, i) => `<button class="btn${i ? '' : ' primary'}" data-action="comp" data-v="${c.id}">${esc(c.name)} →</button>`).join(''),
-        art: `<div class="hub-art-flags">${natTeams.map((t) => badge(t, 'md')).join('')}</div>`,
-        body: () => `<div class="home-h-row"><h2 class="home-h">National teams</h2><span class="muted" style="font-size:13px">Each country's three best players · ${esc(seasonLabel(SEASON_KEYS[0]))} rosters</span></div><div class="tile-grid">${nat.map(compTile).join('')}</div>` },
-      archive: { label: 'Archive', icon: '⟲', c: '#a78bfa', fig: HUB_CUP,
-        eyebrow: 'Season archive', title: 'Replay <em>history</em>',
-        text: se ? `${esc(se.label)}: real fields and rosters. Pick a season and simulate its events again.` : '',
-        acts: HIST.slice(0, 3).map((x, i) => `<button class="btn${i ? '' : ' primary'}" data-action="archive" data-v="${x.key}">${esc(x.label)}</button>`).join(''),
-        art: `<div class="hub-art-seasons">${HIST.map((x) => `<span class="${x.key === ak ? 'on' : ''}">${esc(x.key)}</span>`).join('')}</div>`,
-        body: () => se ? `<div class="home-h-row"><h2 class="home-h">Season archive</h2><div class="seg archive-seg" role="tablist" aria-label="Archive season">${HIST.map((x) => `<button class="${x.key === ak ? 'active' : ''}" data-action="archive" data-v="${x.key}" title="${esc(x.label)}">${esc(x.key)}</button>`).join('')}</div></div>
-          <p class="help" style="margin:-6px 0 0">${esc(se.label)}: real fields and rosters from ${se.key === 'S9' ? 'the regional championships (the Season 9 Finals were cancelled because of COVID-19)' : se.key === 'SX' ? 'the online regional Majors of each split and the regional Championships (RLCS X had no LAN events)' : /^S\d$/.test(se.key) ? 'the season Finals (the World Championship of its day)' : 'every Major and the World Championship'}. Pick one to simulate it again.</p>
-          <div class="tile-grid">${comps.filter((c) => c.season === ak).map(compTile).join('') || none}</div>` : '' },
-      more: { label: 'More modes', icon: '+', c: '#8b5cf6', fig: HUB_CAR,
-        eyebrow: 'Simulators', title: 'More <em>modes</em>',
-        text: 'Build your own tournament, play one series, run a 128-team knockout or a full league season.',
-        acts: `<button class="btn primary" data-action="nav" data-v="setup">Custom tournament →</button><button class="btn" data-action="custom-match">Custom match</button>`,
-        art: `<div class="hub-art-modes"><span>Bracket</span><span>Bo7</span><span>128</span><span>League</span></div>`,
-        body: () => `<h2 class="home-h">More simulators</h2>
-          <div class="sim-grid">
-            <button class="sim-card" data-action="nav" data-v="career" style="--c:#d4a017"><b>Career mode</b><span>Seasons, transfers, Majors and Worlds.</span></button>
-            <button class="sim-card" data-action="nav" data-v="setup" style="--c:#2f8cff"><b>Custom tournament</b><span>Build the field and control the format.</span></button>
-            <button class="sim-card" data-action="custom-match" style="--c:#ff8a1f"><b>Custom match</b><span>Play one series between any two teams.</span></button>
-            <button class="sim-card" data-action="mega" style="--c:#8b5cf6"><b>128-team knockout</b><span>Every region's best in one enormous bracket.</span></button>
-            <button class="sim-card" data-action="build-league" style="--c:#14b8a6"><b>Build a league</b><span>Pick a field and play a full round-robin season.</span></button>
-          </div>
-          ${resumeBanner}
-          <section class="home-banner about"><b>About the simulator</b><div class="toolbar"><button class="btn xs" data-action="open-guide">How it works</button><button class="btn xs" data-action="nav" data-v="teams">Team rankings</button><a class="btn xs" href="https://liquipedia.net/rocketleague/Main_Page" target="_blank" rel="noopener">Data: Liquipedia ↗</a></div></section>` },
+    const board = (title, list, six) => `<div class="feat-board hub-board" aria-hidden="true"><div class="feat-board-head"><span>${title}</span><span class="mono">OVR</span></div><div class="feat-grid${six ? ' feat-grid-6' : ''}">${list.map((t) => `<div class="fb-cell" title="${esc(t.name)}">${badge(t, 'sm')}<span>${esc(t.tag)}</span><i>${t.ovr}</i></div>`).join('')}</div></div>`;
+    const strip = (list) => `<span class="mt-badges">${list.slice(0, 8).map((t) => badge(t, 'sm')).join('')}</span>`;
+    // a competition as a menu tile
+    const ct = (c, extra) => { const th = themeOf(c.theme); return Object.assign({ t: c.name, s: c.sub, m: c.mono, c: th ? th.a : c.color, th, a: 'comp', v: c.id }, extra || {}); };
+    const rest = (season, skip) => comps.filter((c) => c.season === season && !c.nations && !skip.includes(c.id)).map((c) => ct(c));
+    const se = curSeason();
+    const sideTile = (n) => {
+      const M = SIDE[n], res = sideStore(se, n), done = SIDE_REGIONS.filter((r) => res[r]).length, champ = res.W && getTeam(res.W), br = themeOf('side-' + n + 'v' + n);
+      return { t: M.full, s: `4 regional Opens → World Championship · ${M.prize} · ${champ && champ.name !== 'Unknown' ? '🏆 ' + esc(champ.name) : done + ' of 4 Opens played'}`, m: M.name, c: br ? br.a : n === 1 ? '#22d3ee' : '#ff8a1f', th: br, a: 'side-mode', v: String(n), big: true };
     };
-    const tabs = HUB_TABS.filter((k) => k !== 'rlcs27' || HAS27).filter((k) => k !== 'archive' || HIST.length);
-    const F = TABS[tab];
-
-    /* the promo card on the right: a small carousel, like a console dashboard */
+    const TABS = {
+      career: { label: 'Career', icon: '★', c: '#f2b632', fig: HUB_CAR, eyebrow: 'Career mode', title: has ? 'Your career' : 'Run an RLCS organisation',
+        text: cs ? `${esc(cs.team.name)} · RLCS ${cs.season} · ${esc(cs.step)}` : 'Seasons, Opens, Majors, Worlds, transfers, contracts and player development. Manage a club or follow it all as a neutral viewer.',
+        art: cs && cs.team ? `<div class="hub-art-badge">${badge(cs.team, 'xl')}</div>` : `<div class="hub-art-mono">GM</div>`,
+        tiles: () => [
+          { t: 'Continue career', s: cs ? `${esc(cs.team.name)} · RLCS ${cs.season} · ${esc(cs.step)}` : 'No career to continue yet', m: '▶', c: '#f2b632', a: 'nav', v: 'career', big: true, dis: !has, art: cs && cs.team ? `<span class="mt-hero">${badge(cs.team, 'xl')}</span>` : '' },
+          { t: 'Start new career', s: 'Pick a club, or follow the season as a neutral viewer.', m: '+', c: '#d97706', a: 'home-career-new', v: '' },
+          live ? { t: 'Resume tournament', s: `${esc(T.title || E.FORMATS[T.format].name)} · ${entrants(T)} · ${played} series played`, m: 'LIVE', c: '#22c55e', a: 'resume', v: '' }
+            : { t: 'New tournament', s: 'Tournaments you start are saved on this device so you can pick them up later.', m: 'NEW', c: '#2f8cff', a: 'nav', v: 'setup' },
+          { t: 'Teams & rankings', s: 'Every roster, rating and region.', m: 'TOP', c: '#60a5fa', a: 'nav', v: 'teams' },
+        ] },
+      rlcs27: { label: 'RLCS 2027', icon: '27', c: '#e11d48', fig: HUB_CUP, eyebrow: 'Copper Box Arena, London · 9–13 Dec 2026', title: 'Club Championship <em>Kick-Off</em>',
+        text: `24 teams · double elimination · $300,000<br>${days > 0 ? '<b>' + days + ' days away</b> · ' : ''}20 partner teams + 4 Open qualifiers`,
+        art: board('Kick-Off field', koTeams, true), head: HAS27 ? `Current season · rosters as of ${esc(window.RL_DATA27.asOf)}` : '',
+        tiles: () => ko ? [ct(ko, { big: true, s: `London · 9–13 Dec 2026 · 24 teams · $300,000${days > 0 ? ' · ' + days + ' days away' : ''}`, art: strip(koTeams) }),
+          { t: 'Europe Kick-Off Open', s: 'Live · playoffs 20–22 Nov · last Kick-Off spot', m: 'EU', c: '#2A5BD7', a: 'comp', v: 'ko-EU' },
+          { t: 'Club Finale', s: '2027 · 16 teams · $500,500', m: 'CF', c: '#d4a017', a: 'comp', v: 'cf27' }].concat(rest('2027', ['k27', 'ko-EU', 'cf27'])) : [] },
+      rlcs26: { label: 'RLCS 2026', icon: '26', c: '#d4a017', fig: HUB_CUP, eyebrow: 'Fort Worth · Sep 2026', title: 'RLCS World <em>Championship</em>',
+        text: `20 teams · <span class="chip">Real 2026 field</span><br>Won by <b>${esc(DATA.events[0].winner)}</b> over ${esc(DATA.events[0].runnerUp)}`,
+        art: board('Worlds field', worlds), head: 'Real 2026 fields and results',
+        tiles: () => [ct(comps.find((c) => c.id === 'worlds'), { big: true, s: `Fort Worth · Sep 2026 · 20 teams · won by ${esc(DATA.events[0].winner)}`, art: strip(worlds) }),
+          ct(comps.find((c) => c.id === 'paris'), { s: `May 2026 · won by ${esc(DATA.events[1].winner)}` }),
+          ct(comps.find((c) => c.id === 'boston'), { s: `Feb 2026 · won by ${esc(DATA.events[2].winner)}` })].concat(rest('2026', ['worlds', 'paris', 'boston'])) },
+      side: { label: '1v1 & 2v2', icon: '1·2', c: '#22d3ee', fig: HUB_CUP, eyebrow: 'Side championships', title: '1v1 &amp; 2v2 <em>Championships</em>',
+        text: 'Four regional Opens each, then a World Championship. The best duellists and duos in the world.', art: `<div class="hub-art-duo"><b>1v1</b><b>2v2</b></div>`,
+        head: seasonLabel(se) + ' rosters', tiles: () => [sideTile(1), sideTile(2)] },
+      regions: { label: 'Regions', icon: '◎', c: '#34d399', fig: HUB_CUP, eyebrow: seasonLabel(se) + ' rosters', title: 'Regional <em>leagues</em>',
+        text: 'Seven regions, a full league season and playoffs each. Pick a region and play out its season.',
+        art: `<div class="hub-art-regions">${Object.keys(REGIONS).map((k) => `<span style="--c:${REGION_COLORS[k]}">${k}<i>${regionCounts[k] || 0}</i></span>`).join('')}</div>`,
+        tool: seasonSeg(), head: 'League + playoffs',
+        tiles: () => Object.entries(REGIONS).map(([k, v]) => { const th = themeOf('region-' + k.toLowerCase()); return { t: v, s: `${regionCounts[k] || 0} teams · ${seasonLabel(se)} · league + playoffs`, m: k, c: th ? th.a : REGION_COLORS[k], th, a: 'region-league', v: k, big: k === 'EU' }; }) },
+      nations: { label: 'Nations', icon: '⚑', c: '#60a5fa', fig: HUB_CUP, eyebrow: 'National teams', title: 'Nations <em>cups</em>',
+        text: `Each country's three best players · ${esc(seasonLabel(SEASON_KEYS[0]))} rosters. The Esports Nations Cup and the FIFAe World Cup rotate their host cities every year.`,
+        art: `<div class="hub-art-flags">${natTeams.map((t) => badge(t, 'md')).join('')}</div>`, head: `Each country's three best players · ${esc(seasonLabel(SEASON_KEYS[0]))} rosters`,
+        tiles: () => nat.map((c, i) => ct(c, { big: i === 0, art: i === 0 ? strip(natTeams) : '' })) },
+      archive: { label: 'Archive', icon: '⟲', c: '#a78bfa', fig: HUB_CUP, eyebrow: 'Season archive', title: 'Replay <em>history</em>',
+        text: 'Every season from RLCS Season 1 to 2025: real fields and rosters. Pick a season, then an event, and simulate it again.',
+        art: `<div class="hub-art-seasons">${HIST.map((x) => `<span>${esc(x.key)}</span>`).join('')}</div>`, head: 'Pick a season',
+        tiles: () => HIST.map((x, i) => ({ t: x.label, s: `${comps.filter((c) => c.season === x.key).length} events`, m: x.key, c: ['#a78bfa', '#818cf8', '#c084fc', '#7c3aed'][i % 4], a: 'hub-open', v: x.key, big: i === 0, more: true })),
+        sub: (key) => { const s2 = HIST.find((x) => x.key === key); if (!s2) return null; state.ui.archive = key;
+          return { title: s2.label, head: `Real fields and rosters from ${s2.key === 'S9' ? 'the regional championships (the Season 9 Finals were cancelled because of COVID-19)' : s2.key === 'SX' ? 'the online regional Majors of each split and the regional Championships (RLCS X had no LAN events)' : /^S\d$/.test(s2.key) ? 'the season Finals (the World Championship of its day)' : 'every Major and the World Championship'}. Pick one to simulate it again.`,
+            tiles: comps.filter((c) => c.season === key).map((c, i) => ct(c, { big: i === 0 })) }; } },
+      more: { label: 'More modes', icon: '+', c: '#8b5cf6', fig: HUB_CAR, eyebrow: 'Simulators', title: 'More <em>modes</em>',
+        text: 'Build your own tournament, play one series, run a 128-team knockout or a full league season.',
+        art: `<div class="hub-art-modes"><span>Bracket</span><span>Bo7</span><span>128</span><span>League</span></div>`, head: 'Simulators and help',
+        tiles: () => [
+          { t: 'Custom tournament', s: 'Build the field and control the format.', m: 'CT', c: '#2f8cff', a: 'nav', v: 'setup', big: true },
+          { t: 'Custom match', s: 'Play one series between any two teams.', m: 'Bo7', c: '#ff8a1f', a: 'custom-match', v: '' },
+          { t: '128-team knockout', s: "Every region's best in one enormous bracket.", m: '128', c: '#8b5cf6', a: 'mega', v: '' },
+          { t: 'Build a league', s: 'Pick a field and play a full round-robin season.', m: 'LG', c: '#14b8a6', a: 'build-league', v: '' },
+          { t: 'Career mode', s: 'Seasons, transfers, Majors and Worlds.', m: 'GM', c: '#d4a017', a: 'nav', v: 'career' },
+          live ? { t: 'Resume tournament', s: `${esc(T.title || E.FORMATS[T.format].name)} · ${played} series played`, m: 'LIVE', c: '#22c55e', a: 'resume', v: '' } : null,
+          { t: 'How it works', s: 'About the simulator, ratings and formats.', m: '?', c: '#64748b', a: 'open-guide', v: '' },
+          { t: 'Team rankings', s: 'Every team, rated.', m: 'TOP', c: '#60a5fa', a: 'nav', v: 'teams' },
+          { t: 'Data: Liquipedia', s: 'Rosters and event data (CC-BY-SA 3.0).', m: 'LP', c: '#475569', href: 'https://liquipedia.net/rocketleague/Main_Page' },
+        ].filter(Boolean) },
+    };
     const promos = [
-      live ? { t: 'Resume tournament', s: `${esc(T.title || E.FORMATS[T.format].name)} · ${Object.values(T.matches).filter((m) => m.result && !m.result.bye).length} series played`, a: 'resume', v: '', art: `<b class="pc-mono">LIVE</b>` }
+      live ? { t: 'Resume tournament', s: `${esc(T.title || E.FORMATS[T.format].name)} · ${played} series played`, a: 'resume', v: '', art: `<b class="pc-mono">LIVE</b>` }
         : { t: 'New tournament', s: 'Build the field, pick the format and simulate every series. Tournaments are saved on this device.', a: 'nav', v: 'setup', art: `<b class="pc-mono">NEW</b>` },
       ko ? { t: 'Kick-Off · London', s: days > 0 ? `${days} days to go. 24 teams, $300,000.` : '24 teams, $300,000.', a: 'comp', v: 'k27', art: `<div class="pc-badges">${koTeams.slice(0, 6).map((t) => badge(t, 'md')).join('')}</div>` } : null,
       HAS27 ? { t: 'Europe Kick-Off Open', s: 'Live · playoffs 20–22 Nov · the last Kick-Off spot.', a: 'comp', v: 'ko-EU', art: `<b class="pc-mono">EU</b>` } : null,
       { t: 'World Champions', s: `${esc(DATA.events[0].winner)} won Worlds 2026 in Fort Worth.`, a: 'comp', v: 'worlds', art: `<div class="pc-badges">${worlds.slice(0, 6).map((t) => badge(t, 'md')).join('')}</div>` },
       { t: has ? 'Your career' : 'Career mode', s: cs ? `${esc(cs.team.name)} · ${esc(cs.step)}` : 'Run an RLCS organisation through Opens, Majors and Worlds.', a: has ? 'nav' : 'home-career-new', v: has ? 'career' : '', art: cs && cs.team ? `<div class="pc-badges one">${badge(cs.team, 'xl')}</div>` : `<b class="pc-mono">GM</b>` },
     ].filter(Boolean);
+    return { TABS, promos, comps, ct };
+  }
+
+  /** One menu tile (FIFA-style: italic title, a big mono watermark, optional event art). */
+  function menuTile(x, i) {
+    const art = x.th && x.th.art ? `background-image:linear-gradient(180deg, rgba(5,8,22,.05) 25%, rgba(5,8,22,.88)),url(${x.th.art})` : '';
+    const attrs = x.href ? `href="${x.href}" target="_blank" rel="noopener"` : `type="button" data-action="${x.a}" data-v="${esc(x.v || '')}"${x.dis ? ' disabled' : ''}`;
+    const tag = x.href ? 'a' : 'button';
+    return `<${tag} class="mt${x.big ? ' big' : ''}${art ? ' has-art' : ''}${x.more ? ' more' : ''}" ${attrs} style="--c:${x.c || '#2f8cff'};--i:${i};${art}">
+      <i class="mt-mono" aria-hidden="true">${esc(x.m || '')}</i>${x.art || ''}
+      <span class="mt-txt"><b>${esc(x.t).replace(/&amp;(amp;)?/g, '&amp;')}</b>${x.s ? `<small>${x.s}</small>` : ''}</span>${x.more ? '<span class="mt-go" aria-hidden="true">›</span>' : ''}</${tag}>`;
+  }
+
+  function featHTML(F, k) {
+    return `<div class="hf-copy"><span class="hf-eye">${F.eyebrow}</span><h1 class="hf-title">${F.title}</h1><p class="hf-text">${F.text}</p>
+      <div class="hf-acts"><button class="btn primary" data-action="hub-tab" data-v="${k}">Open ${esc(F.label)} ›</button></div></div><div class="hf-art">${F.art}</div>`;
+  }
+
+  function renderHome() {
+    const { TABS, promos, comps, ct } = hubModel();
+    const q = (state.ui.compQuery || '').toLowerCase();
+    const tabs = hubTabsOn();
+    let path = hubPath().slice();
+    if (path[0] && !tabs.includes(path[0])) path = [];
+    const tab = path[0] || hubTab();
+    const F = TABS[tab];
     hubSlide = hubSlide % promos.length;
 
-    const results = q ? `<div class="home-h-row"><h2 class="home-h">Search results</h2><button class="btn xs" data-action="hub-clear">Clear search</button></div><div class="tile-grid">${compList.map(compTile).join('') || none}</div>` : '';
-
-    app.innerHTML = `<div class="home hubbed">
-      <section class="hub" style="--hc:${F.c}" aria-label="Home">
-        <div class="hub-bg" aria-hidden="true"><i class="hb-bars"></i><i class="hb-dots l"></i><i class="hb-dots r"></i><i class="hb-streak"></i><i class="hb-floor"></i></div>
-        <div class="hub-main">
-          <article class="hub-feat" id="hubFeat" role="tabpanel" aria-labelledby="hubTab-${tab}">
-            <div class="hf-copy">
-              <span class="hf-eye">${F.eyebrow}</span>
-              <h1 class="hf-title">${F.title}</h1>
-              <p class="hf-text">${F.text}</p>
-              <div class="hf-acts">${F.acts}</div>
-            </div>
-            <div class="hf-art">${F.art}</div>
-          </article>
+    // the stage: top level (feature + centre-piece + promo), a sub-menu, a deeper level, or search results
+    let stage, level = 'top', crumbs = [];
+    if (q) {
+      level = 'search';
+      const hits = comps.filter((c) => (c.name + ' ' + c.sub).toLowerCase().includes(q));
+      stage = `<header class="hub-head"><div><span class="hh-crumbs">Home › Search</span><h1 class="hh-title">Results for “${esc(state.ui.compQuery)}”</h1><p class="hh-sub">${hits.length} competition${hits.length === 1 ? '' : 's'}</p></div><button class="hh-back" data-action="hub-clear"><kbd>Esc</kbd>Clear</button></header>
+        <div class="hub-grid">${hits.map((c, i) => menuTile(ct(c), i)).join('') || '<p class="hub-empty">No competitions match.</p>'}</div>`;
+    } else if (path.length) {
+      const deep = path[1] && F.sub ? F.sub(path[1]) : null;
+      level = deep ? 'deep' : 'sub';
+      const title = deep ? deep.title : F.label, head = deep ? deep.head : F.head || '', tiles = deep ? deep.tiles : F.tiles();
+      crumbs = deep ? ['Home', F.label, deep.title] : ['Home', F.label];
+      stage = `<header class="hub-head"><div><span class="hh-crumbs">${crumbs.map((c, i) => i < crumbs.length - 1 ? `<button data-action="hub-crumb" data-v="${i}">${esc(c)}</button>` : `<b>${esc(c)}</b>`).join('<i>›</i>')}</span><h1 class="hh-title">${esc(title)}</h1>${head ? `<p class="hh-sub">${head}</p>` : ''}</div>
+        <div class="hh-right">${!deep && F.tool ? `<div class="hh-tool">${F.tool}</div>` : ''}<button class="hh-back" data-action="hub-back"><kbd>Esc</kbd>Back</button></div></header>
+        <div class="hub-grid">${tiles.map(menuTile).join('') || '<p class="hub-empty">Nothing here yet.</p>'}</div>`;
+    } else {
+      stage = `<div class="hub-main">
+          <article class="hub-feat" id="hubFeat" style="--hc:${F.c}">${featHTML(F, tab)}</article>
           <div class="hub-fig" aria-hidden="true">${F.fig}<span class="hub-spot"></span></div>
           <aside class="hub-promo" aria-label="Featured" aria-roledescription="carousel">
             ${promos.map((p, i) => `<div class="hp-slide${i === hubSlide ? ' on' : ''}" aria-hidden="${i === hubSlide ? 'false' : 'true'}">
               <h3>${p.t}</h3><p>${p.s}</p><div class="hp-art">${p.art}</div>
               <button class="hp-go" data-action="${p.a}" data-v="${p.v}" ${i === hubSlide ? '' : 'tabindex="-1"'}><span>Take me there</span></button></div>`).join('')}
-            <div class="hp-dots">${promos.map((p, i) => `<button class="${i === hubSlide ? 'on' : ''}" data-action="hub-promo" data-v="${i}" aria-label="Show: ${esc(p.t.replace(/<[^>]+>/g, ''))}"></button>`).join('')}</div>
+            <div class="hp-dots">${promos.map((p, i) => `<button class="${i === hubSlide ? 'on' : ''}" data-action="hub-promo" data-v="${i}" aria-label="Show: ${esc(p.t)}"></button>`).join('')}</div>
           </aside>
-        </div>
-        <div class="hub-tabs" role="tablist" aria-label="Home sections">
-          ${tabs.map((k) => `<button class="hub-tab${k === tab ? ' on' : ''}" role="tab" id="hubTab-${k}" aria-selected="${k === tab}" tabindex="${k === tab ? 0 : -1}" aria-controls="hubFeat" data-action="hub-tab" data-v="${k}" style="--tc:${TABS[k].c}"><span>${TABS[k].label}</span><i aria-hidden="true">${TABS[k].icon}</i></button>`).join('')}
-        </div>
+        </div>`;
+    }
+    app.innerHTML = `<div class="home hubbed">
+      <section class="hub lvl-${level}" style="--hc:${F.c}" aria-label="Home menu">
+        <div class="hub-bg" aria-hidden="true"><i class="hb-bars"></i><i class="hb-dots l"></i><i class="hb-dots r"></i><i class="hb-streak"></i><i class="hb-floor"></i></div>
+        ${stage}
+        <nav class="hub-tabs" aria-label="Home sections">
+          ${tabs.map((k) => `<button class="hub-tab${k === tab ? ' on' : ''}${k === tab && path.length ? ' in' : ''}" id="hubTab-${k}" ${k === tab ? 'aria-current="true"' : ''} data-action="hub-tab" data-v="${k}" style="--tc:${TABS[k].c}"><span>${TABS[k].label}</span><i aria-hidden="true">${TABS[k].icon}</i></button>`).join('')}
+        </nav>
         <div class="hub-foot">
-          <span class="hub-hint"><kbd>⏎</kbd>Select</span><span class="hub-hint"><kbd>←</kbd><kbd>→</kbd>Browse</span><span class="hub-hint"><kbd>/</kbd>Search</span>
+          <span class="hub-hint"><kbd>⏎</kbd>${path.length || q ? 'Select' : 'Open'}</span><span class="hub-hint"><kbd>←</kbd><kbd>→</kbd>Browse</span>${path.length || q ? '<span class="hub-hint"><kbd>Esc</kbd>Back</span>' : ''}<span class="hub-hint"><kbd>/</kbd>Search</span>
           <div class="search hub-search"><input class="input" id="compQuery" placeholder="Search competitions…" value="${esc(state.ui.compQuery || '')}" aria-label="Search competitions" /></div>
         </div>
       </section>
-      <div class="hub-panel">${results || F.body()}</div>
     </div>`;
     const cq = $('#compQuery');
     if (cq) cq.addEventListener('input', () => { state.ui.compQuery = cq.value; const pos = cq.selectionStart; renderHome(); const n = $('#compQuery'); n.focus(); n.setSelectionRange(pos, pos); });
-    const tl = app.querySelector('.hub-tabs');
-    tl.addEventListener('keydown', (ev) => {
-      const i = tabs.indexOf(tab); let j = -1;
-      if (ev.key === 'ArrowRight') j = (i + 1) % tabs.length; else if (ev.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length; else if (ev.key === 'Home') j = 0; else if (ev.key === 'End') j = tabs.length - 1;
-      if (j < 0) return;
-      ev.preventDefault(); setHubTab(tabs[j]); renderHome(); const b = app.querySelector('#hubTab-' + tabs[j]); if (b) b.focus();
-      if (window.RLSfx) window.RLSfx.play('hover');
+    { const tl = app.querySelector('.hub-tabs'), on = tl && tl.querySelector('.hub-tab.on'); if (on && tl.scrollWidth > tl.clientWidth) tl.scrollLeft = Math.max(0, on.offsetLeft - tl.clientWidth / 2 + on.offsetWidth / 2); } // phones: keep the open tab in view
+    // top level: pointing at (or arrowing to) a tab previews it in the feature panel; clicking opens it
+    const feat = app.querySelector('#hubFeat');
+    const preview = (k) => { if (!feat || feat.dataset.k === k) return; feat.dataset.k = k; feat.style.setProperty('--hc', TABS[k].c); app.querySelector('.hub').style.setProperty('--hc', TABS[k].c); feat.innerHTML = featHTML(TABS[k], k); feat.classList.remove('swap'); void feat.offsetWidth; feat.classList.add('swap'); const fig = app.querySelector('.hub-fig'); if (fig) fig.innerHTML = TABS[k].fig + '<span class="hub-spot"></span>'; };
+    if (feat) feat.dataset.k = tab;
+    app.querySelectorAll('.hub-tab').forEach((b) => { const k = b.dataset.v; b.addEventListener('mouseenter', () => !path.length && preview(k)); b.addEventListener('focus', () => !path.length && preview(k)); });
+    // arrow keys move between tabs or tiles
+    app.querySelector('.hub').addEventListener('keydown', (ev) => {
+      const t = ev.target; if (/^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName)) return;
+      const list = t.classList.contains('hub-tab') ? [...app.querySelectorAll('.hub-tab')] : t.classList.contains('mt') ? [...app.querySelectorAll('.hub-grid .mt')] : null;
+      if (!list) return;
+      const i = list.indexOf(t); let j = -1;
+      if (ev.key === 'ArrowRight') j = Math.min(list.length - 1, i + 1); else if (ev.key === 'ArrowLeft') j = Math.max(0, i - 1);
+      else if ((ev.key === 'ArrowDown' || ev.key === 'ArrowUp') && t.classList.contains('mt')) {
+        const r = t.getBoundingClientRect(), cx = r.left + r.width / 2, down = ev.key === 'ArrowDown';
+        let best = -1, bd = Infinity;
+        list.forEach((el, k) => { const b = el.getBoundingClientRect(); const dy = down ? b.top - r.bottom : r.top - b.bottom; if (dy < -4) return; const d = dy * 3 + Math.abs(b.left + b.width / 2 - cx); if (d < bd) { bd = d; best = k; } });
+        j = best;
+        if (j < 0 && down) { const tb = app.querySelector('.hub-tab.on'); if (tb) { ev.preventDefault(); tb.focus(); } return; }
+      } else if (ev.key === 'ArrowUp' && t.classList.contains('hub-tab') && path.length) { const f = app.querySelector('.hub-grid .mt'); if (f) { ev.preventDefault(); f.focus(); } return; }
+      if (j < 0 || j === i) return;
+      ev.preventDefault(); list[j].focus(); if (window.RLSfx) window.RLSfx.play('hover');
     });
     // rotate the promo card every few seconds (paused while the pointer or focus is on it)
     clearInterval(hubTimer);
     const promo = app.querySelector('.hub-promo');
-    let hold = false;
-    ['mouseenter', 'focusin'].forEach((e) => promo.addEventListener(e, () => (hold = true)));
-    ['mouseleave', 'focusout'].forEach((e) => promo.addEventListener(e, () => (hold = false)));
-    if (promos.length > 1 && !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) hubTimer = setInterval(() => {
-      if (hold || !document.body.contains(promo) || document.hidden) { if (!document.body.contains(promo)) clearInterval(hubTimer); return; }
-      showPromo((hubSlide + 1) % promos.length);
-    }, 6500);
+    if (promo) {
+      let hold = false;
+      ['mouseenter', 'focusin'].forEach((e) => promo.addEventListener(e, () => (hold = true)));
+      ['mouseleave', 'focusout'].forEach((e) => promo.addEventListener(e, () => (hold = false)));
+      if (promos.length > 1 && !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) hubTimer = setInterval(() => {
+        if (!document.body.contains(promo)) { clearInterval(hubTimer); return; }
+        if (!hold && !document.hidden) showPromo((hubSlide + 1) % promos.length);
+      }, 6500);
+    }
   }
-  // "/" jumps to the competition search on the home hub, like a console's quick-search button
+  // keyboard: "/" jumps to the search, Esc / Backspace go back a level (like a console's back button)
   document.addEventListener('keydown', (ev) => {
-    if (ev.key !== '/' || state.view !== 'home' || ev.ctrlKey || ev.metaKey || ev.altKey) return;
-    const t = ev.target; if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) || document.querySelector('.modal-backdrop, .cut, .hero:not(.gone)')) return;
-    const q = document.getElementById('compQuery'); if (q) { ev.preventDefault(); q.focus(); }
+    if (state.view !== 'home' || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+    if (document.querySelector('.modal-backdrop, .cut, .hero:not(.gone)')) return;
+    const t = ev.target, typing = t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
+    if (ev.key === '/' && !typing) { const q = document.getElementById('compQuery'); if (q) { ev.preventDefault(); q.focus(); } return; }
+    if (ev.key === 'Escape' || (ev.key === 'Backspace' && !typing)) {
+      if (state.ui.compQuery) { ev.preventDefault(); state.ui.compQuery = ''; renderHome(); return; }
+      if (hubPath().length && !(typing && ev.key === 'Backspace')) { ev.preventDefault(); const p = hubPath().slice(0, -1); hubGo(p); if (!p.length) { const b = document.getElementById('hubTab-' + hubTab()); if (b) b.focus(); } }
+    }
   });
   function showPromo(i) {
     hubSlide = i;
@@ -1902,11 +1937,14 @@
       case 'career-out-sim': { closeModal(); const T = state.T; T.managedOutShown = true; T.championShown = true; window.RLCareer.simRest(T); save(); go('career'); break; }
       case 'close-modal': closeModal(); break;
       case 'go-setup': ev.preventDefault(); go(state.T && ((state.T.cfg && state.T.cfg.custom) || state.T.side) ? 'home' : 'setup'); break;
-      case 'go-home': ev.preventDefault(); go('home'); break;
+      case 'go-home': ev.preventDefault(); state.ui.homePath = []; go('home'); break;
       case 'nav': ev.preventDefault(); closeModal(); go(v); break;
       case 'resume': go('tournament'); break;
       case 'comp': openComp(v); break;
-      case 'hub-tab': setHubTab(v); state.ui.compQuery = ''; renderHome(); { const b = document.getElementById('hubTab-' + v); if (b) b.focus({ preventScroll: true }); } break;
+      case 'hub-tab': hubGo([v]); break;
+      case 'hub-open': hubGo([hubPath()[0] || hubTab(), v]); break;
+      case 'hub-back': hubGo(hubPath().slice(0, -1)); break;
+      case 'hub-crumb': hubGo(hubPath().slice(0, +v)); break;
       case 'hub-promo': showPromo(+v); break;
       case 'hub-clear': state.ui.compQuery = ''; renderHome(); break;
       case 'comp-customise': { const c = competitions().find((x) => x.id === v); presetSetup(c); closeModal(); go('setup'); break; }
