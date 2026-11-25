@@ -1478,7 +1478,25 @@
     <path d="M90 164 H110 L114 214 H86Z" fill="url(#hubGold)"/><path d="M62 214 H138 L146 246 H54Z" fill="url(#hubGold)"/><rect x="44" y="246" width="112" height="34" rx="3" fill="#0b1230"/><rect x="44" y="254" width="112" height="6" fill="var(--hc)"/>
     <path d="M100 62 l9 18 20 3 -14 14 3 20 -18 -9 -18 9 3 -20 -14 -14 20 -3z" fill="#fff6d8" opacity=".55"/><path d="M60 40 Q66 110 96 150" fill="none" stroke="#fff" stroke-width="5" opacity=".35" stroke-linecap="round"/></svg>`;
   const HUB_CAR = `<svg viewBox="0 0 300 150" class="hub-fig-svg car" aria-hidden="true"><path d="M20 98 L14 74 L40 74 L48 92Z" fill="var(--hc)"/><path d="M8 112 L14 92 L58 86 L112 80 L150 50 L214 46 L254 78 L290 86 L296 104 L288 118Z" fill="#101a3d" stroke="var(--hc)" stroke-width="4" stroke-linejoin="round"/><path d="M158 57 L210 54 L238 78 L146 80Z" fill="#9fc3ff" opacity=".55"/><path d="M18 104 H290" stroke="var(--hc)" stroke-width="4"/><circle cx="74" cy="118" r="22" fill="#05070f" stroke="#2a3142" stroke-width="4"/><circle cx="238" cy="118" r="22" fill="#05070f" stroke="#2a3142" stroke-width="4"/><circle cx="74" cy="118" r="8" fill="var(--hc)"/><circle cx="238" cy="118" r="8" fill="var(--hc)"/></svg>`;
-  const HUB_TABS = ['career', 'rlcs27', 'rlcs26', 'side', 'regions', 'nations', 'archive', 'teams', 'more', 'settings'];
+  const HUB_TABS = ['career', 'rlcs27', 'rlcs26', 'side', 'regions', 'nations', 'archive', 'more', 'teams', 'settings'];
+  /** The tab row is split into labelled groups, so it reads at a glance. */
+  const HUB_GROUPS = [['Your game', ['career']], ['Competitions', ['rlcs27', 'rlcs26', 'side', 'regions', 'nations', 'archive']], ['Tools', ['more', 'teams', 'settings']]];
+  const HUB_KIND = { career: 'option', rlcs27: 'event', rlcs26: 'event', side: 'championship', regions: 'league', nations: 'cup', archive: 'season', more: 'mode', teams: 'ranking', settings: 'option' };
+  const HUB_OVERVIEW = {
+    career: 'Pick a club and run it through seasons of Opens, Majors and Worlds, with transfers, contracts and player development. Or continue the career you started.',
+    rlcs27: 'The current season: the Club Championship Kick-Off in London, the regional Kick-Off Opens, the Club League and the Club Finale.',
+    rlcs26: 'Play 2026 again with the real fields: the World Championship, the Paris and Boston Majors, the Esports World Cup and every regional Open.',
+  };
+  const HUB_BLURB = { career: 'Run your own club', rlcs27: 'Current season', rlcs26: 'Last season, real results', side: 'Solo & duo titles', regions: 'Regional leagues', nations: 'National teams', archive: 'Past seasons', more: 'Build your own', teams: 'Rosters & ratings', settings: 'Options & help' };
+  /** Sub-menu sections: which heading a tile sits under. */
+  function hubGroupOf(x) {
+    if (x.g) return x.g;
+    const n = x.t || '', sub = x.s || '';
+    if (/Kick-Off Open/i.test(n)) return 'Kick-Off Opens';
+    if (/Club League/i.test(n)) return 'Club League';
+    if (/regional open/i.test(sub) || / Open$/.test(n)) return 'Regional Opens';
+    return 'Events';
+  }
   let hubTimer = null, hubSlide = 0;
   const hubTabsOn = () => HUB_TABS.filter((k) => k !== 'rlcs27' || HAS27).filter((k) => k !== 'archive' || HIST.length);
   function hubTab() {
@@ -1524,18 +1542,18 @@
             : { t: 'New tournament', s: 'Tournaments you start are saved on this device so you can pick them up later.', m: 'NEW', c: '#2f8cff', a: 'nav', v: 'setup' },
           { t: 'Teams & rankings', s: 'Every roster, rating and region.', m: 'TOP', c: '#60a5fa', a: 'nav', v: 'teams' },
         ] },
-      rlcs27: { label: 'RLCS 2027', icon: '27', c: '#e11d48', fig: HUB_CUP, eyebrow: 'Copper Box Arena, London · 9–13 Dec 2026', title: 'Club Championship <em>Kick-Off</em>',
+      rlcs27: { sections: true, label: 'RLCS 2027', icon: '27', c: '#e11d48', fig: HUB_CUP, eyebrow: 'Copper Box Arena, London · 9–13 Dec 2026', title: 'Club Championship <em>Kick-Off</em>',
         text: `24 teams · double elimination · $300,000<br>${days > 0 ? '<b>' + days + ' days away</b> · ' : ''}20 partner teams + 4 Open qualifiers`,
         art: board('Kick-Off field', koTeams, true), head: HAS27 ? `Current season · rosters as of ${esc(window.RL_DATA27.asOf)}` : '',
         tiles: () => ko ? [ct(ko, { big: true, s: `London · 9–13 Dec 2026 · 24 teams · $300,000${days > 0 ? ' · ' + days + ' days away' : ''}`, art: strip(koTeams) }),
-          { t: 'Europe Kick-Off Open', s: 'Live · playoffs 20–22 Nov · last Kick-Off spot', m: 'EU', c: '#2A5BD7', a: 'comp', v: 'ko-EU' },
-          { t: 'Club Finale', s: '2027 · 16 teams · $500,500', m: 'CF', c: '#d4a017', a: 'comp', v: 'cf27' }].concat(rest('2027', ['k27', 'ko-EU', 'cf27'])) : [] },
-      rlcs26: { label: 'RLCS 2026', icon: '26', c: '#d4a017', fig: HUB_CUP, eyebrow: 'Fort Worth · Sep 2026', title: 'RLCS World <em>Championship</em>',
+          { t: 'Europe Kick-Off Open', s: 'Live · playoffs 20–22 Nov · last Kick-Off spot', m: 'EU', c: '#2A5BD7', a: 'comp', v: 'ko-EU', feat: true },
+          { t: 'Club Finale', s: '2027 · 16 teams · $500,500', m: 'CF', c: '#d4a017', a: 'comp', v: 'cf27', feat: true }].concat(rest('2027', ['k27', 'ko-EU', 'cf27'])) : [] },
+      rlcs26: { sections: true, label: 'RLCS 2026', icon: '26', c: '#d4a017', fig: HUB_CUP, eyebrow: 'Fort Worth · Sep 2026', title: 'RLCS World <em>Championship</em>',
         text: `20 teams · <span class="chip">Real 2026 field</span><br>Won by <b>${esc(DATA.events[0].winner)}</b> over ${esc(DATA.events[0].runnerUp)}`,
         art: board('Worlds field', worlds), head: 'Real 2026 fields and results',
         tiles: () => [ct(comps.find((c) => c.id === 'worlds'), { big: true, s: `Fort Worth · Sep 2026 · 20 teams · won by ${esc(DATA.events[0].winner)}`, art: strip(worlds) }),
-          ct(comps.find((c) => c.id === 'paris'), { s: `May 2026 · won by ${esc(DATA.events[1].winner)}` }),
-          ct(comps.find((c) => c.id === 'boston'), { s: `Feb 2026 · won by ${esc(DATA.events[2].winner)}` })].concat(rest('2026', ['worlds', 'paris', 'boston'])) },
+          ct(comps.find((c) => c.id === 'paris'), { s: `May 2026 · won by ${esc(DATA.events[1].winner)}`, feat: true }),
+          ct(comps.find((c) => c.id === 'boston'), { s: `Feb 2026 · won by ${esc(DATA.events[2].winner)}`, feat: true })].concat(rest('2026', ['worlds', 'paris', 'boston'])) },
       side: { label: '1v1 & 2v2', icon: '1·2', c: '#22d3ee', fig: HUB_CUP, eyebrow: 'Side championships', title: '1v1 &amp; 2v2 <em>Championships</em>',
         text: 'Four regional Opens each, then a World Championship. The best duellists and duos in the world.', art: `<div class="hub-art-duo"><b>1v1</b><b>2v2</b></div>`,
         head: seasonLabel(se) + ' rosters', tiles: () => [sideTile(1), sideTile(2)] },
@@ -1606,9 +1624,25 @@
       <span class="mt-txt"><b>${esc(x.t).replace(/&amp;(amp;)?/g, '&amp;')}</b>${x.s ? `<small>${x.s}</small>` : ''}</span>${x.more ? '<span class="mt-go" aria-hidden="true">›</span>' : ''}</${tag}>`;
   }
 
+  /** Tiles under headings ("Featured", "Regional Opens"…) when a sub-menu holds several kinds of thing. */
+  function hubSections(tiles, sections) {
+    if (!tiles.length) return '<div class="hub-grid"><p class="hub-empty">Nothing here yet.</p></div>';
+    if (!sections) return `<div class="hub-grid">${tiles.map(menuTile).join('')}</div>`;
+    const order = [], by = {};
+    tiles.forEach((x) => { const g = x.big || x.feat ? 'Featured' : hubGroupOf(x); if (!by[g]) { by[g] = []; order.push(g); } by[g].push(x); });
+    if (order.length < 2) return `<div class="hub-grid">${tiles.map(menuTile).join('')}</div>`;
+    let i = 0;
+    return order.map((g) => `<section class="mg"><h2 class="mg-h">${esc(g)} <span>${by[g].length}</span></h2><div class="hub-grid">${by[g].map((x) => menuTile(x, i++)).join('')}</div></section>`).join('');
+  }
+  /** The top-level preview: what the pointed-at section is, and a list of what's inside it (each row clickable). */
   function featHTML(F, k) {
-    return `<div class="hf-copy"><span class="hf-eye">${F.eyebrow}</span><h1 class="hf-title">${F.title}</h1><p class="hf-text">${F.text}</p>
-      <div class="hf-acts"><button class="btn primary" data-action="hub-tab" data-v="${k}">Open ${esc(F.label)} ›</button></div></div><div class="hf-art">${F.art}</div>`;
+    let items = []; try { items = F.tiles(); } catch (e) { items = []; }
+    const n = items.length, shown = items.slice(0, 6);
+    const row = (x) => { const attrs = x.href ? `href="${x.href}" target="_blank" rel="noopener"` : `type="button" data-action="${x.a}" data-v="${esc(x.v || '')}"${x.dis ? ' disabled' : ''}`; const tag = x.href ? 'a' : 'button';
+      return `<${tag} class="hf-item" ${attrs} style="--c:${x.c || '#2f8cff'}"><i>${esc(x.m || '')}</i><b>${esc(x.t)}</b><small>${x.s || ''}</small><span aria-hidden="true">${x.more ? '›' : '→'}</span></${tag}>`; };
+    return `<div class="hf-copy"><span class="hf-eye">${esc(HUB_BLURB[k] || '')}</span><h1 class="hf-title">${esc(F.label).replace(/^(\S+)(\s.+)$/, '$1<em>$2</em>')}</h1><p class="hf-text">${HUB_OVERVIEW[k] || F.text}</p>
+      <div class="hf-acts"><button class="btn primary" data-action="hub-tab" data-v="${k}">Open ${esc(F.label)} · ${n} ${HUB_KIND[k] || 'item'}${n === 1 ? '' : 's'} ›</button></div></div>
+      <div class="hf-list"><span class="hf-list-h">Inside ${esc(F.label)}</span>${shown.map(row).join('')}${n > shown.length ? `<button class="hf-item hf-more" type="button" data-action="hub-tab" data-v="${k}"><i>+${n - shown.length}</i><b>See all ${n} ${HUB_KIND[k] || 'item'}s</b><small></small><span aria-hidden="true">›</span></button>` : ''}</div>`;
   }
 
   function renderHome() {
@@ -1635,14 +1669,14 @@
       crumbs = deep ? ['Home', F.label, deep.title] : ['Home', F.label];
       stage = `<header class="hub-head"><div><span class="hh-crumbs">${crumbs.map((c, i) => i < crumbs.length - 1 ? `<button data-action="hub-crumb" data-v="${i}">${esc(c)}</button>` : `<b>${esc(c)}</b>`).join('<i>›</i>')}</span><h1 class="hh-title">${esc(title)}</h1>${head ? `<p class="hh-sub">${head}</p>` : ''}</div>
         <div class="hh-right">${!deep && F.tool ? `<div class="hh-tool">${F.tool}</div>` : ''}<button class="hh-back" data-action="hub-back"><kbd>Esc</kbd>Back</button></div></header>
-        <div class="hub-grid">${tiles.map(menuTile).join('') || '<p class="hub-empty">Nothing here yet.</p>'}</div>`;
+        ${hubSections(tiles, !deep && F.sections)}`;
     } else {
       stage = `<div class="hub-main">
           <article class="hub-feat" id="hubFeat" style="--hc:${F.c}">${featHTML(F, tab)}</article>
           <div class="hub-fig" aria-hidden="true">${F.fig}<span class="hub-spot"></span></div>
           <aside class="hub-promo" aria-label="Featured" aria-roledescription="carousel">
             ${promos.map((p, i) => `<div class="hp-slide${i === hubSlide ? ' on' : ''}" aria-hidden="${i === hubSlide ? 'false' : 'true'}">
-              <h3>${p.t}</h3><p>${p.s}</p><div class="hp-art">${p.art}</div>
+              <span class="hp-eye">Featured</span><h3>${p.t}</h3><p>${p.s}</p><div class="hp-art">${p.art}</div>
               <button class="hp-go" data-action="${p.a}" data-v="${p.v}" ${i === hubSlide ? '' : 'tabindex="-1"'}><span>Take me there</span></button></div>`).join('')}
             <div class="hp-dots">${promos.map((p, i) => `<button class="${i === hubSlide ? 'on' : ''}" data-action="hub-promo" data-v="${i}" aria-label="Show: ${esc(p.t)}"></button>`).join('')}</div>
           </aside>
@@ -1661,10 +1695,10 @@
         </div>
         ${stage}
         <nav class="hub-tabs" aria-label="Home sections">
-          ${tabs.map((k) => `<button class="hub-tab${k === tab ? ' on' : ''}${k === tab && path.length ? ' in' : ''}" id="hubTab-${k}" ${k === tab ? 'aria-current="true"' : ''} data-action="hub-tab" data-v="${k}" style="--tc:${TABS[k].c}"><span>${TABS[k].label}</span><i aria-hidden="true">${TABS[k].icon}</i></button>`).join('')}
+          ${HUB_GROUPS.map(([gl, ks]) => { const on = ks.filter((k) => tabs.includes(k)); if (!on.length) return ''; return `<div class="htg" style="--n:${on.length}"><span class="htg-l">${gl}</span><div class="htg-tabs">${on.map((k) => { let n = 0; try { n = TABS[k].tiles().length; } catch (e) { n = 0; } return `<button class="hub-tab${k === tab ? ' on' : ''}${k === tab && path.length ? ' in' : ''}" id="hubTab-${k}" ${k === tab ? 'aria-current="true"' : ''} data-action="hub-tab" data-v="${k}" style="--tc:${TABS[k].c}" title="${esc(HUB_BLURB[k] || '')}"><span>${TABS[k].label}</span><small>${n} ${HUB_KIND[k] || 'item'}${n === 1 ? '' : 's'}</small><i aria-hidden="true">${TABS[k].icon}</i></button>`; }).join('')}</div></div>`; }).join('')}
         </nav>
         <div class="hub-foot">
-          <span class="hub-hint"><kbd>⏎</kbd>${path.length || q ? 'Select' : 'Open'}</span><span class="hub-hint"><kbd>←</kbd><kbd>→</kbd>Browse</span>${path.length || q ? '<span class="hub-hint"><kbd>Esc</kbd>Back</span>' : ''}<span class="hub-hint"><kbd>/</kbd>Search</span>
+          <span class="hub-hint">${path.length || q ? '<b>Click a tile</b> to open it' : '<b>Point at a section</b> to see what’s inside · <b>click</b> to open it'}</span><span class="hub-hint"><kbd>←</kbd><kbd>→</kbd>Move</span><span class="hub-hint"><kbd>⏎</kbd>Open</span>${path.length || q ? '<span class="hub-hint"><kbd>Esc</kbd>Back</span>' : ''}<span class="hub-hint"><kbd>/</kbd>Search</span>
           <div class="search hub-search"><input class="input" id="compQuery" placeholder="Search competitions…" value="${esc(state.ui.compQuery || '')}" aria-label="Search competitions" /></div>
         </div>
         <p class="hub-credits">Unofficial fan simulator · Data: <a href="https://liquipedia.net/rocketleague/Main_Page" target="_blank" rel="noopener">Liquipedia</a> (CC-BY-SA 3.0) · Flags: <a href="https://github.com/jdecked/twemoji" target="_blank" rel="noopener">Twemoji</a> (CC-BY 4.0) · ${esc(dataStamp())}</p>

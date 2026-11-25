@@ -3475,3 +3475,40 @@ html.menu-home .hf-text { font-size: clamp(14px, 1.6vh, 17px); }
 html.menu-home .hub-tab { height: clamp(70px, 8.5vh, 96px); }
 html.menu-home .hub-grid { grid-auto-rows: clamp(118px, 13vh, 170px); }
 @media (max-width: 720px) { html.menu-home .hub-feat, html.menu-home .hub-promo { min-height: 0; } html.menu-home .hub-promo { min-height: 190px; } html.menu-home .hub-tab { height: 64px; } }
+/* ----- overview aids: grouped tabs with counts, an "inside" list in the preview, sub-menu sections ----- */
+.hub-tabs { display: flex; gap: 14px; grid-auto-flow: initial; }
+.htg { flex: var(--n) 1 0; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.htg-l { font: 800 11px var(--font); letter-spacing: .18em; text-transform: uppercase; color: rgba(255,255,255,.6); padding-left: 2px; border-left: 3px solid #ff8a1f; padding-left: 8px; }
+.htg-tabs { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; }
+.hub-tab { flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; }
+.hub-tab small { position: relative; z-index: 1; font: 600 11.5px var(--font); letter-spacing: .02em; opacity: .7; white-space: nowrap; }
+.hub-tab.on small { opacity: .8; }
+.hf-copy { gap: 8px; }
+.hub-feat { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: stretch; }
+.hf-list { display: flex; flex-direction: column; gap: 4px; min-width: 0; align-self: center; }
+.hf-list-h { font: 800 11px var(--font); letter-spacing: .18em; text-transform: uppercase; color: rgba(255,255,255,.6); margin-bottom: 4px; }
+.hf-item { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; grid-template-rows: auto auto; column-gap: 12px; align-items: center; padding: 8px 12px 8px 8px; border: 0; border-left: 3px solid var(--c); background: rgba(255,255,255,.05); color: #fff; text-align: left; text-decoration: none; cursor: pointer; transition: background .12s, transform .12s; }
+.hf-item i { grid-row: span 2; display: grid; place-items: center; height: 36px; font: italic 800 15px/1 var(--cond); font-style: normal; background: color-mix(in srgb, var(--c) 55%, #0b1230); overflow: hidden; }
+.hf-item b { font: italic 800 17px/1.05 var(--cond); text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hf-item small { grid-column: 2; font-size: 12px; color: rgba(235,242,255,.7); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hf-item small:empty { display: none; }
+.hf-item > span { grid-column: 3; grid-row: 1 / span 2; font-weight: 800; opacity: .6; }
+.hf-item:hover, .hf-item:focus-visible { background: #fff; color: #10204f; transform: translateX(3px); outline: none; }
+.hf-item:hover small, .hf-item:focus-visible small { color: #3a4466; }
+.hf-item:disabled { opacity: .5; cursor: not-allowed; }
+.hf-more { border-left-color: #ff8a1f; background: rgba(255,138,31,.12); }
+.mg { display: flex; flex-direction: column; gap: 8px; }
+.mg + .mg { margin-top: 6px; }
+.mg-h { margin: 0; display: flex; align-items: center; gap: 10px; font: 800 12px var(--font); letter-spacing: .18em; text-transform: uppercase; color: rgba(255,255,255,.75); }
+.mg-h::after { content: ""; flex: 1; height: 1px; background: rgba(255,255,255,.14); }
+.mg-h span { display: inline-grid; place-items: center; min-width: 22px; height: 20px; padding: 0 6px; border-radius: 10px; background: rgba(255,255,255,.12); letter-spacing: 0; }
+.hub-hint b { color: #fff; }
+@media (max-width: 1000px) { .hf-list { display: flex; } .hub-feat { grid-template-columns: 1fr; } }
+@media (max-width: 720px) {
+  .hub-tabs { display: flex; overflow-x: auto; gap: 10px; }
+  .htg { flex: 0 0 auto; }
+  .htg-tabs { grid-auto-columns: 128px; }
+  .hf-list .hf-item:nth-of-type(n+4):not(.hf-more) { display: none; }
+  .hub-hint:first-child { display: inline-flex; }
+}
+.hp-eye { display: inline-block; align-self: flex-start; margin-bottom: 8px; padding: 3px 8px; background: #11183a; color: #fff; font: 800 10.5px var(--font); letter-spacing: .18em; text-transform: uppercase; }
