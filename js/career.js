@@ -655,7 +655,7 @@
   const esc = (s) => api.esc(s);
   function news(kind, html, meta) {
     if (C.newsN == null) { C.newsN = C.news.length; C.newsRead = C.news.length; }
-    C.news.unshift(Object.assign({ kind, html, when: C.season + ' · ' + step().short }, meta ? { meta } : {})); C.news = C.news.slice(0, 80); C.newsN++;
+    C.news.unshift(Object.assign({ kind, html, when: C.season + ' · ' + step().short }, meta ? { meta } : {})); C.news = C.news.slice(0, 150); C.newsN++;
   }
   /** Stories added since the inbox was last opened (older saves start fully read). */
   function unreadCount() {
@@ -1439,7 +1439,7 @@
     const hubKey = [tab, view, C.season, C.step, ui.cnews || 0].join('|'), enter = hubKey !== lastHubKey;
     const tabChanged = !lastHubKey || lastHubKey.split('|')[0] !== tab;
     lastHubKey = hubKey; lastPick = null;
-    const newsList = C.news.slice(0, 30);
+    const newsList = C.news.slice(0, 60);
     // inbox: opening the news view marks everything read; the stories that were new keep a tag while you read
     if (tab === 'central' && view === 'news') { const u = unreadCount(); if (u) { ui.newsFresh = u; C.newsRead = C.newsN; save(); } } else ui.newsFresh = 0;
     const unread = unreadCount();
@@ -1457,7 +1457,8 @@
     const squadHtml = `<div class="leader-list">${roster.map((p, i) => `<div class="leader"><span class="rk">${i < 3 ? 'ST' : 'SUB'}</span><span class="who"><b>${p.flag || ''} ${esc(p.name)}</b><small>Age ${ageLabel(p)} · ${p.contract}y · ${money(p.salary)}/yr${p.stats.gp ? ' · ' + p.stats.g + 'G ' + p.stats.sv + 'Sv' : ''}</small></span><span class="val">${p.rating}</span></div>`).join('')}</div>`;
     const objHtml = C.objectives.map((o) => `<div class="kv"><span>${esc(o.t)}</span><span class="pill">${C.season}</span></div>`).join('');
     const trophyHtml = C.trophies.length ? C.trophies.slice().reverse().slice(0, 8).map((x) => `<div class="kv"><span>🏆 ${esc(x.title)}</span></div>`).join('') : '<p class="muted" style="font-size:13px">No trophies yet.</p>';
-    const newsHtml = `<div class="pulse">${newsList.map((n, i) => `<div class="story ${n.kind === 'trophy' ? 'win' : n.kind === 'transfer' ? 'upset' : ''}${i < fresh ? ' fresh' : ''}"><small>${i < fresh ? '<span class="new-tag">New</span>' : ''}${X() ? `<span class="nk nk-${esc(n.kind)}">${esc(X().kindLabel(n.kind))}</span>` : ''}${esc(n.when)}</small>${n.html}</div>`).join('')}</div>`;
+    const newsCats = X() ? `<div class="seg nk-cats" role="tablist" aria-label="News categories">${X().newsCats().map(([k, l]) => `<button class="${(ui.newsCat || 'all') === k ? 'active' : ''}" data-action="x-newscat" data-v="${k}">${esc(l)}</button>`).join('')}</div>` : '';
+    const newsHtml = `<div class="pulse">${newsCats}${newsList.map((n, i) => !X() || X().newsIn(n.kind, ui.newsCat) ?  `<div class="story ${n.kind === 'trophy' ? 'win' : n.kind === 'transfer' ? 'upset' : ''}${i < fresh ? ' fresh' : ''}"><small>${i < fresh ? '<span class="new-tag">New</span>' : ''}${X() ? `<span class="nk nk-${esc(n.kind)}">${esc(X().kindLabel(n.kind))}</span>` : ''}${esc(n.when)}</small>${n.html}</div>` : '').join('') || '<p class="muted">No stories in this category yet.</p>'}</div>`;
     const historyHtml = viewer ? '' : C.history.length ? `<div class="table-wrap"><table class="st"><thead><tr><th class="l">Season</th><th>Points</th><th>Region</th><th>Best Open</th><th>Majors</th><th>Worlds</th><th class="l">World champion</th><th class="l">1v1 / 2v2 champions</th><th class="l">Nations Cup / FIFAe</th><th class="l">Objectives</th></tr></thead><tbody>
       ${C.history.map((h) => `<tr><td class="l">${h.season}</td><td>${h.points}</td><td>${E.ordinal(h.regRank)}</td><td>${h.bestOpen}</td><td>${h.majors}/2</td><td>${esc(h.worlds)}</td><td class="l">${esc(h.champion)}</td><td class="l">${esc(h.d1 || '—')} / ${esc(h.d2 || '—')}</td><td class="l">${esc(h.enc || '—')} / ${esc(h.fifae || '—')}</td><td class="l">${h.objectives.map((o) => (o.ok ? '✓ ' : '✗ ') + esc(o.t)).join(' · ')}</td></tr>`).join('')}
       </tbody></table></div>` : '<p class="muted" style="font-size:13px">Your finished seasons will appear here.</p>';

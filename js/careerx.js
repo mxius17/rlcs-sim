@@ -257,7 +257,106 @@
   }
 
   /* ======================= news helpers ======================= */
-  const KIND_LABEL = { trophy: 'Trophy', result: 'Result', transfer: 'Transfer', academy: 'Academy', career: 'Club', info: 'Club', upset: 'Upset', rumour: 'Rumour', feature: 'Feature', milestone: 'Milestone', award: 'Awards', hof: 'Hall of Fame', power: 'Power shift', preview: 'Preview', record: 'Record' };
+  const KIND_LABEL = { interview: 'Interview', rankings: 'Rankings', analysis: 'Analysis', stat: 'Stat of the week', opinion: 'Opinion', throwback: 'Throwback', contract: 'Contract watch', board: 'Boardroom', sacked: 'Manager news', trophy: 'Trophy', result: 'Result', transfer: 'Transfer', academy: 'Academy', career: 'Club', info: 'Club', upset: 'Upset', rumour: 'Rumour', feature: 'Feature', milestone: 'Milestone', award: 'Awards', hof: 'Hall of Fame', power: 'Power shift', preview: 'Preview', record: 'Record' };
+
+  /** pick() that avoids lines used recently in this career (so stories don't repeat word for word) */
+  function fresh(pool) {
+    const x = C().x; x.used = x.used || [];
+    const left = pool.filter((t) => !x.used.includes(t));
+    const t = pick(left.length ? left : pool);
+    x.used.push(t); x.used = x.used.slice(-60);
+    return t;
+  }
+  /* news categories for the filter chips on the News view */
+  const NEWS_CATS = [['all', 'All'], ['results', 'Results'], ['transfers', 'Transfers'], ['features', 'Features'], ['club', 'Your club']];
+  const CAT_OF = { trophy: 'results', result: 'results', upset: 'results', rankings: 'results', preview: 'results', transfer: 'transfers', rumour: 'transfers', contract: 'transfers',
+    feature: 'features', interview: 'features', analysis: 'features', stat: 'features', opinion: 'features', throwback: 'features', milestone: 'features', record: 'features', hof: 'features', award: 'features', power: 'features', sacked: 'features',
+    career: 'club', info: 'club', academy: 'club', board: 'club' };
+  const newsIn = (kind, cat) => !cat || cat === 'all' || (CAT_OF[kind] || 'club') === cat;
+
+  /* ======================= varied news stories ======================= */
+  const Q = {
+    win: ['"We worked so hard for this. Every scrim, every late night: it was all for moments like this."', '"Honestly I still can\'t believe it. Ask me tomorrow."', '"People doubted us after the last event. This is the answer."', '"The crowd carried us in the final. That noise was unreal."', '"We didn\'t play our best and still won. That\'s what scares me about this team."', '"Our coach called the adjustments perfectly. Credit to the whole staff."'],
+    lose: ['"It stings. We were one goal away from a different story."', '"Credit to them, they were better on the day. We\'ll learn from it."', '"We\'ll watch the VODs, fix it, and come back."', '"Second place means nothing to us. We want the trophy."'],
+    side: ['"In a 1v1 there\'s nowhere to hide. I trusted my mechanics and it paid off."', '"My duo and I barely need to talk anymore. We just know."', '"This means as much to me as any 3v3 title."'],
+    nation: ['"Wearing the flag is different. You play for millions of people back home."', '"We\'re rivals all year, but this week we were brothers."', '"My family was watching. This one is for them."'],
+  };
+  /** Power rankings: the top 6 clubs worldwide (season points + rating), with movement since the last edition. */
+  function rankingsStory(after) {
+    const x = C().x, ids = Object.keys(C().teams);
+    const score = (id) => (C().points[id] ? C().points[id].season : 0) * 1.2 + K.ovr(id) * 2;
+    const top = ids.sort((a, b) => score(b) - score(a)).slice(0, 6);
+    const prev = x.lastRank || [];
+    const rows = top.map((id, i) => { const was = prev.indexOf(id); const mv = was < 0 ? '<i class="nr-new">NEW</i>' : was > i ? `<i class="nr-up">▲${was - i}</i>` : was < i ? `<i class="nr-dn">▼${i - was}</i>` : '<i class="nr-eq">–</i>'; return `<li><b>${esc(tname(id))}</b> ${mv}<small>${C().points[id] ? C().points[id].season : 0} pts · OVR ${K.ovr(id)}${id === C().user ? ' · you' : ''}</small></li>`; }).join('');
+    x.lastRank = top;
+    K.news('rankings', `<b>Power rankings after the ${esc(after)}</b><ol class="nlist">${rows}</ol>`, { champ: top[0] });
+  }
+  function interview(p, title, mood, pool) {
+    if (!p) return;
+    K.news('interview', `<b>${esc(p.name)}</b> (${esc(p.team && C().teams[p.team] ? tname(p.team) : p.country || '')}) after the ${esc(title)}:<blockquote class="nq">${fresh(pool || Q[mood])}</blockquote>`, { pid: p.id });
+  }
+  function fiveThings(title, T, list, champ) {
+    const items = [];
+    items.push(`<b>${esc(tname(champ))}</b> are the team to beat: ${C().trophies && champ === C().user ? 'and they\'re yours' : 'their rotations held up under pressure'}.`);
+    const rows = Object.values(T.stats || {}).filter((s) => s && s.name && s.gp >= 3).sort((a, b) => b.score / b.gp - a.score / a.gp);
+    if (rows[0]) items.push(`<b>${esc(rows[0].name)}</b> is in the form of their life (${Math.round(rows[0].score / rows[0].gp)} avg score).`);
+    const reg = {}; list.slice(0, 8).forEach(({ id }) => { const t = C().teams[id]; if (t) reg[t.region] = (reg[t.region] || 0) + 1; });
+    const best = Object.entries(reg).sort((a, b) => b[1] - a[1])[0];
+    if (best) items.push(`<b>${esc(K.api().regions[best[0]])}</b> put ${best[1]} teams in the top eight. Respect the region.`);
+    const flop = list.filter(({ id }) => C().teams[id] && K.tierOf(id) >= 4).sort((a, b) => b.place - a.place)[0];
+    if (flop && flop.place > 6) items.push(`<b>${esc(tname(flop.id))}</b> have questions to answer after finishing ${E_ord(flop.place)}.`);
+    const goals = Object.values(T.stats || {}).reduce((s, x) => s + (x && x.g ? x.g : 0), 0);
+    items.push(`${goals} goals in the event. ${goals > 400 ? 'Defence optional.' : 'Tight, tactical Rocket League.'}`);
+    if (mine()) { const me = list.find((y) => y.id === C().user); if (me) items.push(`Your <b>${esc(K.userTeam().name)}</b> finished ${E_ord(me.place)}. ${me.place <= 2 ? 'Contenders.' : me.place <= 4 ? 'Close.' : 'Work to do.'}`); }
+    K.news('analysis', `<b>Five things we learned at the ${esc(title)}</b><ol class="nlist">${items.slice(0, 5).map((t) => `<li>${t}</li>`).join('')}</ol>`, { champ });
+  }
+  const E_ord = (n) => n + (['th', 'st', 'nd', 'rd'][(n % 100 >> 3) ^ 1 && n % 10] || 'th');
+  /** Extra stories after every 3v3 event. */
+  function eventNews(T, st, region, title, list, big) {
+    const champ = T.champion; if (!champ || !C().teams[champ]) return;
+    const home = big || region === K.homeReg();
+    if (!home) return;
+    const star = C().teams[champ].roster.slice(0, 3).map((id) => C().players[id]).filter(Boolean).sort((a, b) => b.rating - a.rating)[0];
+    if (Math.random() < (big ? 0.9 : 0.5)) interview(star, title, 'win');
+    if (T.runnerUp && C().teams[T.runnerUp] && Math.random() < (big ? 0.6 : 0.25)) interview(C().teams[T.runnerUp].roster.map((id) => C().players[id]).filter(Boolean).sort((a, b) => b.rating - a.rating)[0], title, 'lose');
+    if (big) { fiveThings(title, T, list, champ); rankingsStory(title); }
+    else if (st.key === 'o3' || st.key === 'o6') rankingsStory(st.name);
+    // tactics: what the champions' style says about the meta
+    if (Math.random() < (big ? 0.7 : 0.25)) { const sty = aiStyle(champ), S = STYLES[sty]; if (champ !== C().user) K.news('analysis', `<b>Tactics board:</b> ${esc(tname(champ))}'s ${esc(S.n.toLowerCase())} approach (${esc(S.d.toLowerCase())}) won the ${esc(title)}. ${fresh(['Expect copycats next event.', 'Is this the new meta?', 'Coaches will be studying the VODs all week.', 'The counter is out there, but nobody found it yet.'])}`, { champ }); }
+    // rival managers under pressure
+    const flop = list.filter(({ id }) => id !== C().user && C().teams[id] && K.tierOf(id) >= 4).sort((a, b) => b.place - a.place)[0];
+    if (big && flop && flop.place >= 9 && Math.random() < 0.35) { K.news('sacked', `<b>${esc(tname(flop.id))}</b> part ways with their manager after a ${E_ord(flop.place)}-place finish at the ${esc(title)}. ${pick(['The search for a replacement starts now.', 'Players are said to be shocked.', 'The board wanted a trophy this season.'])}`, { champ: flop.id }); post(pressAcct(), `BREAKING: ${esc(tname(flop.id))} have sacked their manager. 🚪`, { kind: 'press', big: true }); }
+  }
+  /** Stories between events: stat of the week, opinion, throwbacks, contract watch, the boardroom. */
+  function stepNews(st) {
+    const x = C().x;
+    const ps = Object.values(C().players).filter((p) => p.team && p.stats && p.stats.gp >= 6);
+    if (ps.length && Math.random() < 0.6) {
+      const k = pick([['g', 'goals'], ['a', 'assists'], ['sv', 'saves']]), top = ps.sort((a, b) => b.stats[k[0]] - a.stats[k[0]])[0];
+      K.news('stat', `📊 <b>${esc(top.name)}</b> (${esc(tname(top.team))}) leads the circuit with <b>${top.stats[k[0]]} ${k[1]}</b> this season${pick([', and it isn\'t close.', '. Nobody else is near.', ' in ' + top.stats.gp + ' games.'])}`, { pid: top.id });
+    }
+    if (Math.random() < 0.35) {
+      const pw = (x.power || []).slice(-1)[0], reg = K.homeReg(), rn = K.api().regions[reg];
+      K.news('opinion', fresh([
+        `<b>Opinion:</b> ${esc(rn)} ${pw && Object.entries(pw.idx).sort((a, b) => b[1] - a[1])[0][0] === reg ? 'is the strongest region in the world, and it\'s time we said it out loud.' : 'is closing the gap on the best regions faster than anyone expected.'}`,
+        `<b>Opinion:</b> the Swiss format rewards consistency over brilliance, and we should talk about that.`,
+        `<b>Opinion:</b> young players are being thrown in too early. Let the academies do their job.`,
+        `<b>Opinion:</b> the 1v1 and 2v2 titles deserve the same respect as the 3v3 circuit.`,
+        `<b>Opinion:</b> transfer fees have gone mad. Who is paying for all of this?`]));
+    }
+    const H = C().history.filter((h) => h.season < C().season);
+    if (H.length && Math.random() < 0.3) { const h = pick(H); K.news('throwback', `⏪ <b>Throwback, ${h.season}:</b> ${esc(h.champion || '—')} were crowned world champions${h.mvp && h.mvp !== '—' ? `, with ${esc(h.mvp)} the season MVP` : ''}.`); }
+    if (st.type === 'window') {
+      const exp = Object.values(C().players).filter((p) => p.team && p.team !== C().user && p.contract <= 1 && p.rating >= 82).sort((a, b) => b.rating - a.rating).slice(0, 4);
+      if (exp.length) K.news('contract', `<b>Contract watch:</b> stars out of contract at the end of this season<ul class="nlist">${exp.map((p) => `<li><b>${esc(p.name)}</b> <small>${esc(tname(p.team))} · OVR ${p.rating} · age ${p.age}</small></li>`).join('')}</ul>`);
+    }
+    if (mine()) {
+      const b = C().board, last = x.boardSaid || 0;
+      if (b < 35 && last !== -1) { x.boardSaid = -1; K.news('board', `🏢 <b>Boardroom:</b> the ${esc(K.userTeam().name)} board "expects an immediate improvement in results". Confidence is at ${b}%.`); }
+      else if (b >= 80 && last !== 1) { x.boardSaid = 1; K.news('board', `🏢 <b>Boardroom:</b> the board gives the manager its "full backing" and talks about a long-term project. Confidence ${b}%.`); }
+      else if (b >= 35 && b < 80 && last) x.boardSaid = 0;
+    }
+  }
 
   /* ======================= records ======================= */
   function rec() { const x = C().x; x.rec = x.rec || { titles: {}, season: {}, fees: [], upsets: [], youngest: null, oldest: null, teamPts: null, peak: null, career: {} }; return x.rec; }
@@ -343,6 +442,7 @@
       if (['open', 'major', 'worlds', 'ewc'].includes(kind) && me) C().x.fam = Math.min(100, (C().x.fam || 0) + 20); // tactics bed in with games
     }
     eventChatter(T, st, region, title, list, big);
+    eventNews(T, st, region, title, list, big);
     // power index: international results by region
     if (big) {
       x.intl = x.intl || {};
@@ -383,6 +483,8 @@
     if (!ch.length) return;
     const names = ch.map((p) => p.name).join(' & '), solo = e.mode === 1;
     const home = e.world || region === K.homeReg() || (mine() && ch.some((p) => p.team === C().user));
+    if (home && Math.random() < (e.world ? 0.9 : 0.5)) interview(ch[0], title, 'side');
+    if (e.world) K.news('feature', solo ? `<b>Profile:</b> ${esc(names)}, the best 1v1 player on the planet. ${pick(['Calm, clinical, unbreakable.', 'A mechanical freak with a chess player\'s brain.', 'Nobody reads the ball earlier.'])}` : `<b>Profile:</b> ${esc(names)}, ${pick(['the duo nobody can solve.', 'two players, one plan.', 'the best partnership in Rocket League.'])}`);
     if (!home) { if (Math.random() < 0.3) post(pressAcct(), `🌍 ${esc(names)} ${solo ? 'wins' : 'win'} the ${esc(title)}.`, { kind: 'press' }); return; }
     post(playerAcct(ch[0]), solo ? pick(['just me and the ball. 1v1 CHAMPION 🗡️', 'nobody to blame, nobody to share it with. ' + (e.world ? 'WORLD CHAMPION 🌍' : 'CHAMPION 🏆'), 'the solo grind paid off 😤', '1v1 is the purest test. passed. ✅']) : pick([`me and ${esc(ch[1] ? ch[1].name : 'my duo')} are ${e.world ? 'WORLD CHAMPIONS 🌍' : 'champions 🏆'}`, 'best duo in the world? you tell me 😏', 'two players, one brain cell, one trophy 🏆', 'GG. duo of the year incoming.']), { kind: 'player', big: !!e.world, mood: 'good' });
     if (!solo && ch[1]) post(playerAcct(ch[1]), pick([`@${esc(ch[0].name)} told you we'd do it 🤝`, 'couldn\'t ask for a better partner 🤝', 'trophy #' + careerOf(ch[1]).t + '? who\'s counting 😌']), { kind: 'player', mood: 'good' });
@@ -396,6 +498,8 @@
   /** National-team tournaments: federations, players on duty, patriotic fans. */
   function onNation(T, st, title, e) {
     if (!e.champ) return;
+    interview((e.champPs || [])[0], title, 'nation');
+    K.news('feature', `${e.champFlag || ''} <b>${esc(e.champ)}</b>: ${fresh(['a golden generation, finally rewarded.', 'how a nation of club rivals became one team.', 'the ' + esc(title) + ' winners nobody predicted.', 'the deepest pool of talent in the world, and now the trophy to prove it.'])}`);
     post(fedAcct(e.champ, e.champFlag), `${e.champFlag || ''} ${pick(['CHAMPIONS OF THE WORLD', 'WE DID IT', 'FOR OUR COUNTRY'])}! ${esc(title)} 🏆 ${pick(['A whole nation is proud.', 'Written in history.', 'Thank you for the support from home.'])} ${hashTag(e.champ)}`, { kind: 'club', big: true, mood: 'good' });
     const star = (e.champPs || [])[0];
     if (star) post(playerAcct(star), pick([`representing ${esc(e.champ)} is the biggest honour 🫡 ${e.champFlag || ''}`, `${e.champFlag || ''} national champions. for my family, for my country.`, 'club trophies are great. this one hits different. 🏆']), { kind: 'player', big: true, mood: 'good' });
@@ -495,15 +599,17 @@
       if (won.length) addXp(150 * won.length);
       if (awards.some((a) => a.key === 'mgr' && a.winner.team === C().user)) ach('award');
     }
-    // season records and career totals
+    // season records and career totals (milestones are gathered into one story per landmark)
+    const miles = {};
     all.forEach((p) => {
       const cr = careerOf(p); cr.s++; cr.g += p.stats.g; cr.a += p.stats.a; cr.sv += p.stats.sv; cr.peak = Math.max(cr.peak || 0, p.rating);
       const club = tname(p.team); if (!cr.clubs.includes(club)) cr.clubs.push(club);
       const w = { name: p.name, team: club };
       if (bumpRecord('goals', p.stats.g, w)) K.news('record', `📕 Record! <b>${esc(p.name)}</b>'s ${p.stats.g} goals are the most ever in one season.`);
       bumpRecord('assists', p.stats.a, w); bumpRecord('saves', p.stats.sv, w); bumpRecord('avg', Math.round(per(p)), w);
-      [100, 250, 500, 1000].forEach((ms) => { if (cr.g >= ms && cr.g - p.stats.g < ms) K.news('milestone', `🎯 <b>${esc(p.name)}</b> reaches ${ms} career goals.`, { pid: p.id }); });
+      [250, 500, 1000].forEach((ms) => { if (cr.g >= ms && cr.g - p.stats.g < ms) (miles[ms] = miles[ms] || []).push(p.name); });
     });
+    Object.entries(miles).forEach(([ms, names]) => K.news('milestone', `🎯 <b>${ms} career goals:</b> ${names.slice(0, 6).map(esc).join(', ')}${names.length > 6 ? ` and ${names.length - 6} more` : ''} passed the mark this season.`));
     const R = rec();
     Object.keys(C().teams).forEach((id) => { if (pts(id)) bumpRecord('teamPts', pts(id), { name: tname(id), team: tname(id) }); });
     Object.values(C().players).forEach((p) => { if (!R.peak || p.rating > R.peak.v) R.peak = { v: p.rating, name: p.name, season }; });
@@ -600,6 +706,7 @@
       pollPost(pressAcct(), `🗳️ Who wins ${/^Major/.test(st.name) ? '' : 'the '}${esc(st.name)}?`, cand.map((id, i) => ({ l: tname(id), w: 1.4 - i * 0.2 })));
       post(streamAcct(), `${esc(st.name)} watch party all week, every series live with chat 📺`, { kind: 'fan' });
     }
+    stepNews(st);
     // build-up to Opens in your region, and the 1v1 / 2v2 and national events
     if (st.type === 'open' && Math.random() < 0.7) post(pick([fanAcct(), casterAcct(), streamAcct()]), pick([`${esc(st.name)} starts today. who's your dark horse? 👀`, `Swiss stage chaos incoming. ${esc(st.name)} let's go 🍿`, `${esc(st.name)} pick'em locked in. ${esc(tname(Object.keys(C().teams).filter((id) => C().teams[id].region === K.homeReg()).sort((a, b) => K.ovr(b) - K.ovr(a))[0]))} to win it.`]), { kind: 'fan' });
     if ((st.type === 'side' || st.type === 'sidew') && Math.random() < 0.8) post(casterAcct(), `${st.mode === 1 ? '1v1' : '2v2'} week! ${st.type === 'sidew' ? 'The World Championship: four entrants, one title.' : 'Regional Opens, winners go to the World Championship.'} 🎙️`, { kind: 'press' });
@@ -1016,6 +1123,7 @@
       case 'x-talk': teamTalk(v); K.render(); return true;
       case 'x-scout': { const lv = (scoutNet()[v] || 0) + 1, cost = SCOUT_COST[lv]; if (K.userTeam().budget < cost) return true; K.userTeam().budget -= cost; C().x.scout[v] = lv; K.news('career', `🔭 Scouting: you ${lv === 1 ? 'hire a scout in' : 'expand your network in'} ${esc(K.api().regions[v])} (level ${lv}).`); K.save(); K.render(); return true; }
       case 'x-trreg': K.api().state.ui.trReg = v; K.render(); return true;
+      case 'x-newscat': K.api().state.ui.newsCat = v; K.render(); return true;
       case 'x-cmt': case 'x-cmt-more': {
         const ui = K.api().state.ui, sid = +v, sp = (C().x.social || []).find((y) => y.id === sid); if (!sp) return true;
         const open = new Set(ui.xOpen || []);
@@ -1049,6 +1157,7 @@
     persChip, moraleBar, persOf, potEst, knowOf,
     tacticsHTML, managerHTML, offersHTML, awardsButton, historyExtras, powerHTML, socialHTML, talentHTML, bidsHTML,
     kindLabel: (k) => KIND_LABEL[k] || 'News',
+    newsCats: () => NEWS_CATS, newsIn,
     hasAwards: () => { const a = (C().x.awards || {})[C().season]; return !!(a && a.length); },
     awardsSeen: () => (C().x.awSeen || 0) >= C().season, markAwards: () => { C().x.awSeen = C().season; K.save(); }, openAwards,
     onAction,
