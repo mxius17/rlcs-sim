@@ -1336,10 +1336,11 @@
       <div class="modal-foot"><button class="btn primary" data-action="save-settings">Save</button></div>`, { size: 'sm' });
   }
   const SHORTCUTS = [
-    ['Anywhere', [['?', 'Show this help'], ['/', 'Search this page'], ['M', 'Sound effects on / off'], ['Alt + H', 'Main menu'], ['Esc', 'Close a pop-up']]],
+    ['Anywhere', [['Ctrl + K', 'Jump to a team, event or page'], ['?', 'Show this help'], ['/', 'Search this page'], ['M', 'Sound effects on / off'], ['Alt + H', 'Main menu'], ['Esc', 'Close a pop-up']]],
     ['Main menu', [['← →', 'Move between sections and tiles'], ['⏎', 'Open'], ['Esc', 'Back a level'], ['/', 'Search competitions']]],
-    ['Live series', [['Space', 'Pause / resume'], ['1 – ' + SPEEDS.length, 'Playback speed'], ['[ ]', 'Slower / faster'], ['N', 'Skip this game'], ['R', 'Reveal the result']]],
-    ['Intros & ceremonies', [['Space / → / ⏎', 'Next'], ['Esc', 'Skip']]],
+    ['Live series', [['F', 'Fullscreen'], ['Space', 'Pause / resume'], ['1 – ' + SPEEDS.length, 'Playback speed'], ['[ ]', 'Slower / faster'], ['N', 'Skip this game'], ['R', 'Reveal the result']]],
+    ['Intros & ceremonies', [['Space / → / ⏎', 'Next'], ['Esc', 'Skip'], ['F', 'Fullscreen']]],
+    ['Career', [['N', 'Next step (simulate / close window)'], ['Q E', 'Previous / next tab'], ['1 – 6', 'Hub tiles']]],
   ];
   const shortcutsHTML = () => `<div class="kb-grid">${SHORTCUTS.map(([h, rows]) => `<div class="kb-sec"><b>${esc(h)}</b>${rows.map(([k, d]) => `<div class="kb-row"><span>${k.split(' ').map((x, _, all) => (all.length > 1 && ['+', '/', '–'].includes(x) ? `<i>${esc(x)}</i>` : `<kbd>${esc(x)}</kbd>`)).join('')}</span><em>${esc(d)}</em></div>`).join('')}</div>`).join('')}</div>`;
   function openShortcuts() { openModal(`${modalHead('Keyboard shortcuts', 'Press ? any time to bring this back.')}<div class="modal-body">${shortcutsHTML()}</div>`, { size: 'md' }); }
@@ -1593,7 +1594,7 @@
         text: cs ? `${esc(cs.team.name)} · RLCS ${cs.season} · ${esc(cs.step)}` : 'Seasons, Opens, Majors, Worlds, transfers, contracts and player development. Manage a club or follow it all as a neutral viewer.',
         art: cs && cs.team ? `<div class="hub-art-badge">${badge(cs.team, 'xl')}</div>` : `<div class="hub-art-mono">GM</div>`,
         tiles: () => [
-          { t: 'Continue career', s: cs ? `${esc(cs.team.name)} · RLCS ${cs.season} · ${esc(cs.step)}` : 'No career to continue yet', m: '▶', c: '#f2b632', a: 'nav', v: 'career', big: true, dis: !has, art: cs && cs.team ? `<span class="mt-hero">${badge(cs.team, 'xl')}</span>` : '' },
+          { t: 'Continue career', s: cs ? `${esc(cs.team.name)} · RLCS ${cs.season} · ${esc(cs.step)}${window.RLCareer.unread() ? ` · <b class="hc-unread">${Math.min(99, window.RLCareer.unread())} unread</b>` : ''}` : 'No career to continue yet', m: '▶', c: '#f2b632', a: 'nav', v: 'career', big: true, dis: !has, art: cs && cs.team ? `<span class="mt-hero">${badge(cs.team, 'xl')}</span>` : '' },
           { t: 'Start new career', s: has ? 'Starts in a new save slot. Your current career stays saved.' : 'Pick a club, or follow the season as a neutral viewer.', m: '+', c: '#d97706', a: 'home-career-new', v: '' },
           { t: 'Career saves', s: nSaves ? `${nSaves} of ${window.RLCareer.maxSaves} slots used · load, switch or delete` : 'Every career you start gets its own save slot.', m: '💾', c: '#a78bfa', a: 'career-saves', v: '', dis: !nSaves },
           live ? { t: 'Resume tournament', s: `${esc(T.title || E.FORMATS[T.format].name)} · ${entrants(T)} · ${played} series played`, m: 'LIVE', c: '#22c55e', a: 'resume', v: '' }
@@ -1747,6 +1748,7 @@
         <div class="hub-top">
           <button class="hub-brand" data-action="hub-crumb" data-v="0" aria-label="RL Esports Simulator: main menu"><span class="brand-mark">RL</span><b>ESPORTS <em>SIMULATOR</em></b></button>
           <div class="hub-top-r">
+            <button class="hub-ico" data-action="jump" title="Quick jump (Ctrl+K)" aria-label="Quick jump">⌕</button>
             <button class="hub-ico" data-action="open-guide" title="How it works" aria-label="How it works">?</button>
             <button class="hub-ico hub-sfx" data-action="sfx-toggle" title="Sound effects" aria-label="Sound effects">${window.RLSfx && !window.RLSfx.on ? '🔇' : '🔊'}</button>
             <button class="hub-ico" data-action="open-settings" title="Settings" aria-label="Settings">⚙</button>
@@ -1762,7 +1764,7 @@
             <button class="hc-side r" data-action="hub-sel" data-v="${nx}" tabindex="-1" aria-hidden="true" style="--tc:${TABS[nx].c}"><b>${TABS[nx].label}</b></button>
             <button class="hc-arrow r" data-action="hub-step" data-v="1" aria-label="Next section: ${esc(TABS[nx].label)}">▶</button>`; })()}
         </nav>
-        <div class="hub-tabs hc-list" role="tablist" aria-label="All sections">${tabs.map((k) => `<button class="hub-tab${k === tab ? ' on' : ''}" id="hubTab-${k}" role="tab" aria-selected="${k === tab}" data-action="${path.length ? 'hub-tab' : 'hub-sel'}" data-v="${k}" style="--tc:${TABS[k].c}">${TABS[k].label}</button>`).join('')}</div>
+        <div class="hub-tabs hc-list" role="tablist" aria-label="All sections">${tabs.map((k) => `<button class="hub-tab${k === tab ? ' on' : ''}" id="hubTab-${k}" role="tab" aria-selected="${k === tab}" data-action="${path.length ? 'hub-tab' : 'hub-sel'}" data-v="${k}" style="--tc:${TABS[k].c}">${TABS[k].label}${k === 'career' && window.RLCareer.unread() ? `<i class="hc-badge" title="Unread career news">${Math.min(99, window.RLCareer.unread())}</i>` : ''}</button>`).join('')}</div>
         <div class="hub-foot">
           <span class="hub-hint">${path.length || q ? '<b>Click a tile</b> to open it' : '<b>◀ ▶</b> switch section · <b>click a tile</b> to open it'}</span><span class="hub-hint"><kbd>Q</kbd><kbd>E</kbd>Section</span><span class="hub-hint"><kbd>←</kbd><kbd>→</kbd>Move</span><span class="hub-hint"><kbd>⏎</kbd>Open</span>${path.length || q ? '<span class="hub-hint"><kbd>Esc</kbd>Back</span>' : ''}<span class="hub-hint"><kbd>/</kbd>Search</span>
           <div class="search hub-search"><input class="input" id="compQuery" placeholder="Search competitions…" value="${esc(state.ui.compQuery || '')}" aria-label="Search competitions" /></div>
@@ -2187,6 +2189,7 @@
       case 'open-settings': openSettings(); break;
       case 'save-settings': state.settings.speed = +$('#setSpeed').value; state.settings.mode = $('#setMode').value; if ($('#setMotion')) state.settings.motion = $('#setMotion').value; if ($('#setIntros')) state.settings.autoIntros = $('#setIntros').checked; if ($('#setConfirm')) state.settings.confirmLeave = $('#setConfirm').checked; if (window.RLSfx && $('#setSfx')) window.RLSfx.set({ on: $('#setSfx').checked, vol: +$('#setVol').value / 100, music: $('#setMusic').checked, mvol: +$('#setMVol').value / 100, bgm: $('#setBgm').checked, bvol: +$('#setBVol').value / 100 }); syncSfxBtn(); applyDisplay(); closeModal(); persistRender(); break;
       case 'sfx-toggle': if (window.RLSfx) { window.RLSfx.toggle(); syncSfxBtn(); toast(window.RLSfx.on ? 'Sound effects on' : 'Sound effects off'); if (state.view === 'home') renderHome(); } break;
+      case 'jump': openJump(); break;
       case 'set-text': state.settings.textSize = v; el.parentElement.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b === el)); applyDisplay(); save(); break;
       case 'backup-all': {
         const data = {};
@@ -2268,6 +2271,13 @@
   document.addEventListener('keydown', (ev) => {
     if (ev.key === 'Escape' && modalRoot.innerHTML) { closeModal(); return; }
     const tg = ev.target, typing = tg && (tg.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName));
+    if ((ev.ctrlKey || ev.metaKey) && (ev.key === 'k' || ev.key === 'K')) { ev.preventDefault(); if (!document.querySelector('.cut, .side-cer, .hero:not(.gone)')) openJump(); return; }
+    // F: fullscreen for the live viewer and the ceremonies / intros
+    if ((ev.key === 'f' || ev.key === 'F') && !typing && !ev.ctrlKey && !ev.metaKey && !ev.altKey && (document.querySelector('.cut, .side-cer') || (live && document.getElementById('matchCentre')))) {
+      ev.preventDefault();
+      try { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); } catch (e) { toast('Fullscreen is not available here.'); }
+      return;
+    }
     const covered = !!document.querySelector('.cut, .side-cer, .hero:not(.gone)');
     if (!typing && !covered && !ev.ctrlKey && !ev.metaKey) {
       if (ev.altKey && (ev.key === 'h' || ev.key === 'H' || ev.code === 'KeyH')) { ev.preventDefault(); closeModal(); go('home'); return; }
@@ -2306,6 +2316,54 @@
     if (document.hidden) { if (live && live.playing) { live.playing = false; live.autoPaused = true; const b = document.querySelector('[data-action="live-pause"]'); if (b) b.textContent = 'Resume'; } }
     else if (live && live.autoPaused) { live.autoPaused = false; toast('Paused while you were away.', { label: 'Resume', fn: () => { const b = document.querySelector('[data-action="live-pause"]'); if (b && live && !live.playing) b.click(); } }); }
   });
+
+  /* ---------------- Quick jump (Ctrl/Cmd + K): go anywhere by typing ---------------- */
+  function jumpItems() {
+    const items = [];
+    const add = (k, label, sub, run, w) => items.push({ k, label, sub, run, w: w || 0, hay: (label + ' ' + sub + ' ' + k + (/world championship/i.test(label) ? ' worlds wc' : '') + (/esports world cup/i.test(label) ? ' ewc' : '') + (/settings/i.test(label) ? ' options preferences' : '')).toLowerCase() });
+    add('Page', 'Main menu', 'Home', () => { state.ui.homePath = []; go('home'); });
+    add('Page', 'Career', 'Your club or neutral viewer', () => go('career'));
+    if (window.RLCareer.has()) [['central', 'Central'], ['squad', 'Squad'], ['tactics', 'Tactics'], ['transfers', 'Transfers'], ['teams', 'Teams'], ['office', 'Office'], ['history', 'History']].forEach(([k, l]) => add('Career', 'Career · ' + l, 'Career tab', () => { state.ui.ctab = k; go('career'); }));
+    if (window.RLCareer.has()) [['news', 'News'], ['social', 'Social'], ['standings', 'Standings'], ['schedule', 'Season schedule']].forEach(([k, l]) => add('Career', 'Career · ' + l, 'Central view', () => { state.ui.ctab = 'central'; state.ui.cview = k; go('career'); }));
+    add('Page', 'Teams & rankings', 'Every roster and rating', () => go('teams'));
+    add('Page', 'Custom tournament', 'Build your own event', () => go('setup'));
+    if (state.T) add('Page', 'Resume tournament', state.T.title || E.FORMATS[state.T.format].name, () => go('tournament'));
+    add('Action', 'Settings', 'Speed, sound, display, backup', () => openSettings());
+    add('Action', 'Keyboard shortcuts', 'All the keys', () => openShortcuts());
+    add('Action', 'How it works', 'Guide', () => openGuide());
+    add('Action', 'Career saves', 'Load, switch or delete careers', () => window.RLCareer.openSaves());
+    add('Action', 'Back up all data', 'Download a backup file', () => { const b = document.createElement('button'); b.dataset.action = 'backup-all'; document.body.appendChild(b); b.click(); b.remove(); });
+    add('Action', window.RLSfx && window.RLSfx.on ? 'Mute sound effects' : 'Unmute sound effects', 'Sound', () => { const b = document.getElementById('sfxBtn'); if (b) b.click(); });
+    competitions().forEach((c) => add('Event', c.name, c.sub ? String(c.sub).replace(/<[^>]+>/g, '') : '', () => { go('home'); openComp(c.id); }));
+    const seen = new Set();
+    ['2027', '2026'].forEach((se) => rankedTeams(se).forEach((t) => { if (seen.has(t.name)) return; seen.add(t.name); add('Team', t.name, (REGIONS[t.region] || t.region || '') + ' · OVR ' + t.ovr + ' · ' + (t.season === '2027' ? 'RLCS 2027' : 'RLCS 2026'), () => { state.ui.teamId = t.id; go('team'); }, Math.max(0, t.ovr - 60)); }));
+    return items;
+  }
+  function openJump() {
+    const items = jumpItems();
+    let sel = 0, shown = [];
+    openModal(`<div class="jump"><div class="jump-in"><span aria-hidden="true">⌕</span><input class="input" id="jumpQ" placeholder="Jump to a team, event, page or action…" autocomplete="off" aria-label="Jump to" /><kbd>Esc</kbd></div><div class="jump-list" id="jumpList" role="listbox"></div><p class="jump-foot"><kbd>↑</kbd><kbd>↓</kbd> choose · <kbd>⏎</kbd> go · <kbd>Ctrl</kbd>+<kbd>K</kbd> any time</p></div>`, { size: 'md', cls: 'jump-modal' });
+    const q = $('#jumpQ'), list = $('#jumpList');
+    const draw = () => {
+      const t = q.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+      // rank: whole words that start with what you typed, the full phrase, then strength (big teams first)
+      const qs = t.join(' ');
+      const score = (x) => { const l = x.label.toLowerCase(), words = l.split(/[^a-z0-9]+/); return (l === qs ? 200 : 0) + (l.startsWith(qs) ? 15 : 0) + t.filter((w) => words.some((y) => y.startsWith(w))).length * 30 + (l.includes(qs) ? 20 : 0) + (x.k === 'Page' || x.k === 'Career' ? 12 : 0) + x.w; };
+      shown = (t.length ? items.filter((x) => t.every((w) => x.hay.includes(w))).map((x) => [x, score(x)]).sort((a, b) => b[1] - a[1]).map((x) => x[0]) : items.filter((x) => x.k !== 'Team')).slice(0, 40);
+      sel = Math.min(sel, Math.max(0, shown.length - 1));
+      list.innerHTML = shown.map((x, i) => `<button type="button" role="option" aria-selected="${i === sel}" class="jump-it${i === sel ? ' on' : ''}" data-i="${i}"><i class="jk jk-${x.k.toLowerCase()}">${esc(x.k)}</i><b>${esc(x.label)}</b><small>${esc(x.sub || '')}</small></button>`).join('') || '<p class="muted jump-none">Nothing matches.</p>';
+      const on = list.querySelector('.on'); if (on) on.scrollIntoView({ block: 'nearest' });
+    };
+    const run = (i) => { const x = shown[i]; if (!x) return; closeModal(); x.run(); };
+    q.addEventListener('input', () => { sel = 0; draw(); });
+    q.addEventListener('keydown', (ev) => {
+      if (ev.key === 'ArrowDown') { ev.preventDefault(); sel = Math.min(shown.length - 1, sel + 1); draw(); }
+      else if (ev.key === 'ArrowUp') { ev.preventDefault(); sel = Math.max(0, sel - 1); draw(); }
+      else if (ev.key === 'Enter') { ev.preventDefault(); run(sel); }
+    });
+    list.addEventListener('click', (ev) => { const b = ev.target.closest('.jump-it'); if (b) run(+b.dataset.i); });
+    draw(); q.focus();
+  }
 
   /* ---------------- Boot ---------------- */
   load();

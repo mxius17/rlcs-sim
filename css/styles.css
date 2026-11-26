@@ -4256,3 +4256,28 @@ html:is([data-view="tournament"], [data-view="setup"], [data-view="teams"], [dat
 .nk-stat { background: rgba(34,197,94,.22); color: #86efac; } .nk-throwback { background: rgba(148,163,184,.22); color: #cbd5e1; } .nk-contract { background: rgba(168,85,247,.22); color: #d8b4fe; } .nk-board, .nk-sacked { background: rgba(239,68,68,.2); color: #fca5a5; }
 /* career News view: the story list fills the panel (the panel scrolls), instead of its own 360px box */
 .fc-main .pulse { max-height: none; overflow: visible; }
+
+/* ---------------- quality of life 3 ---------------- */
+/* quick jump */
+.jump-modal { padding: 0 !important; }
+.jump { padding: 14px; display: grid; gap: 10px; }
+.jump-in { display: flex; align-items: center; gap: 10px; padding: 0 4px; }
+.jump-in > span { font-size: 20px; opacity: .7; }
+.jump-in .input { flex: 1; font-size: 16px; height: 44px; }
+.jump-in kbd, .jump-foot kbd { display: inline-block; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); font: 600 11px var(--mono, monospace); }
+.jump-list { display: grid; gap: 2px; max-height: min(56vh, 440px); overflow: auto; }
+.jump-it { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 9px 10px; border: 0; border-radius: 6px; background: none; color: inherit; text-align: left; cursor: pointer; font: inherit; }
+.jump-it b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.jump-it small { opacity: .6; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
+.jump-it:hover, .jump-it.on { background: rgba(255,255,255,.1); box-shadow: inset 3px 0 0 var(--mn-hl, #ff8a1f); }
+.jk { font-style: normal; font: 800 10px var(--font); letter-spacing: .08em; text-transform: uppercase; padding: 3px 6px; border-radius: 3px; text-align: center; background: rgba(255,255,255,.1); }
+.jk-team { background: rgba(59,130,246,.25); color: #93c5fd; } .jk-event { background: rgba(242,182,50,.22); color: #fcd34d; } .jk-career { background: rgba(34,197,94,.22); color: #86efac; } .jk-action { background: rgba(168,85,247,.22); color: #d8b4fe; }
+.jump-foot { margin: 0; font-size: 12px; opacity: .6; }
+.jump-none { padding: 12px; }
+@media (max-width: 560px) { .jump-it { grid-template-columns: 56px minmax(0, 1fr); } .jump-it small { grid-column: 2; max-width: none; } .jump-foot { display: none; } }
+/* career fast-forward */
+.ff-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,.14); }
+.ff-row small { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; opacity: .6; font-weight: 700; margin-right: 4px; }
+/* unread career news on the main menu */
+.hc-badge { font-style: normal; display: inline-grid; place-items: center; min-width: 17px; height: 17px; padding: 0 4px; margin-left: 5px; border-radius: 9px; background: #ef4444; color: #fff; font: 800 10px/1 var(--font); letter-spacing: 0; vertical-align: 1px; }
+.hc-unread { color: #fca5a5; }

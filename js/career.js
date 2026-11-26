@@ -1488,7 +1488,7 @@
         <div class="fc-side-row"><span class="fc-day">${C.step + 1}</span><span><small>${esc(st.type === 'window' ? 'Transfer window' : st.type === 'review' ? 'Season review' : st.type === 'open' ? 'Regional Open' : st.type === 'major' ? 'Major' : st.type === 'ewc' ? 'Club event · not RLCS' : st.type === 'nation' ? 'Off-season · national teams' : st.type === 'side' ? (st.mode === 1 ? '1v1' : '2v2') + ' Championship' : st.type === 'sidew' ? 'Worlds week' : 'World Championship')}</small><b>${esc(st.short || st.name)}</b></span><span class="fc-ico" aria-hidden="true">${st.type === 'window' ? '⇄' : st.type === 'review' ? '★' : '🏆'}</span></div>
         <div class="fc-side-mid"><small>${viewer ? 'Neutral viewer · home region ' + esc(api.regions[reg]) : esc(t.name) + ' · ' + regionRankLabel() + ' in ' + esc(api.regions[reg])}</small>
           <div class="fc-rings">${viewer ? (() => { const n88 = Object.values(C.players).filter((p) => p.team && p.rating >= 88).length, base = (C.base || talentBase()).n88; return ring(t.ovr - 60, 40, 'Region leader', `<span data-count="${t.ovr}">${t.ovr}</span>`, '◆') + ring(n88, Math.round(base * 1.5), 'Stars 88+', `<span data-count="${n88}">${n88}</span>`, '★'); })() : ring(t.ovr - 60, 40, 'Team rating', `<span data-count="${t.ovr}">${t.ovr}</span>`, '◆')}${viewer ? '' : ring(C.board, 100, 'Board', `<span data-count="${C.board}" data-suf="%">${C.board}%</span>`, '☺')}${ring(C.step + 1, SCHEDULE.length, 'Season', (C.step + 1) + '/' + SCHEDULE.length, '▶')}</div></div>
-        <div class="fc-next">${next}${(st.type === 'major' || st.type === 'ewc' || st.type === 'worlds' || st.type === 'sidew') && window.RLCutscene ? `<button class="fc-intro" data-action="career-intro">▶ Watch the ${esc(st.type === 'major' ? majorCity(st) : st.type === 'ewc' ? 'Esports World Cup' : worldsCity() + ' Worlds Week')} intro</button>` : ''}</div>
+        <div class="fc-next">${next}${ffHtml(activeEvent)}${(st.type === 'major' || st.type === 'ewc' || st.type === 'worlds' || st.type === 'sidew') && window.RLCutscene ? `<button class="fc-intro" data-action="career-intro">▶ Watch the ${esc(st.type === 'major' ? majorCity(st) : st.type === 'ewc' ? 'Esports World Cup' : worldsCity() + ' Worlds Week')} intro</button>` : ''}</div>
       </aside>`;
     const tiles = `<nav class="fc-tiles" aria-label="Career hub">${VIEWS.map(([k, l, sub]) => `<button class="fc-tile ${k === view && tab === 'central' ? 'on' : ''}" data-action="career-view" data-v="${k}"><b>${l}</b><small>${esc(sub)}</small><span class="fc-tile-ico" aria-hidden="true">${{ next: '▶', standings: '☰', schedule: '▦', objectives: '✔', news: '▤', social: '#' }[k]}</span></button>`).join('')}</nav>`;
     // ---- tabs ----
@@ -1951,6 +1951,32 @@
     openMarket();
   }
 
+  /* ---------------- fast-forward: simulate step after step up to a target ---------------- */
+  const FF = { major: ['Next Major', (s) => s.type === 'major'], worlds: ['Worlds', (s) => s.type === 'worlds'], review: ['Season end', (s) => s.type === 'review'] };
+  function ffHtml(activeEvent) {
+    const st = step();
+    if (activeEvent || st.type === 'review' || C.sacked) return '';
+    const opts = Object.entries(FF).filter(([, [, f]]) => SCHEDULE.slice(C.step + 1).some(f) || (f(st) && false));
+    if (!opts.length) return '';
+    return `<div class="ff-row"><small>Fast-forward</small>${opts.map(([k, [l]]) => `<button class="btn sm" data-action="career-ff" data-v="${k}" title="Simulate every step until the ${esc(l.toLowerCase())}">⏩ ${esc(l)}</button>`).join('')}</div>`;
+  }
+  function fastForward(target) {
+    const f = FF[target] && FF[target][1]; if (!f) return;
+    if (!V() && userTeam().roster.length < 3) { api.toast('You need at least three players. Sign someone in the transfer market.'); return; }
+    let n = 0;
+    const tick = () => {
+      if (!C || C.sacked) { api.render(); return; }
+      const st = step();
+      if (st.type === 'review' || (n > 0 && f(st))) { save(); api.render(); api.toast(`Fast-forwarded ${n} step${n === 1 ? '' : 's'}: ${st.name}.`); return; }
+      if (st.type === 'window') { aiWindow(); advance(); news('career', 'The transfer window is closed.'); }
+      else runStep(null);
+      n++;
+      const b = document.querySelector('.ff-row'); if (b) b.innerHTML = `<small>Simulating ${esc(step().name)}…</small>`;
+      setTimeout(tick, 30);
+    };
+    tick();
+  }
+
   /* ---------------- event flow ---------------- */
   function playEvent() {
     const st = step();
@@ -2056,6 +2082,7 @@
       }
       case 'career-play': playEvent(); return true;
       case 'career-sim': { const b = el; b.disabled = true; b.textContent = 'Simulating…'; setTimeout(() => { runStep(null); api.render(); }, 30); return true; }
+      case 'career-ff': fastForward(v); return true;
       case 'career-sim-rest': { const T = api.state.T; simRest(T); api.render(); return true; }
       case 'career-close-window': aiWindow(); advance(); news('career', 'The transfer window is closed.'); save(); api.render(); return true;
       case 'career-next-season': startNextSeason(); api.render(); window.scrollTo({ top: 0 }); return true;
@@ -2116,7 +2143,13 @@
     return false;
   }
 
+  // where you were in the career screens survives a reload
+  const UI_KEYS = ['ctab', 'cview', 'thTab', 'newsCat', 'trReg', 'thReg', 'thSort'];
+  let uiRestored = false;
+  function rememberUi() { try { const o = {}; UI_KEYS.forEach((k) => { if (api.state.ui[k] != null) o[k] = api.state.ui[k]; }); localStorage.setItem('rlsim.careerUi', JSON.stringify(o)); } catch (e) { /* storage blocked */ } }
   function render(app) {
+    if (!uiRestored) { uiRestored = true; try { const o = JSON.parse(localStorage.getItem('rlsim.careerUi') || '{}'); UI_KEYS.forEach((k) => { if (o[k] != null && api.state.ui[k] == null) api.state.ui[k] = o[k]; }); } catch (e) { /* ignore */ } }
+    setTimeout(rememberUi, 0);
     if (!C) renderStart(app); else renderHub(app);
   }
   function canAdvanceCheck() { return !C || V() || userTeam().roster.length >= 3; }
@@ -2146,12 +2179,14 @@
         if (document.querySelector('#modalRoot .modal') || /input|select|textarea/i.test((ev.target && ev.target.tagName) || '')) return;
         const TABS = (C && C.viewer ? ['central', 'transfers', 'teams', 'history'] : ['central', 'squad'].concat(X() ? ['tactics'] : [], ['transfers', 'teams', 'office', 'history'])), VIEWS = ['next', 'standings', 'schedule', 'objectives', 'news', 'social'];
         const ui = api.state.ui, k = ev.key.toLowerCase();
+        if (k === 'n') { const b = document.querySelector('.fc-next [data-action="career-sim"], .fc-next [data-action="career-close-window"], .fc-next [data-action="career-next-season"]'); if (b && !b.disabled) { ev.preventDefault(); b.click(); } return; }
         if (k === 'q' || k === 'e') { const i = TABS.indexOf(ui.ctab || 'central'); ui.ctab = TABS[(i + (k === 'e' ? 1 : TABS.length - 1)) % TABS.length]; api.render(); }
         else if (/^[1-6]$/.test(k) && (k !== '6' || X())) { ui.ctab = 'central'; ui.cview = VIEWS[+k - 1]; api.render(); }
       });
     },
     render, onAction, recordFromT, simRest,
     has: () => !!C,
+    unread: () => (C ? unreadCount() : 0),
     /** Save slots: list (newest first), how many are free, and switching / starting a new one. */
     /** No career loaded (e.g. backed out of a new one) but others are saved: load the most recent. */
     ensure: () => { if (!C) { const nx = slotList()[0]; if (nx) switchSlot(nx.id); } },
