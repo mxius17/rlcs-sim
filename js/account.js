@@ -12,6 +12,7 @@
  */
 (function (global) {
   'use strict';
+  const SITE = 'https://mxius17.github.io/rlcs-sim/';   // the hosted copy, where sign-in works
   const META_KEY = 'rl.acct.sync';               // this device's sync bookkeeping (not synced itself)
   const EXCLUDE = new Set(['rlsim.homeTab']);     // per-device UI state
   const PART_BYTES = 900 * 1024, PART_CHARS = 280 * 1024;
@@ -232,7 +233,7 @@
     'auth/wrong-password': 'Wrong e-mail or password.',
     'auth/user-not-found': 'No account with this e-mail. Create one instead.',
     'auth/too-many-requests': 'Too many attempts. Wait a moment and try again.',
-    'auth/network-request-failed': 'No connection to the account server. Check your internet.',
+    'auth/network-request-failed': !/github\.io$/.test(location.hostname) && location.protocol === 'https:' ? 'This copy can’t reach the account server (the claude.ai preview blocks it). Sign in on the full site instead: ' + SITE : 'No connection to the account server. Check your internet.',
     'auth/operation-not-allowed': 'E-mail sign-in isn’t switched on for this site yet (Firebase console › Authentication › Sign-in method).',
     'permission-denied': 'The cloud refused access. The Firestore security rules may not be set up yet.',
     'unavailable': 'The cloud can’t be reached right now. Your saves stay on this device and sync later.',

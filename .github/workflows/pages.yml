@@ -1,0 +1,45 @@
+# Publishes the simulator to GitHub Pages on every push to main.
+# The Firebase web config for accounts comes from the repository secret FIREBASE_CONFIG and is written into
+# js/firebase-config.js only inside the build, so it never lands in the repository.
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add the Firebase config (accounts)
+        env:
+          FIREBASE_CONFIG: ${{ secrets.FIREBASE_CONFIG }}
+        run: |
+          if [ -n "$FIREBASE_CONFIG" ]; then
+            printf 'window.RL_FIREBASE_CONFIG = %s;\n' "$FIREBASE_CONFIG" > js/firebase-config.js
+            echo "Accounts: on"
+          else
+            echo "Accounts: off (no FIREBASE_CONFIG secret)"
+          fi
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4
