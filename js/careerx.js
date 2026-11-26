@@ -370,12 +370,12 @@
   /* ======================= events ======================= */
   function onEvent(T, st, region, title, list) {
     const x = C().x, kind = st.type, champ = T.champion;
-    const big = kind === 'major' || kind === 'worlds' || kind === 'ewc';
+    const big = kind === 'major' || kind === 'worlds' || kind === 'ewc' || kind === 'kickoff';
     // titles for the record book (club + players)
     if (champ && C().teams[champ]) {
       const R = rec(), nm = C().teams[champ].name;
       const tr = R.titles[nm] = R.titles[nm] || { total: 0, worlds: 0, majors: 0, opens: 0, ewc: 0 };
-      tr.total++; if (kind === 'worlds') tr.worlds++; else if (kind === 'major') tr.majors++; else if (kind === 'ewc') tr.ewc++; else tr.opens++;
+      tr.total++; if (kind === 'worlds') tr.worlds++; else if (kind === 'major') tr.majors++; else if (kind === 'ewc') tr.ewc++; else if (kind === 'kickoff') tr.ko = (tr.ko || 0) + 1; else tr.opens++;
       const ps = C().teams[champ].roster.slice(0, 3).map((id) => C().players[id]).filter(Boolean);
       ps.forEach((p) => { const cr = careerOf(p); cr.t++; if (kind === 'major') cr.maj++; if (kind === 'worlds') cr.w++; });
       if (big) ps.forEach((p) => {
@@ -446,7 +446,7 @@
     // power index: international results by region
     if (big) {
       x.intl = x.intl || {};
-      list.slice(0, 8).forEach(({ id, place }) => { const t = C().teams[id]; if (!t) return; const pts = place === 1 ? 10 : place === 2 ? 7 : place <= 4 ? 5 : 2; x.intl[t.region] = (x.intl[t.region] || 0) + pts * (kind === 'ewc' ? 0.5 : 1); });
+      list.slice(0, 8).forEach(({ id, place }) => { const t = C().teams[id]; if (!t) return; const pts = place === 1 ? 10 : place === 2 ? 7 : place <= 4 ? 5 : 2; x.intl[t.region] = (x.intl[t.region] || 0) + pts * (kind === 'ewc' ? 0.5 : kind === 'kickoff' ? 0.75 : 1); });
     }
   }
 
@@ -696,7 +696,7 @@
       const kn = x.know[p.id] || 0; if (kn < 100) x.know[p.id] = Math.min(100, kn + lv * 9 + (p.age <= 19 ? 3 : 0));
     });
     // previews before the big events
-    if ((st.type === 'major' || st.type === 'worlds' || st.type === 'ewc') && x.previewed !== C().season + st.key) {
+    if ((st.type === 'major' || st.type === 'worlds' || st.type === 'ewc' || st.type === 'kickoff') && x.previewed !== C().season + st.key) {
       x.previewed = C().season + st.key;
       const fav = Object.keys(C().teams).sort((a, b) => K.ovr(b) - K.ovr(a)).slice(0, 2);
       const dark = Object.keys(C().teams).filter((id) => K.ovr(id) >= K.ovr(fav[1]) - 6 && !fav.includes(id)).sort(() => Math.random() - 0.5)[0];
@@ -1039,7 +1039,7 @@
     const careerAll = Object.entries(R.career).concat(live);
     const lead = (k) => { const b = careerAll.slice().sort((a, b) => (b[1][k] || 0) - (a[1][k] || 0))[0]; return b && b[1][k] ? `${b[1][k]} · ${esc(b[0])}` : '—'; };
     const recHtml = `<section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">📕 Record book</h3>
-      <div class="fc-grid2 x-rec"><div><div class="tile-kicker">Most titles (this career)</div>${t.length ? t.map(([n, v], i) => row(`${i + 1}. ${esc(n)}`, `${v.total} <small>${v.worlds ? v.worlds + 'W · ' : ''}${v.majors ? v.majors + 'M · ' : ''}${v.opens} Opens</small>`)).join('') : '<p class="muted" style="font-size:13px">No titles yet.</p>'}
+      <div class="fc-grid2 x-rec"><div><div class="tile-kicker">Most titles (this career)</div>${t.length ? t.map(([n, v], i) => row(`${i + 1}. ${esc(n)}`, `${v.total} <small>${v.worlds ? v.worlds + 'W · ' : ''}${v.majors ? v.majors + 'M · ' : ''}${v.ko ? v.ko + ' KO · ' : ''}${v.opens} Opens</small>`)).join('') : '<p class="muted" style="font-size:13px">No titles yet.</p>'}
         ${tw.length ? `<div class="tile-kicker" style="margin-top:12px">World Championships</div>${tw.map(([n, v]) => row(esc(n), v.worlds + '×')).join('')}` : ''}</div>
         <div><div class="tile-kicker">Single season</div>${row('Most goals', sr('goals', 'goals'))}${row('Most assists', sr('assists', 'assists'))}${row('Most saves', sr('saves', 'saves'))}${row('Best average score', sr('avg', ''))}${row('Most circuit points', sr('teamPts', 'pts'))}
         <div class="tile-kicker" style="margin-top:12px">All time</div>${row('Career goals', lead('g'))}${row('Career titles', lead('t'))}${row('MVP awards', lead('mvp'))}${row('Highest rating', R.peak ? R.peak.v + ' · ' + esc(R.peak.name) + ', ' + R.peak.season : '—')}

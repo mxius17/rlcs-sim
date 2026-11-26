@@ -34,6 +34,10 @@
   const MAJOR_SLOTS = { EU: 5, NA: 4, SAM: 2, MENA: 2, OCE: 1, APAC: 1, SSA: 1 };
   const WORLDS_SLOTS = { EU: 6, NA: 5, SAM: 3, MENA: 3, OCE: 1, APAC: 1, SSA: 1 };
   // regional power shifts can move slots between regions (C.x.slotsM / C.x.slotsW)
+  /* Club Championship Kick-Off: the season opener in London (Copper Box Arena), 24 clubs from all seven regions,
+     double elimination with the top eight seeds starting in Upper Round 2. $300,000 and Split 1 points. */
+  const KO_SLOTS = { EU: 7, NA: 6, SAM: 3, MENA: 3, OCE: 2, APAC: 2, SSA: 1 };
+  const KO_CITY = 'London';
   const slotM = () => (C && C.x && C.x.slotsM) || MAJOR_SLOTS;
   const slotW = () => (C && C.x && C.x.slotsW) || WORLDS_SLOTS;
   const CITIES = ['Copenhagen', 'Sydney', 'Riyadh', 'Los Angeles', 'London', 'Rio de Janeiro', 'Berlin', 'Tokyo', 'Dallas', 'Madrid', 'Toronto', 'Stockholm', 'Seoul', 'Mexico City',
@@ -148,12 +152,14 @@
     Object.keys(HOST_PAL).forEach((city) => { const [country, a, b, c] = HOST_PAL[city]; T[hostKey(city)] = { name: city + ', ' + country, a, b, c, on: onColor(a) }; });
     T['enc'] = { name: 'Esports Nations Cup', a: '#2148FF', b: '#080C26', c: '#F2C14E', on: '#fff' };
     T['fifae'] = { name: 'FIFAe World Cup', a: '#00A3E0', b: '#06142B', c: '#FFFFFF', on: '#04121f' };
+    T['kickoff'] = { name: 'RLCS Kick-Off', a: '#E11D48', b: '#0B0B16', c: '#FFFFFF', on: '#fff' }; // the season opener in London
     T['ewc'] = { name: 'Esports World Cup', a: '#18E08A', b: '#0A0A0C', c: '#FFFFFF', on: '#03140c' }; // EWC look: black and white with a green accent
     T['career-worlds'] = { name: 'RLCS World Championship', a: '#1F5BFF', b: '#050505', c: '#D4A017', on: '#fff' }; // Worlds branding: blue, gold, black
     Object.keys(REGION_PAL).forEach((r) => { const [name, a, b, c] = REGION_PAL[r]; T[regionKey(r)] = { name, a, b, c, on: onColor(a) }; });
   })();
   const SCHEDULE = [
     { key: 'pre', type: 'window', name: 'Pre-season transfer window', short: 'Window' },
+    { key: 'ko', type: 'kickoff', name: 'Kick-Off', split: 1, short: 'Kick-Off' },
     { key: 'o1', type: 'open', name: 'Open 1', split: 1, short: 'Open 1' },
     { key: 'o2', type: 'open', name: 'Open 2', split: 1, short: 'Open 2' },
     { key: 'o3', type: 'open', name: 'Open 3', split: 1, short: 'Open 3' },
@@ -210,10 +216,12 @@
   const POINTS = {
     open: [12, 10, 8, 8, 6, 6, 6, 6, 3, 3, 3, 3, 1, 1, 1, 1],
     major: [30, 24, 18, 18, 12, 12, 8, 8, 5, 5, 5, 5, 3, 3, 3, 3],
+    kickoff: [20, 16, 12, 12, 9, 9, 7, 7, 5, 5, 5, 5, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1],
   };
   const PRIZE = {
     open: [30000, 18000, 10000, 10000, 5000, 5000, 5000, 5000, 1500, 1500, 1500, 1500, 500, 500, 500, 500],
     major: [150000, 80000, 50000, 50000, 30000, 30000, 20000, 20000, 10000, 10000, 10000, 10000, 5000, 5000, 5000, 5000],
+    kickoff: [100000, 50000, 30000, 30000, 15000, 15000, 10000, 10000, 5000, 5000, 5000, 5000, 2500, 2500, 2500, 2500, 1250, 1250, 1250, 1250, 1250, 1250, 1250, 1250],
     ewc: [400000, 180000, 80000, 80000, 35000, 35000, 35000, 35000, 20000, 20000, 20000, 20000, 12500, 12500, 12500, 12500],
     worlds: [300000, 153000, 99000, 99000, 84000, 84000, 66000, 66000, 37500, 37500, 37500, 37500, 17250, 17250, 17250, 17250, 9000, 9000, 6000, 6000],
   };
@@ -292,7 +300,7 @@
   }
 
   /* ---------------- persistence ---------------- */
-  function load() { loadSlots(); try { const raw = localStorage.getItem(KEY); C = raw ? JSON.parse(raw) : null; } catch (e) { C = null; } fixAges(); fixEconomy(); fixHosts(); fixSchedule(); fixScheduleEwc(); fixScheduleNations(); if (C && !C.academyV1) { fixAcademy(); save(); } bump(); if (C && global.RLCareerX) { const fresh = !C.x; C.x = C.x || {}; global.RLCareerX.migrate(); if (fresh) save(); } if (C) { try { slots.list[slots.active] = Object.assign(slotMeta(), { at: (slots.list[slots.active] || {}).at || Date.now() }); saveSlots(); } catch (e) { /* meta is best effort */ } } }
+  function load() { loadSlots(); try { const raw = localStorage.getItem(KEY); C = raw ? JSON.parse(raw) : null; } catch (e) { C = null; } fixAges(); fixEconomy(); fixHosts(); fixSchedule(); fixScheduleEwc(); fixScheduleNations(); fixScheduleKickoff(); if (C && !C.academyV1) { fixAcademy(); save(); } bump(); if (C && global.RLCareerX) { const fresh = !C.x; C.x = C.x || {}; global.RLCareerX.migrate(); if (fresh) save(); } if (C) { try { slots.list[slots.active] = Object.assign(slotMeta(), { at: (slots.list[slots.active] || {}).at || Date.now() }); saveSlots(); } catch (e) { /* meta is best effort */ } } }
   /** Saves from before the 1v1/2v2 Championships: Worlds and the review moved four steps later. */
   function fixSchedule() {
     if (!C || C.schedV2) return;
@@ -322,6 +330,16 @@
       if (T && T.career && T.career.season === C.season && T.career.step >= 16) T.career.step += 2;
     }
     C.schedV4 = true; save();
+  }
+  /** Saves from before the Kick-Off: every step after the pre-season window moved one step later. */
+  function fixScheduleKickoff() {
+    if (!C || C.schedV5) return;
+    if (C.step >= 1) {
+      C.step += 1;
+      const T = api && api.state && api.state.T;
+      if (T && T.career && T.career.season === C.season && T.career.step >= 1) T.career.step += 1;
+    }
+    C.schedV5 = true; save();
   }
   function fixHosts() {
     if (!C || C.hostsV2) return;
@@ -626,7 +644,7 @@
   /* ---------------- new career ---------------- */
   function newCareer(teamId, level, vreg) {
     const lib = api.libraryTeams();
-    C = { v: 1, viewer: !teamId || undefined, vreg: teamId ? undefined : vreg || 'EU', diff: DIFF[level] ? level : 'normal', agesV2: true, econV2: true, hostsV2: true, schedV2: true, schedV3: true, schedV4: true, rep: 0, season: 2027, step: 0, user: teamId ? 'c:' + teamId : null, teams: {}, players: {}, nextPid: 1, points: {}, results: {}, news: [], history: [], trophies: [], fa: [], seasonFin: { prize: 0, sponsor: 0, salaries: 0, transfers: 0 }, objectives: [], board: 60, stepNews: [] };
+    C = { v: 1, viewer: !teamId || undefined, vreg: teamId ? undefined : vreg || 'EU', diff: DIFF[level] ? level : 'normal', agesV2: true, econV2: true, hostsV2: true, schedV2: true, schedV3: true, schedV4: true, schedV5: true, rep: 0, season: 2027, step: 0, user: teamId ? 'c:' + teamId : null, teams: {}, players: {}, nextPid: 1, points: {}, results: {}, news: [], history: [], trophies: [], fa: [], seasonFin: { prize: 0, sponsor: 0, salaries: 0, transfers: 0 }, objectives: [], board: 60, stepNews: [] };
     lib.forEach((t) => {
       const cid = 'c:' + t.id;
       const roster = t.players.slice(0, 4).map((p, i) => {
@@ -754,6 +772,12 @@
   }
   const sideSize = (n) => [16, 12, 8, 6, 4].find((x) => x <= n) || 0;
   const sideHome = () => (SIDE_REGIONS.includes(homeReg()) ? homeReg() : null);
+  /** Kick-Off field: each region's strongest clubs as the season starts (KO_SLOTS), seeded by strength. */
+  function kickoffField() {
+    let ids = [];
+    REGIONS.forEach((r) => (ids = ids.concat(standings(r, 'season').slice(0, KO_SLOTS[r]))));
+    return ids.sort((a, b) => ovr(b) - ovr(a));
+  }
   /** EWC field: the 16 best clubs of the season by RLCS points, with the Major regional slots. */
   function ewcField() {
     let ids = [];
@@ -778,6 +802,7 @@
     if (st.type === 'open') { const f = openField(region, 's' + st.split); return { cfg: Object.assign(base, { format: 'swiss', size: 16, teams: f.field }), qualifier: f.qualifier }; }
     if (st.type === 'major') { const ids = majorField('s' + st.split); return { cfg: Object.assign(base, { format: 'major', size: 16, teams: snake(ids, 4) }) }; }
     if (st.type === 'nation') { const ev = NATION_EVENTS[st.key], ids = nationField(st.key); return { cfg: Object.assign(base, { format: 'groups', size: ids.length, groupSize: ev.groupSize, advance: ev.advance, teams: snake(ids, ev.groupSize) }) }; }
+    if (st.type === 'kickoff') { const ids = kickoffField(); return { cfg: Object.assign(base, { format: 'double', size: ids.length, teams: ids }) }; }
     if (st.type === 'ewc') return { cfg: Object.assign(base, { format: 'groups', size: 16, groupSize: 4, advance: 2, teams: snake(ewcField(), 4) }) };
     if (st.type === 'side' || st.type === 'sidew') { const ids = st.type === 'side' ? sideField(st.mode, region) : sideWorldsField(st.mode); const n = sideSize(ids.length); return { cfg: Object.assign(base, { format: 'knockout', size: n, teams: ids.slice(0, n) }), qualifier: [] }; }
     const ids = worldsField(); return { cfg: Object.assign(base, { format: 'groups', size: 20, groupSize: 5, advance: 2, teams: snake(ids, 5) }) };
@@ -785,6 +810,7 @@
   function eventTitle(st, region) {
     if (st.type === 'open') return 'RLCS ' + C.season + ' · ' + api.regions[region] + ' ' + st.name;
     if (st.type === 'major') return 'RLCS ' + C.season + ' · ' + majorCity(st) + ' Major';
+    if (st.type === 'kickoff') return 'RLCS ' + C.season + ' · ' + KO_CITY + ' Kick-Off';
     if (st.type === 'ewc') return 'Esports World Cup ' + C.season + ' · ' + EWC_CITY;
     if (st.type === 'nation') return NATION_EVENTS[st.key].name + ' ' + C.season + ' · ' + nationHost(st.key, C.season).city;
     if (st.type === 'side') return 'RLCS ' + C.season + ' · ' + api.regions[region] + ' ' + (st.mode === 1 ? '1v1' : '2v2') + ' Open';
@@ -809,8 +835,8 @@
   }
   const majorCity = (st) => seasonHosts(C.season)[st.split === 2 ? 'm2' : 'm1'];
   const worldsCity = () => seasonHosts(C.season).w;
-  const hostCity = (st) => (st.type === 'major' ? majorCity(st) : st.type === 'ewc' ? EWC_CITY : st.type === 'nation' ? nationHost(st.key, C.season).city : st.type === 'worlds' || st.type === 'sidew' ? worldsCity() : null);
-  const themeKeyFor = (st) => { if (st.type === 'open') return C && (V() || userTeam()) ? regionKey(homeReg()) : null; if (st.type === 'side') return 'side-' + st.mode + 'v' + st.mode; if (st.type === 'ewc') return 'ewc'; if (st.type === 'nation') return st.key; if (st.type === 'worlds' || st.type === 'sidew') return 'career-worlds'; const c = hostCity(st); return c && HOST_PAL[c] ? hostKey(c) : null; };
+  const hostCity = (st) => (st.type === 'major' ? majorCity(st) : st.type === 'kickoff' ? KO_CITY : st.type === 'ewc' ? EWC_CITY : st.type === 'nation' ? nationHost(st.key, C.season).city : st.type === 'worlds' || st.type === 'sidew' ? worldsCity() : null);
+  const themeKeyFor = (st) => { if (st.type === 'open') return C && (V() || userTeam()) ? regionKey(homeReg()) : null; if (st.type === 'side') return 'side-' + st.mode + 'v' + st.mode; if (st.type === 'ewc') return 'ewc'; if (st.type === 'kickoff') return 'kickoff'; if (st.type === 'nation') return st.key; if (st.type === 'worlds' || st.type === 'sidew') return 'career-worlds'; const c = hostCity(st); return c && HOST_PAL[c] ? hostKey(c) : null; };
   const hostTheme = (st) => { const k = themeKeyFor(st); return k ? window.RL_EVENT_THEMES[k] || null : null; };
   const hostVars = (th) => (th ? `--e1:${th.a};--e2:${th.b};--e3:${th.c};--e-on:${th.on}` : '');
 
@@ -1178,8 +1204,8 @@
     const evWin = (k) => (C.results[k] && C.results[k].champion && C.teams[C.results[k].champion] ? C.teams[C.results[k].champion].name : '—');
     const sideWin = (k) => (C.results[k] && C.results[k].champName) || '—';
     const natWin = (k) => (C.results[k] ? ((C.results[k].flag ? C.results[k].flag + ' ' : '') + C.results[k].champName) : '—');
-    if (V()) C.history.unshift({ season: C.season, viewer: true, champion: evWin('w'), runnerUp: C.results.w && C.teams[C.results.w.runnerUp] ? C.teams[C.results.w.runnerUp].name : '—', m1: evWin('m1'), m2: evWin('m2'), m1c: majorCity({ split: 1 }), m2c: majorCity({ split: 2 }), wc: worldsCity(), ewc: evWin('ewc'), enc: natWin('enc'), fifae: natWin('fifae'), d1: sideWin('wd1'), d2: sideWin('wd2'), mvp: mvp ? mvp.name : '—', topG: topG ? topG.name + ' (' + topG.stats.g + ')' : '—', leader: (() => { const id = standings(homeReg(), 'season')[0]; return id ? C.teams[id].name : '—'; })() });
-    else C.history.unshift({ season: C.season, worlds: worlds ? worlds.label : 'DNQ', majors, bestOpen: bestOpen < 99 ? E.ordinal(bestOpen) : '—', regRank, objectives: objRes, champion: champion && C.teams[champion] ? C.teams[champion].name : '—', mvp: mvp ? mvp.name : '—', points: C.points[C.user].season, m1: evWin('m1'), m2: evWin('m2'), ewc: evWin('ewc'), enc: natWin('enc'), fifae: natWin('fifae'), d1: sideWin('wd1'), d2: sideWin('wd2') });
+    if (V()) C.history.unshift({ season: C.season, viewer: true, champion: evWin('w'), runnerUp: C.results.w && C.teams[C.results.w.runnerUp] ? C.teams[C.results.w.runnerUp].name : '—', ko: evWin('ko'), m1: evWin('m1'), m2: evWin('m2'), m1c: majorCity({ split: 1 }), m2c: majorCity({ split: 2 }), wc: worldsCity(), ewc: evWin('ewc'), enc: natWin('enc'), fifae: natWin('fifae'), d1: sideWin('wd1'), d2: sideWin('wd2'), mvp: mvp ? mvp.name : '—', topG: topG ? topG.name + ' (' + topG.stats.g + ')' : '—', leader: (() => { const id = standings(homeReg(), 'season')[0]; return id ? C.teams[id].name : '—'; })() });
+    else C.history.unshift({ season: C.season, worlds: worlds ? worlds.label : 'DNQ', majors, bestOpen: bestOpen < 99 ? E.ordinal(bestOpen) : '—', regRank, objectives: objRes, champion: champion && C.teams[champion] ? C.teams[champion].name : '—', mvp: mvp ? mvp.name : '—', points: C.points[C.user].season, ko: evWin('ko'), m1: evWin('m1'), m2: evWin('m2'), ewc: evWin('ewc'), enc: natWin('enc'), fifae: natWin('fifae'), d1: sideWin('wd1'), d2: sideWin('wd2') });
     C.review = { acLines, upkeep, objRes, salaries, sponsor, mvp: mvp && { name: mvp.name, team: mvp.team }, topG: topG && { name: topG.name, g: topG.stats.g }, devLines, retired: retired.filter((p) => p.team === C.user || p.rating >= 80).map((p) => p.name), expiring, champion, regRank };
     bump();
   }
@@ -1316,6 +1342,14 @@
     if (inp) inp.addEventListener('input', () => { api.state.ui.careerQ = inp.value; const pos = inp.selectionStart; renderStart(app); const n = app.querySelector('#careerQ'); n.focus(); n.setSelectionRange(pos, pos); });
   }
 
+  /** One line on an event's format for the hub. */
+  function fmtDesc(st) {
+    if (st.type === 'open') return '16 teams · Swiss stage, then an eight-team playoff';
+    if (st.type === 'major') return '16 teams · groups, then the Final Eight';
+    if (st.type === 'kickoff') return eventCfg(st).cfg.size + ' clubs from all seven regions · double elimination, the top eight seeds start in Upper Round 2 · $300,000 and Split 1 points';
+    if (st.type === 'ewc') return '16 clubs · four groups of four, then an eight-team knockout · $1,010,000, no RLCS points';
+    return '20 teams · four groups of five, then an eight-team knockout';
+  }
   function myEventStatus(st) {
     if (st.type === 'nation') { const r = C.results[st.key]; return r ? '🏆 ' + (r.flag ? r.flag + ' ' : '') + r.champName : null; }
     if (st.type === 'side' || st.type === 'sidew') {
@@ -1385,6 +1419,7 @@
       if (!C.review) { seasonReview(); save(); }
       const R = C.review, H = C.history[0] || {};
       next = `<p>Season ${C.season} is over. ${R.champion ? `<b>${esc(C.teams[R.champion].name)}</b> are world champions.` : ''}</p>
+        <div class="kv"><span>Kick-Off · London</span><b>${esc(H.ko || '—')}</b></div>
         <div class="kv"><span>${esc(H.m1c || 'Major 1')} Major</span><b>${esc(H.m1 || '—')}</b></div><div class="kv"><span>${esc(H.m2c || 'Major 2')} Major</span><b>${esc(H.m2 || '—')}</b></div>
         <div class="kv"><span>Esports World Cup</span><b>${esc(H.ewc || '—')}</b></div>
         <div class="kv"><span>Worlds · ${esc(H.wc || '')}</span><b>${esc(H.champion || '—')}</b></div>
@@ -1396,13 +1431,13 @@
         <div class="action-row"><button class="btn primary" data-action="career-next-season">Start ${C.season + 1} season →</button></div>${X() ? X().awardsButton() : ''}`;
     } else if (viewer) {
       const title = eventTitle(st, reg);
-      next = `<p><b>${esc(title)}</b> · ${st.type === 'open' ? '16 teams · Swiss stage, then an eight-team playoff' : st.type === 'major' ? '16 teams · groups, then the Final Eight' : st.type === 'ewc' ? '16 clubs · four groups of four, then an eight-team knockout · $1,010,000, no RLCS points' : '20 teams · four groups of five, then an eight-team knockout'}.</p>
+      next = `<p><b>${esc(title)}</b> · ${fmtDesc(st)}.</p>
         <p class="help">${st.type === 'open' ? 'You watch the Open in your home region; the other six regions play theirs at the same time.' : 'Watch it match by match, or simulate it and read the results.'}</p>
         <div class="action-row">
           ${activeEvent ? `<button class="btn primary" data-action="resume">Resume event →</button><button class="btn" data-action="career-sim-rest">Simulate the rest</button>` : `<button class="btn primary" data-action="career-play">▶ Watch event</button><button class="btn" data-action="career-sim">Simulate event</button>`}
         </div>${st.type === 'open' && !activeEvent ? regPick : ''}`;
     } else if (st.type === 'window') {
-      next = `<p>The transfer window is open. Sign players, extend contracts or sell, then close the window to start ${C.step === 0 ? 'Open 1' : 'Open 4'}. AI teams make their moves when the window closes.</p>
+      next = `<p>The transfer window is open. Sign players, extend contracts or sell, then close the window to start ${SCHEDULE[C.step + 1] ? (SCHEDULE[C.step + 1].type === 'kickoff' ? 'the ' : '') + esc(SCHEDULE[C.step + 1].name) : 'the next event'}. AI teams make their moves when the window closes.</p>
         <div class="action-row"><button class="btn primary" data-action="career-market">Open transfer market</button><button class="btn" data-action="career-close-window">Close window →</button></div>`;
     } else if (st.type === 'review') {
       if (!C.review) { seasonReview(); save(); }
@@ -1424,7 +1459,7 @@
       const ev = st.type === 'open' ? null : eventCfg(st);
       const inIt = st.type === 'open' ? true : ev.cfg.teams.includes(C.user);
       const title = eventTitle(st, reg);
-      next = `<p><b>${esc(title)}</b> · ${st.type === 'open' ? '16 teams · Swiss stage, then an eight-team playoff' : st.type === 'major' ? '16 teams · groups, then the Final Eight' : st.type === 'ewc' ? '16 clubs · four groups of four, then an eight-team knockout · $1,010,000, no RLCS points' : '20 teams · four groups of five, then an eight-team knockout'}.</p>
+      next = `<p><b>${esc(title)}</b> · ${fmtDesc(st)}.</p>
         ${st.type === 'open' ? '<p class="help">The top 12 in your region\'s points go straight in; teams ranked 13th–28th play a knockout qualifier for the last four places.</p>' : inIt ? `<p class="help">You have qualified. Every other region's teams are in the field as well.</p>` : `<p class="help">You did not qualify for this event. You can still simulate it and follow the results.</p>`}
         <div class="action-row">
           ${activeEvent ? `<button class="btn primary" data-action="resume">Resume event →</button><button class="btn" data-action="career-sim-rest">Simulate the rest</button>` : `${inIt ? '<button class="btn primary" data-action="career-play">▶ Play event</button>' : ''}<button class="btn ${inIt ? '' : 'primary'}" data-action="career-sim">Simulate event</button>`}
@@ -1485,10 +1520,10 @@
     // ---- next-up side card (all the season actions live here) ----
     const sideCard = `<aside class="fc-side">
         <div class="fc-side-head"><h2>${esc(st.name)}</h2><small>RLCS ${C.season}${hostCity(st) ? ' · ' + esc(hostCity(st)) + (HOST_PAL[hostCity(st)] ? ', ' + esc(HOST_PAL[hostCity(st)][0]) : '') : ''} · step ${C.step + 1} of ${SCHEDULE.length}</small></div>
-        <div class="fc-side-row"><span class="fc-day">${C.step + 1}</span><span><small>${esc(st.type === 'window' ? 'Transfer window' : st.type === 'review' ? 'Season review' : st.type === 'open' ? 'Regional Open' : st.type === 'major' ? 'Major' : st.type === 'ewc' ? 'Club event · not RLCS' : st.type === 'nation' ? 'Off-season · national teams' : st.type === 'side' ? (st.mode === 1 ? '1v1' : '2v2') + ' Championship' : st.type === 'sidew' ? 'Worlds week' : 'World Championship')}</small><b>${esc(st.short || st.name)}</b></span><span class="fc-ico" aria-hidden="true">${st.type === 'window' ? '⇄' : st.type === 'review' ? '★' : '🏆'}</span></div>
+        <div class="fc-side-row"><span class="fc-day">${C.step + 1}</span><span><small>${esc(st.type === 'window' ? 'Transfer window' : st.type === 'review' ? 'Season review' : st.type === 'open' ? 'Regional Open' : st.type === 'major' ? 'Major' : st.type === 'kickoff' ? 'Season opener' : st.type === 'ewc' ? 'Club event · not RLCS' : st.type === 'nation' ? 'Off-season · national teams' : st.type === 'side' ? (st.mode === 1 ? '1v1' : '2v2') + ' Championship' : st.type === 'sidew' ? 'Worlds week' : 'World Championship')}</small><b>${esc(st.short || st.name)}</b></span><span class="fc-ico" aria-hidden="true">${st.type === 'window' ? '⇄' : st.type === 'review' ? '★' : '🏆'}</span></div>
         <div class="fc-side-mid"><small>${viewer ? 'Neutral viewer · home region ' + esc(api.regions[reg]) : esc(t.name) + ' · ' + regionRankLabel() + ' in ' + esc(api.regions[reg])}</small>
           <div class="fc-rings">${viewer ? (() => { const n88 = Object.values(C.players).filter((p) => p.team && p.rating >= 88).length, base = (C.base || talentBase()).n88; return ring(t.ovr - 60, 40, 'Region leader', `<span data-count="${t.ovr}">${t.ovr}</span>`, '◆') + ring(n88, Math.round(base * 1.5), 'Stars 88+', `<span data-count="${n88}">${n88}</span>`, '★'); })() : ring(t.ovr - 60, 40, 'Team rating', `<span data-count="${t.ovr}">${t.ovr}</span>`, '◆')}${viewer ? '' : ring(C.board, 100, 'Board', `<span data-count="${C.board}" data-suf="%">${C.board}%</span>`, '☺')}${ring(C.step + 1, SCHEDULE.length, 'Season', (C.step + 1) + '/' + SCHEDULE.length, '▶')}</div></div>
-        <div class="fc-next">${next}${ffHtml(activeEvent)}${(st.type === 'major' || st.type === 'ewc' || st.type === 'worlds' || st.type === 'sidew') && window.RLCutscene ? `<button class="fc-intro" data-action="career-intro">▶ Watch the ${esc(st.type === 'major' ? majorCity(st) : st.type === 'ewc' ? 'Esports World Cup' : worldsCity() + ' Worlds Week')} intro</button>` : ''}</div>
+        <div class="fc-next">${next}${ffHtml(activeEvent)}${(st.type === 'major' || st.type === 'kickoff' || st.type === 'ewc' || st.type === 'worlds' || st.type === 'sidew') && window.RLCutscene ? `<button class="fc-intro" data-action="career-intro">▶ Watch the ${esc(st.type === 'major' ? majorCity(st) : st.type === 'kickoff' ? 'Kick-Off' : st.type === 'ewc' ? 'Esports World Cup' : worldsCity() + ' Worlds Week')} intro</button>` : ''}</div>
       </aside>`;
     const tiles = `<nav class="fc-tiles" aria-label="Career hub">${VIEWS.map(([k, l, sub]) => `<button class="fc-tile ${k === view && tab === 'central' ? 'on' : ''}" data-action="career-view" data-v="${k}"><b>${l}</b><small>${esc(sub)}</small><span class="fc-tile-ico" aria-hidden="true">${{ next: '▶', standings: '☰', schedule: '▦', objectives: '✔', news: '▤', social: '#' }[k]}</span></button>`).join('')}</nav>`;
     // ---- tabs ----
@@ -1531,7 +1566,7 @@
     else if (tab === 'transfers') body = transferHub(st, me, roster, salaries);
     else if (tab === 'teams') body = (X() ? X().powerHTML() : '') + teamsPage(reg);
     else if (tab === 'office') {
-      const evRows = SCHEDULE.filter((x) => x.type === 'open' || x.type === 'major' || x.type === 'ewc' || x.type === 'worlds' || x.type === 'nation').map((x) => { const i = SCHEDULE.indexOf(x); const res = myEventStatus(x); const where = x.type === 'open' ? api.regions[reg] : hostCity(x); const th = hostTheme(x); return `<tr class="${i === C.step ? 'hl' : ''}"><td class="l"><span class="of-dot" style="background:${th ? th.a : 'var(--line-strong)'}"></span>${esc(x.name)}</td><td class="l muted">${esc(where || '')}</td><td>${res ? esc(res) : i === C.step ? '<b>Next</b>' : i < C.step ? '—' : '<span class="muted">Upcoming</span>'}</td></tr>`; }).join('');
+      const evRows = SCHEDULE.filter((x) => x.type === 'open' || x.type === 'kickoff' || x.type === 'major' || x.type === 'ewc' || x.type === 'worlds' || x.type === 'nation').map((x) => { const i = SCHEDULE.indexOf(x); const res = myEventStatus(x); const where = x.type === 'open' ? api.regions[reg] : hostCity(x); const th = hostTheme(x); return `<tr class="${i === C.step ? 'hl' : ''}"><td class="l"><span class="of-dot" style="background:${th ? th.a : 'var(--line-strong)'}"></span>${esc(x.name)}</td><td class="l muted">${esc(where || '')}</td><td>${res ? esc(res) : i === C.step ? '<b>Next</b>' : i < C.step ? '—' : '<span class="muted">Upcoming</span>'}</td></tr>`; }).join('');
       const mood = C.board >= 75 ? 'The board is delighted with the direction of the club.' : C.board >= 60 ? 'The board is happy. Keep hitting the season objectives.' : C.board >= 40 ? 'The board is getting nervous. Results need to improve.' : 'The board is close to losing patience. Your job is at risk.';
       body = `${X() ? X().managerHTML() : ''}<div class="fc-grid2"><section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Finances</h3>
           <div class="fc-stats"><div><small>Budget</small><b data-count="${me.budget}" data-fmt="money">${money(me.budget)}</b></div><div><small>Salaries / season</small><b data-count="${salaries}" data-fmt="money">${money(salaries)}</b></div>
@@ -1579,7 +1614,7 @@
     const week = st.type === 'worlds' || st.type === 'sidew';
     const cutKey = C.season + '|' + (week ? 'week' : st.key);
     const autoI = api.state.settings.autoIntros !== false;
-    if ((st.type === 'major' || st.type === 'ewc' || week) && tab === 'central' && !activeEvent && window.RLCutscene && autoI && !(C.cutSeen || []).includes(cutKey)) {
+    if ((st.type === 'major' || st.type === 'kickoff' || st.type === 'ewc' || week) && tab === 'central' && !activeEvent && window.RLCutscene && autoI && !(C.cutSeen || []).includes(cutKey)) {
       C.cutSeen = (C.cutSeen || []).concat(cutKey).slice(-40); save();
       setTimeout(() => playMajorIntro(st), 350);
     }
@@ -1613,8 +1648,8 @@
     const wc = st.type === 'worlds' || st.type === 'sidew';
     const cur = st;
     if (wc) st = SCHEDULE.find((x) => x.type === 'worlds');
-    const ewc = st.type === 'ewc';
-    const city = wc ? worldsCity() : ewc ? EWC_CITY : majorCity(st), pal = HOST_PAL[city], th = hostTheme(st) || { a: '#1f8bff', b: '#121A2E', c: '#d4a017' };
+    const ewc = st.type === 'ewc', ko = st.type === 'kickoff';
+    const city = wc ? worldsCity() : ewc ? EWC_CITY : ko ? KO_CITY : majorCity(st), pal = HOST_PAL[city], th = hostTheme(st) || { a: '#1f8bff', b: '#121A2E', c: '#d4a017' };
     const country = pal ? pal[0] : '';
     const flag = global.RL_DATA.flagFor(country === 'United Kingdom' ? (city === 'Edinburgh' ? 'Scotland' : 'England') : country);
     const ids = eventCfg(st).cfg.teams.slice().sort((x, y) => ovr(y) - ovr(x));
@@ -1623,7 +1658,7 @@
     const field = ids.map((id) => { const tt = teamObj(id); return { badge: api.badge(tt, 'md'), name: tt.name, short: tt.tag || tt.name, region: C.teams[id].region, mine: !V() && id === C.user }; });
     const mineIn = !V() && ids.includes(C.user);
     const home = V() ? ids.filter((id) => C.teams[id].region === homeReg()).length : 0;
-    const note = V() ? `${home} team${home === 1 ? '' : 's'} from ${api.regions[homeReg()]} made it.` : mineIn ? `${userTeam().name} are in, ${wc ? 'one of ' + ids.length + ' teams chasing the world title.' : 'seeded ' + E.ordinal(eventCfg(st).cfg.teams.slice().sort((x, y) => ovr(y) - ovr(x)).indexOf(C.user) + 1) + ' of 16.'}` : `${userTeam().name} did not qualify. You can still simulate the event and follow the results.`;
+    const note = V() ? `${home} team${home === 1 ? '' : 's'} from ${api.regions[homeReg()]} made it.` : mineIn ? `${userTeam().name} are in, ${wc ? 'one of ' + ids.length + ' teams chasing the world title.' : 'seeded ' + E.ordinal(ids.indexOf(C.user) + 1) + ' of ' + ids.length + '.'}` : `${userTeam().name} did not qualify. You can still simulate the event and follow the results.`;
     const prev = (C.history || []).find((h) => h.season === C.season - 1);
     // Worlds Week: the 1v1 and 2v2 World Championships, then the World Championship itself
     const sideList = (n) => sideWorldsField(n).map((id) => { const o = sideObj(id); return o && { name: o.name, region: o.region, badge: api.badge(o, 'sm'), mine: !V() && sideClub(id) === C.user }; }).filter(Boolean);
@@ -1633,7 +1668,7 @@
       { key: 'wd2', day: 'Day 2', name: '2v2 World Championship', sub: 'The four regional 2v2 Open winners · $170,000', list: sideList(2), done: !!C.results.wd2 },
       { key: 'w', day: 'Days 3–6', name: 'World Championship', sub: ids.length + ' teams from 7 regions · groups, then the knockout', list: [], done: false },
     ].map((x) => Object.assign(x, { now: x.key === now })) : null;
-    window.RLCutscene.play({ city, country, flag, palette: th, worlds: wc, week, chip: wc ? 'Worlds Week' : null, holder: wc && prev && prev.champion && prev.champion !== '—' ? prev.champion : null, kicker: wc ? `RLCS ${C.season} · The season finale` : ewc ? `Esports World Cup ${C.season} · Club event` : `RLCS ${C.season} · ${st.name} · Split ${st.split}`, chip: wc ? 'Worlds Week' : ewc ? 'Esports World Cup' : null, field, note });
+    window.RLCutscene.play({ city, country, flag, palette: th, worlds: wc, week, chip: wc ? 'Worlds Week' : null, holder: wc && prev && prev.champion && prev.champion !== '—' ? prev.champion : null, kicker: wc ? `RLCS ${C.season} · The season finale` : ewc ? `Esports World Cup ${C.season} · Club event` : ko ? `RLCS ${C.season} · Season opener · Copper Box Arena` : `RLCS ${C.season} · ${st.name} · Split ${st.split}`, chip: wc ? 'Worlds Week' : ewc ? 'Esports World Cup' : ko ? 'Club Championship Kick-Off' : null, field, note });
   }
   /** Viewer: the 16 strongest teams worldwide. */
   function powerHtml() {
@@ -1644,13 +1679,13 @@
   /** Viewer: champions of every season, and the clubs with the most titles. */
   function viewerHistory() {
     const H = C.history.filter((h) => h.viewer || h.m1);
-    const rows = H.map((h) => `<tr><td class="l"><b>${h.season}</b></td><td class="l">🏆 ${esc(h.champion || '—')}${h.wc ? ` <span class="muted">· ${esc(h.wc)}</span>` : ''}</td><td class="l">${esc(h.runnerUp || '—')}</td><td class="l">${esc(h.m1 || '—')}${h.m1c ? ` <span class="muted">· ${esc(h.m1c)}</span>` : ''}</td><td class="l">${esc(h.m2 || '—')}${h.m2c ? ` <span class="muted">· ${esc(h.m2c)}</span>` : ''}</td><td class="l">${esc(h.ewc || '—')}</td><td class="l">${esc(h.d1 || '—')}</td><td class="l">${esc(h.d2 || '—')}</td><td class="l">${esc(h.enc || '—')}</td><td class="l">${esc(h.fifae || '—')}</td><td class="l">${esc(h.mvp || '—')}</td><td class="l">${esc(h.topG || '—')}</td></tr>`).join('');
+    const rows = H.map((h) => `<tr><td class="l"><b>${h.season}</b></td><td class="l">🏆 ${esc(h.champion || '—')}${h.wc ? ` <span class="muted">· ${esc(h.wc)}</span>` : ''}</td><td class="l">${esc(h.runnerUp || '—')}</td><td class="l">${esc(h.ko || '—')}</td><td class="l">${esc(h.m1 || '—')}${h.m1c ? ` <span class="muted">· ${esc(h.m1c)}</span>` : ''}</td><td class="l">${esc(h.m2 || '—')}${h.m2c ? ` <span class="muted">· ${esc(h.m2c)}</span>` : ''}</td><td class="l">${esc(h.ewc || '—')}</td><td class="l">${esc(h.d1 || '—')}</td><td class="l">${esc(h.d2 || '—')}</td><td class="l">${esc(h.enc || '—')}</td><td class="l">${esc(h.fifae || '—')}</td><td class="l">${esc(h.mvp || '—')}</td><td class="l">${esc(h.topG || '—')}</td></tr>`).join('');
     const count = {};
     H.forEach((h) => { [['w', h.champion], ['m', h.m1], ['m', h.m2]].forEach(([k, n]) => { if (!n || n === '—') return; count[n] = count[n] || { w: 0, m: 0 }; count[n][k]++; }); });
     const fame = Object.entries(count).sort((a, b) => b[1].w - a[1].w || b[1].m - a[1].m).slice(0, 10);
     const stars = Object.values(C.players).filter((p) => p.team).sort((a, b) => b.rating - a.rating).slice(0, 8);
     return `<section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Champions</h3>
-        ${H.length ? `<div class="table-wrap"><table class="st"><thead><tr><th class="l">Season</th><th class="l">World champion</th><th class="l">Runner-up</th><th class="l">Major 1</th><th class="l">Major 2</th><th class="l">EWC</th><th class="l">1v1</th><th class="l">2v2</th><th class="l">Nations Cup</th><th class="l">FIFAe WC</th><th class="l">MVP</th><th class="l">Top scorer</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="muted" style="font-size:13px">Finished seasons and their champions will appear here.</p>'}</div></section>
+        ${H.length ? `<div class="table-wrap"><table class="st"><thead><tr><th class="l">Season</th><th class="l">World champion</th><th class="l">Runner-up</th><th class="l">Kick-Off</th><th class="l">Major 1</th><th class="l">Major 2</th><th class="l">EWC</th><th class="l">1v1</th><th class="l">2v2</th><th class="l">Nations Cup</th><th class="l">FIFAe WC</th><th class="l">MVP</th><th class="l">Top scorer</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="muted" style="font-size:13px">Finished seasons and their champions will appear here.</p>'}</div></section>
       <div class="fc-grid2"><section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Most titles</h3>
           ${fame.length ? `<div class="leader-list">${fame.map(([n, c], i) => `<div class="leader"><span class="rk">${i + 1}</span><span class="who"><b>${esc(n)}</b><small>${c.w} World title${c.w === 1 ? '' : 's'} · ${c.m} Major${c.m === 1 ? '' : 's'}</small></span><span class="val">${c.w + c.m}</span></div>`).join('')}</div>` : '<p class="muted" style="font-size:13px">No titles awarded yet.</p>'}</div></section>
         <section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Best players right now</h3>
@@ -1663,9 +1698,9 @@
     const pushStory = (n) => n && slides.push(Object.assign({ tag: n.kind === 'trophy' ? 'Trophy' : n.kind === 'transfer' ? 'Transfer' : n.kind === 'result' ? 'Result' : n.kind === 'academy' ? 'Academy' : X() ? X().kindLabel(n.kind) : 'News' }, n));
     // spotlight: next event in its colours
     let nextUp = null;
-    if (st.type === 'open' || st.type === 'major' || st.type === 'worlds' || st.type === 'ewc' || st.type === 'nation') {
+    if (st.type === 'open' || st.type === 'kickoff' || st.type === 'major' || st.type === 'worlds' || st.type === 'ewc' || st.type === 'nation') {
       const where = st.type === 'open' ? api.regions[reg] : hostCity(st);
-      nextUp = { kind: 'next', tag: 'Next up', html: `Next: <b>${esc(eventTitle(st, reg))}</b> · ${st.type === 'open' ? '16 teams, Swiss stage then an eight-team playoff' : st.type === 'major' ? '16 teams, groups then the Final Eight' : st.type === 'ewc' ? '16 clubs in Riyadh, outside the RLCS' : st.type === 'nation' ? 'national teams in Riyadh' : '20 teams, four groups then an eight-team knockout'}.`, meta: { stepKey: st.key, where, label: st.name } };
+      nextUp = { kind: 'next', tag: 'Next up', html: `Next: <b>${esc(eventTitle(st, reg))}</b> · ${st.type === 'open' ? '16 teams, Swiss stage then an eight-team playoff' : st.type === 'major' ? '16 teams, groups then the Final Eight' : st.type === 'kickoff' ? '24 clubs in London open the season' : st.type === 'ewc' ? '16 clubs in Riyadh, outside the RLCS' : st.type === 'nation' ? 'national teams in Riyadh' : '20 teams, four groups then an eight-team knockout'}.`, meta: { stepKey: st.key, where, label: st.name } };
     } else if (st.type === 'window') {
       nextUp = { kind: 'next', tag: 'Transfer window', html: `The <b>${esc(st.name.toLowerCase())}</b> is open. Clubs make their moves when you close it.`, meta: { window: true, where: 'Transfer window', label: SCHEDULE[C.step + 1] ? 'Then ' + SCHEDULE[C.step + 1].name : '' } };
     }
@@ -2055,7 +2090,7 @@
     switch (a) {
       case 'career-pick': newCareer(id, api.state.ui.cdiff || 'normal'); api.go('career'); return true;
       case 'career-viewer': newCareer(null, 'normal', v || 'EU'); api.state.ui.ctab = 'central'; api.state.ui.cview = 'next'; api.go('career'); return true;
-      case 'career-intro': { const st = step(); if (st.type === 'major' || st.type === 'ewc' || st.type === 'worlds' || st.type === 'sidew') playMajorIntro(st); else if (st.type === 'nation') playNationIntro(st); return true; }
+      case 'career-intro': { const st = step(); if (st.type === 'major' || st.type === 'kickoff' || st.type === 'ewc' || st.type === 'worlds' || st.type === 'sidew') playMajorIntro(st); else if (st.type === 'nation') playNationIntro(st); return true; }
       case 'career-vpick': api.state.ui.vreg = v; api.render(); return true;
       case 'career-vmarket': api.state.ui.ctab = 'transfers'; api.state.ui.thTab = 'activity'; api.state.ui.thSel = null; api.render(); window.scrollTo({ top: 0 }); return true;
       case 'career-vreg': if (C && V() && REGIONS.includes(v)) { C.vreg = v; bump(); save(); api.render(); } return true;
