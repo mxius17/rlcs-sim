@@ -954,6 +954,7 @@
           <button class="btn sm" data-action="live-skip-game">Skip game</button>
           <button class="btn sm orange" data-action="live-reveal">Reveal result →</button>
         </div>
+        <p class="live-keys" aria-hidden="true"><kbd>Space</kbd> pause · <kbd>1</kbd>–<kbd>${SPEEDS.length}</kbd> speed · <kbd>N</kbd> skip game · <kbd>R</kbd> reveal · <kbd>?</kbd> all shortcuts</p>
         <div class="feed" id="feed"></div>`
       : res ? `
         <div class="result-line">${esc(getTeam(res.winner).name)} win ${Math.max(res.sa, res.sb)}-${Math.min(res.sa, res.sb)}${res.upset ? ' · <b style="color:var(--orange)">UPSET</b>' : ''}</div>
@@ -1274,7 +1275,7 @@
   }
   function openChampion(skipCeremony) {
     const T = state.T;
-    if (!skipCeremony && !T.ceremonyShown && window.RLCeremony) { T.ceremonyShown = true; save(); closeModal(); playCeremony(T, () => { if (state.T === T) openChampion(true); }); return; }
+    if (!skipCeremony && !T.ceremonyShown && window.RLCeremony && state.settings.autoIntros !== false) { T.ceremonyShown = true; save(); closeModal(); playCeremony(T, () => { if (state.T === T) openChampion(true); }); return; }
     const t = getTeam(T.champion);
     const rows = Object.values(T.stats).filter((s) => s && s.name);
     const mvp = rows.filter((s) => s.team === T.champion).sort((a, b) => b.score - a.score)[0];
@@ -1307,12 +1308,22 @@
         <div class="field"><label for="setSfx">Sound effects</label><div class="sfx-row"><label class="sfx-switch"><input type="checkbox" id="setSfx" ${window.RLSfx && window.RLSfx.on ? 'checked' : ''} /> <span>Enabled</span></label><input type="range" id="setVol" min="0" max="100" value="${Math.round((window.RLSfx ? window.RLSfx.volume : 0.55) * 100)}" aria-label="Sound effects volume" /></div></div>
         <div class="field"><label for="setMusic">Intro music</label><div class="sfx-row"><label class="sfx-switch"><input type="checkbox" id="setMusic" ${window.RLSfx && window.RLSfx.music ? 'checked' : ''} /> <span>Enabled</span></label><input type="range" id="setMVol" min="0" max="100" value="${Math.round((window.RLSfx ? window.RLSfx.musicVolume : 0.5) * 100)}" aria-label="Music volume" /></div><p class="help" style="margin:4px 0 0">Themed music for the Major, Esports World Cup and Worlds Week intros.</p></div>
         <div class="field"><label for="setBgm">Background music</label><div class="sfx-row"><label class="sfx-switch"><input type="checkbox" id="setBgm" ${window.RLSfx && window.RLSfx.bgm ? 'checked' : ''} /> <span>Enabled</span></label><input type="range" id="setBVol" min="0" max="100" value="${Math.round((window.RLSfx ? window.RLSfx.bgmVolume : 0.4) * 100)}" aria-label="Background music volume" /></div><p class="help" style="margin:4px 0 0">A chill loop while you browse. It pauses during intros and ceremonies.</p></div>
+        <div class="field"><label for="setIntros">Intros and ceremonies</label><label class="sfx-switch"><input type="checkbox" id="setIntros" ${st.autoIntros !== false ? 'checked' : ''} /> <span>Play automatically</span></label><p class="help" style="margin:4px 0 0">When off, Major intros and trophy ceremonies wait for you to start them (the Watch intro and Replay ceremony buttons).</p></div>
+        <div class="field"><label for="setConfirm">Live matches</label><label class="sfx-switch"><input type="checkbox" id="setConfirm" ${st.confirmLeave !== false ? 'checked' : ''} /> <span>Ask before leaving a series mid-game</span></label></div>
         <hr class="divider" />
         <p class="help">Data: ${esc(DATA.source)} · updated ${esc(DATA.updated)}.</p>
         <button class="btn danger" data-action="reset-all">Reset all saved data</button>
       </div>
       <div class="modal-foot"><button class="btn primary" data-action="save-settings">Save</button></div>`, { size: 'sm' });
   }
+  const SHORTCUTS = [
+    ['Anywhere', [['?', 'Show this help'], ['M', 'Sound effects on / off'], ['Alt + H', 'Main menu'], ['Esc', 'Close a pop-up']]],
+    ['Main menu', [['← →', 'Move between sections and tiles'], ['⏎', 'Open'], ['Esc', 'Back a level'], ['/', 'Search competitions']]],
+    ['Live series', [['Space', 'Pause / resume'], ['1 – ' + SPEEDS.length, 'Playback speed'], ['[ ]', 'Slower / faster'], ['N', 'Skip this game'], ['R', 'Reveal the result']]],
+    ['Intros & ceremonies', [['Space / → / ⏎', 'Next'], ['Esc', 'Skip']]],
+  ];
+  const shortcutsHTML = () => `<div class="kb-grid">${SHORTCUTS.map(([h, rows]) => `<div class="kb-sec"><b>${esc(h)}</b>${rows.map(([k, d]) => `<div class="kb-row"><span>${k.split(' ').map((x, _, all) => (all.length > 1 && ['+', '/', '–'].includes(x) ? `<i>${esc(x)}</i>` : `<kbd>${esc(x)}</kbd>`)).join('')}</span><em>${esc(d)}</em></div>`).join('')}</div>`).join('')}</div>`;
+  function openShortcuts() { openModal(`${modalHead('Keyboard shortcuts', 'Press ? any time to bring this back.')}<div class="modal-body">${shortcutsHTML()}</div>`, { size: 'md' }); }
   function openGuide() {
     openModal(`${modalHead('How it works', '')}
       <div class="modal-body" style="font-size:14px">
@@ -1323,6 +1334,8 @@
           <li>Optionally <b>manage a team</b> to choose its playstyle before every series.</li>
           <li><b>Start tournament</b>. Play series live (2D pitch + commentary), quick-sim one, or simulate a whole matchday or the rest of the event.</li>
         </ol>
+        <h3 class="kb-h">Keyboard shortcuts</h3>
+        ${shortcutsHTML()}
         <p class="help">Each game is 5:00 with sudden-death overtime. Team strength is the average rating of the three starters; ratings were derived from 2026 RLCS results on Liquipedia and can be edited. Your setup and tournament are saved in this browser automatically.</p>
       </div>`, { size: 'md' });
   }
@@ -1333,7 +1346,7 @@
     const preset = obj.kind === 'rlsim-preset';
     openModal(`${modalHead(preset ? 'Save preset' : 'Save tournament', preset ? 'Copy this text and keep it somewhere safe. Paste it into Import preset to load this setup again.' : 'Copy the full results, series scores and player stats as JSON.')}
       <div class="modal-body"><textarea class="input mono" id="jsonOut" readonly rows="14" style="width:100%;font-size:12px;resize:vertical" aria-label="${esc(name)}">${esc(json)}</textarea></div>
-      <div class="modal-foot"><button class="btn" data-action="close-modal">Close</button><button class="btn primary" data-action="copy-json">Copy</button></div>`, { size: 'md', focus: false });
+      <div class="modal-foot"><button class="btn" data-action="close-modal">Close</button><button class="btn" data-action="dl-json" data-v="${esc(name)}">Download file</button><button class="btn primary" data-action="copy-json">Copy</button></div>`, { size: 'md', focus: false });
   }
   function applyPreset(p) {
     if (!p || p.kind !== 'rlsim-preset') throw new Error('not a preset');
@@ -1463,11 +1476,21 @@
     s.title = c.name;
     s.theme = c.theme || null;
   }
-  function go(view) {
+  /** True while a series is being watched and has not finished: leaving would throw the live view away. */
+  const liveBusy = () => !!(live && !live.done && state.settings.confirmLeave !== false);
+  function confirmLeaveLive(then) {
+    openModal(`${modalHead('Leave the live series?', 'The series is still being played. If you leave now it stops and is not counted.')}<div class="modal-foot"><button class="btn" data-action="close-modal">Keep watching</button><button class="btn danger" id="leaveLive">Leave</button></div>`, { size: 'sm' });
+    $('#leaveLive').onclick = () => { closeModal(); stopLive(); then(); };
+  }
+  function go(view, opts) {
+    opts = opts || {};
+    if (!opts.force && liveBusy() && view !== state.view) { confirmLeaveLive(() => go(view, Object.assign({}, opts, { force: true }))); return; }
     stopLive();
+    const from = state.view;
     state.view = view;
     const h = view === 'home' ? '' : view === 'setup' ? '#custom-tournament' : view === 'team' ? '#team/' + encodeURIComponent(state.ui.teamId || '') : '#' + view;
-    try { if (location.hash !== h) history.replaceState(null, '', h || location.pathname + location.search); } catch (e) { /* sandboxed history */ }
+    // a real history entry per page, so the browser / phone Back button goes back a page instead of leaving the site
+    try { if (location.hash !== h) history[from !== view && !opts.replace ? 'pushState' : 'replaceState'](null, '', h || location.pathname + location.search); } catch (e) { /* sandboxed history */ }
     persistRender();
     window.scrollTo({ top: 0 });
   }
@@ -1954,6 +1977,8 @@
       window.RLBgm.setContext({ key: bk || '', name: (bth && bth.name) || (state.view === 'tournament' && state.T ? state.T.title || '' : '') });
     }
     const root = document.documentElement;
+    { const tt = state.view === 'tournament' && state.T ? (state.T.title || E.FORMATS[state.T.format].name) : state.view === 'career' ? 'Career' : state.view === 'setup' ? 'Custom tournament' : state.view === 'teams' ? 'Teams' : state.view === 'team' ? (getTeam(state.ui.teamId || '').name || 'Team') : '';
+      document.title = tt ? tt + ' · RL Esports Simulator' : 'RL Esports Simulator'; }
     root.classList.toggle('menu-home', state.view === 'home'); // the home menu carries its own top bar, tabs and credits
     root.dataset.view = state.view; // menu-styled pages (tournament, career) hook their look on this
     root.classList.toggle('ev', !!pth);
@@ -2109,12 +2134,16 @@
         break;
       }
       case 'open-settings': openSettings(); break;
-      case 'save-settings': state.settings.speed = +$('#setSpeed').value; state.settings.mode = $('#setMode').value; if (window.RLSfx && $('#setSfx')) window.RLSfx.set({ on: $('#setSfx').checked, vol: +$('#setVol').value / 100, music: $('#setMusic').checked, mvol: +$('#setMVol').value / 100, bgm: $('#setBgm').checked, bvol: +$('#setBVol').value / 100 }); syncSfxBtn(); closeModal(); persistRender(); break;
+      case 'save-settings': state.settings.speed = +$('#setSpeed').value; state.settings.mode = $('#setMode').value; if ($('#setIntros')) state.settings.autoIntros = $('#setIntros').checked; if ($('#setConfirm')) state.settings.confirmLeave = $('#setConfirm').checked; if (window.RLSfx && $('#setSfx')) window.RLSfx.set({ on: $('#setSfx').checked, vol: +$('#setVol').value / 100, music: $('#setMusic').checked, mvol: +$('#setMVol').value / 100, bgm: $('#setBgm').checked, bvol: +$('#setBVol').value / 100 }); syncSfxBtn(); closeModal(); persistRender(); break;
       case 'sfx-toggle': if (window.RLSfx) { window.RLSfx.toggle(); syncSfxBtn(); toast(window.RLSfx.on ? 'Sound effects on' : 'Sound effects off'); if (state.view === 'home') renderHome(); } break;
       case 'reset-all':
         openModal(`${modalHead('Reset all saved data?', 'This deletes your setup, custom teams, roster edits and saved tournament in this browser.')}<div class="modal-foot"><button class="btn" data-action="close-modal">Cancel</button><button class="btn danger" data-action="reset-confirm">Delete everything</button></div>`, { size: 'sm' });
         break;
       case 'reset-confirm': stopLive(); try { localStorage.removeItem(STORE_KEY); } catch (e) { /* storage blocked */ } location.reload(); break;
+      case 'dl-json': {
+        try { const url = URL.createObjectURL(new Blob([$('#jsonOut').value], { type: 'application/json' })); const a = document.createElement('a'); a.href = url; a.download = v || 'rl-sim.json'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000); toast('Download started.'); } catch (e) { toast('Downloads are blocked here. Use Copy instead.'); }
+        break;
+      }
       case 'copy-json': {
         const ta = $('#jsonOut');
         const done = () => toast('Copied to clipboard.');
@@ -2162,8 +2191,38 @@
 
   document.addEventListener('keydown', (ev) => {
     if (ev.key === 'Escape' && modalRoot.innerHTML) { closeModal(); return; }
+    const tg = ev.target, typing = tg && (tg.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName));
+    const covered = !!document.querySelector('.cut, .side-cer, .hero:not(.gone)');
+    if (!typing && !covered && !ev.ctrlKey && !ev.metaKey) {
+      if (ev.altKey && (ev.key === 'h' || ev.key === 'H' || ev.code === 'KeyH')) { ev.preventDefault(); closeModal(); go('home'); return; }
+      if (!ev.altKey && !modalRoot.innerHTML) {
+        if (ev.key === '?') { ev.preventDefault(); openShortcuts(); return; }
+        if (ev.key === 'm' || ev.key === 'M') { const b = document.getElementById('sfxBtn'); if (b) b.click(); return; }
+        // live series controls
+        if (live && !live.done && document.getElementById('matchCentre')) {
+          const q = (a, v) => document.querySelector(`#matchCentre [data-action="${a}"]${v != null ? `[data-v="${v}"]` : ''}`);
+          let b = null;
+          if (ev.key === ' ' && !tg.closest('button, a, [role=button]')) b = q('live-pause');
+          else if (/^[1-9]$/.test(ev.key) && SPEEDS[+ev.key - 1]) b = q('live-speed', SPEEDS[+ev.key - 1]);
+          else if (ev.key === '[' || ev.key === ']') { const i = SPEEDS.indexOf(live.speed), j = Math.max(0, Math.min(SPEEDS.length - 1, i + (ev.key === ']' ? 1 : -1))); if (j !== i) b = q('live-speed', SPEEDS[j]); }
+          else if (ev.key === 'n' || ev.key === 'N') b = q('live-skip-game');
+          else if (ev.key === 'r' || ev.key === 'R') b = q('live-reveal');
+          if (b) { ev.preventDefault(); b.click(); return; }
+        }
+      }
+    }
     if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches('[role=button][data-action]')) { ev.preventDefault(); ev.target.click(); }
   });
+
+  // back to top: a small button once a long page has been scrolled a good way down
+  {
+    const tb = document.createElement('button');
+    tb.type = 'button'; tb.className = 'to-top'; tb.setAttribute('aria-label', 'Back to top'); tb.title = 'Back to top'; tb.textContent = '↑';
+    tb.addEventListener('click', () => window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }));
+    document.body.appendChild(tb);
+    let tick = 0;
+    window.addEventListener('scroll', () => { if (tick) return; tick = requestAnimationFrame(() => { tick = 0; tb.classList.toggle('on', state.view !== 'home' && window.scrollY > window.innerHeight * 1.2); }); }, { passive: true });
+  }
 
   /* ---------------- Boot ---------------- */
   load();
@@ -2188,6 +2247,8 @@
   $('#dataStamp').textContent = dataStamp();
   const fromHash = () => { const h = (location.hash || '').replace('#', ''); if (h.startsWith('team/')) { state.ui.teamId = decodeURIComponent(h.slice(5)); return 'team'; } return h === 'custom-tournament' ? 'setup' : h === 'tournament' && state.T ? 'tournament' : h === 'teams' ? 'teams' : h === 'career' ? 'career' : 'home'; };
   state.view = fromHash();
-  window.addEventListener('hashchange', () => { const v = fromHash(); if (v !== state.view) { stopLive(); state.view = v; render(); } });
+  const onHist = () => { const v = fromHash(); if (v === state.view && v !== 'team') return; stopLive(); closeModal(); state.view = v; render(); window.scrollTo({ top: 0 }); };
+  window.addEventListener('hashchange', onHist);
+  window.addEventListener('popstate', onHist);
   render();
 })();

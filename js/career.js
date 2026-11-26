@@ -1535,11 +1535,12 @@
     // first time a Major comes up: its host-city intro plays once
     const week = st.type === 'worlds' || st.type === 'sidew';
     const cutKey = C.season + '|' + (week ? 'week' : st.key);
-    if ((st.type === 'major' || st.type === 'ewc' || week) && tab === 'central' && !activeEvent && window.RLCutscene && !(C.cutSeen || []).includes(cutKey)) {
+    const autoI = api.state.settings.autoIntros !== false;
+    if ((st.type === 'major' || st.type === 'ewc' || week) && tab === 'central' && !activeEvent && window.RLCutscene && autoI && !(C.cutSeen || []).includes(cutKey)) {
       C.cutSeen = (C.cutSeen || []).concat(cutKey).slice(-40); save();
       setTimeout(() => playMajorIntro(st), 350);
     }
-    if (st.type === 'nation' && tab === 'central' && !activeEvent && window.RLNationsIntro && !(C.cutSeen || []).includes(cutKey) && eventCfg(st).cfg.size) {
+    if (st.type === 'nation' && tab === 'central' && !activeEvent && window.RLNationsIntro && autoI && !(C.cutSeen || []).includes(cutKey) && eventCfg(st).cfg.size) {
       C.cutSeen = (C.cutSeen || []).concat(cutKey).slice(-40); save();
       setTimeout(() => playNationIntro(st), 350);
     }
