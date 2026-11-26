@@ -4238,3 +4238,10 @@ html:is([data-view="tournament"], [data-view="setup"], [data-view="teams"], [dat
   .fc-main > .x-soc { max-height: none; }
   .fc-main > .x-soc .x-feed { max-height: min(70vh, 640px); }
 }
+/* social: polls */
+.x-poll { display: grid; gap: 5px; margin: 6px 0 8px; max-width: 460px; }
+.x-opt { position: relative; display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,.14); overflow: hidden; font-size: 13px; }
+.x-opt i { position: absolute; inset: 0 auto 0 0; background: rgba(96,165,250,.18); z-index: 0; }
+.x-opt.top i { background: rgba(96,165,250,.38); } .x-opt.top b { color: #93c5fd; }
+.x-opt span, .x-opt b { position: relative; z-index: 1; }
+.x-poll small { font-size: 11.5px; opacity: .55; }

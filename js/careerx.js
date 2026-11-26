@@ -187,10 +187,33 @@
     const x = C().x; x.social = x.social || [];
     const base = (acct.v ? 900 : 40) * (o.big ? 6 : 1);
     x.sid = (x.sid || 0) + 1;
-    x.social.unshift({ id: x.sid, a: acct, t: text, k: o.kind || 'fan', mood: o.mood || '', likes: Math.round(base * rnd(0.4, 2.6)), rts: Math.round(base * rnd(0.05, 0.4)), when: C().season + ' · ' + K.step().short, tag: o.tag || '' });
-    x.social = x.social.slice(0, 140);
+    x.social.unshift({ id: x.sid, a: acct, t: text, poll: o.poll || null, votes: o.votes || 0, k: o.kind || 'fan', mood: o.mood || '', likes: Math.round(base * rnd(0.4, 2.6)), rts: Math.round(base * rnd(0.05, 0.4)), when: C().season + ' · ' + K.step().short, tag: o.tag || '' });
+    x.social = x.social.slice(0, 220);
   }
   const hashTag = (s) => '#' + String(s).replace(/[^A-Za-z0-9]/g, '');
+  /* ---- more voices: casters, a memes page, a stats page, a transfer insider, streamers, national federations ---- */
+  const CASTERS = [['Vox · caster', 'voxcasts', '#f59e0b'], ['Mira Lane', 'miralane_cast', '#ec4899'], ['Coach Dex', 'coachdex', '#0ea5e9'], ['The Desk', 'thedesk_rl', '#64748b']];
+  const casterAcct = () => { const x = pick(CASTERS); return { n: x[0], h: x[1], c: x[2], v: true, press: true }; };
+  const memeAcct = () => ({ n: 'RL Memes Daily', h: 'rlmemesdaily', c: '#a3e635', v: false });
+  const statsAcct = () => ({ n: 'Aerial Analytics', h: 'aerialstats', c: '#22c55e', v: true, press: true });
+  const itkAcct = () => ({ n: 'TransferTalk RL', h: 'transfertalkrl', c: '#8b5cf6', v: false });
+  const streamAcct = () => { const x = pick([['boostedTV', '#ef4444'], ['flipresetFM', '#14b8a6'], ['ceilingshot_live', '#f97316'], ['grandchampgrind', '#6366f1']]); return { n: x[0], h: x[0], c: x[1], v: true }; };
+  const fedAcct = (country, flag) => ({ n: (flag ? flag + ' ' : '') + country + ' Esports', h: String(country).replace(/[^A-Za-z]/g, '') + 'Esports', c: '#2563eb', v: true });
+  /** A poll post: options with made-up but plausible vote shares. */
+  function pollPost(acct, q, opts, o) {
+    const w = opts.map((x, i) => (x.w || 1) * rnd(0.6, 1.4) + (i === 0 ? 0.3 : 0));
+    const tot = w.reduce((a, b) => a + b, 0);
+    let left = 100; const poll = opts.map((x, i) => { const v = i === opts.length - 1 ? left : Math.round((w[i] / tot) * 100); left -= v; return [x.l, Math.max(0, v)]; });
+    post(acct, q, Object.assign({ kind: 'press', poll, votes: ri(2000, 40000) }, o || {}));
+  }
+  const MEME = {
+    upset: ['{l} fans logging off for the week 💀', 'nobody:\n{w}: *wins the series anyway*', 'the bracket predictions after {w} beat {l}: 📉📉📉', '{l} really said "we\'ll win this easy" huh', 'POV: you had {l} winning it all in your pick\'em'],
+    champ: ['{w} lifting another trophy, starter pack: 🏆 🎉 😴 (the rest of the region)', 'me pretending I didn\'t say {w} would flop this season', 'the {w} trophy cabinet needs an extension 🔨', '{w} fans when they see a bracket: 😌'],
+    market: ['transfer window open, every fan is a GM now 🧠', 'me refreshing for transfer news every 4 seconds', 'my club\'s transfer strategy: vibes', 'that fee could buy me 400,000 boost pads'],
+    side: ['1v1 players walking into the arena knowing it\'s just them and their thoughts', 'the 2v2 duo synergy is unreal, they share one brain cell and it\'s cracked', 'solo queue warriors finally getting their moment 🗡️'],
+    nation: ['national team week = everyone suddenly patriotic 🫡', 'I don\'t watch football but I\'m screaming at FIFAe right now', 'my country losing in groups again: a tradition 🥲'],
+  };
+  const fill = (t, m) => String(t).replace(/\{(\w+)\}/g, (_, k) => esc(m[k] == null ? '' : m[k]));
 
   /* ---- comments under a post: generated the first time a thread is opened (older posts included), more on demand ---- */
   const CM = {
@@ -262,7 +285,7 @@
       });
       // social: the champions celebrate
       if (big || champ === C().user || (kind === 'open' && region === K.homeReg())) {
-        post(clubAcct(champ), `${kind === 'worlds' ? 'WORLD CHAMPIONS. 🌍🏆' : 'CHAMPIONS 🏆'} ${esc(title)}. ${pick(['What a team.', 'We never stopped believing.', 'This one is for the fans.', 'History made.'])} ${hashTag(C().teams[champ].tag || nm)}`, { kind: 'club', big, mood: 'good' });
+        post(clubAcct(champ), `${kind === 'worlds' ? 'WORLD CHAMPIONS. 🌍🏆' : pick(['CHAMPIONS 🏆', 'WE WIN 🏆', 'TROPHY SECURED 🏆', 'SILVERWARE 🏆'])} ${esc(title)}. ${pick(['What a team.', 'We never stopped believing.', 'This one is for the fans.', 'History made.', 'Back where we belong.', 'Every single one of you got us here.', 'Nobody believed. We did.'])} ${hashTag(C().teams[champ].tag || nm)}`, { kind: 'club', big, mood: 'good' });
         const star = ps.slice().sort((a, b) => b.rating - a.rating)[0];
         if (star) post(playerAcct(star), pick(['NO WORDS 😭🏆', 'we did it. WE DID IT.', 'Dreamt of this since I was a kid. Thank you all ❤️', 'Told you. 😤', 'Trophy #' + careerOf(star).t + ' 🏆']), { kind: 'player', big, mood: 'good' });
         post(fanAcct(), pick([`${esc(nm)} are just built different`, `${esc(nm)} deserved that so much`, `crying at work rn ${hashTag(nm)}`, `that final was insane, ${esc(nm)} 🐐`]), { kind: 'fan', mood: 'good' });
@@ -319,11 +342,69 @@
       }
       if (['open', 'major', 'worlds', 'ewc'].includes(kind) && me) C().x.fam = Math.min(100, (C().x.fam || 0) + 20); // tactics bed in with games
     }
+    eventChatter(T, st, region, title, list, big);
     // power index: international results by region
     if (big) {
       x.intl = x.intl || {};
       list.slice(0, 8).forEach(({ id, place }) => { const t = C().teams[id]; if (!t) return; const pts = place === 1 ? 10 : place === 2 ? 7 : place <= 4 ? 5 : 2; x.intl[t.region] = (x.intl[t.region] || 0) + pts * (kind === 'ewc' ? 0.5 : 1); });
     }
+  }
+
+  /** Extra voices after every 3v3 event: the runner-up, casters, stats, memes, a world roundup. */
+  function eventChatter(T, st, region, title, list, big) {
+    const champ = T.champion, ru = T.runnerUp, home = region === K.homeReg() || big;
+    if (!champ || !C().teams[champ]) return;
+    const w = tname(champ), l = ru && C().teams[ru] ? tname(ru) : '';
+    if (!home) { if (Math.random() < 0.35) post(pressAcct(), `🌍 Around the world: ${esc(w)} win the ${esc(title)}${l ? `, beating ${esc(l)} in the final` : ''}.`, { kind: 'press' }); return; }
+    // the runner-up
+    if (ru && C().teams[ru]) {
+      const rp = C().teams[ru].roster.slice(0, 3).map((id) => C().players[id]).filter(Boolean).sort((a, b) => b.rating - a.rating)[0];
+      if (rp) post(playerAcct(rp), pick(['so close. we\'ll be back. 🫡', 'hurts. proud of the boys though.', 'congrats ' + esc(w) + ', deserved. see you next time.', 'not the ending we wanted. back to work tomorrow.', 'second place is the first loser. we go again.']), { kind: 'player', mood: 'bad' });
+    }
+    // a caster's call of the final
+    post(casterAcct(), pick([`Called the final for ${esc(title)}. ${esc(w)} were simply on another level. 🎙️`, `What a series. ${esc(w)} vs ${esc(l || 'the field')} will be talked about for years.`, `My voice is gone. ${esc(w)}, you absolute legends. 🎙️🔥`, `Final thoughts on ${esc(title)}: ${esc(w)}'s rotations were textbook. Clip it.`]), { kind: 'press' });
+    // a stats post about the standout player
+    const rows = Object.values(T.stats || {}).filter((x) => x && x.name && x.gp >= 3).sort((a, b) => b.score / b.gp - a.score / a.gp);
+    const top = rows[0];
+    if (top && Math.random() < 0.8) post(statsAcct(), `📊 ${esc(title)} in numbers: ${esc(top.name)} (${esc(tname(top.team))}) led the event with ${top.g} goals, ${top.a} assists and ${top.sv} saves in ${top.gp} games (${Math.round(top.score / top.gp)} avg score).`, { kind: 'press' });
+    // memes
+    if (Math.random() < 0.55) post(memeAcct(), fill(pick(MEME.champ), { w }), { kind: 'fan' });
+    // a streamer watching along
+    if (Math.random() < 0.4) post(streamAcct(), pick([`watch party for ${esc(title)} was INSANE, 12k of you in chat 🙏`, `clipping the best moments from ${esc(title)} live right now`, `${esc(w)} winning means I owe chat a 24h stream 💀`]), { kind: 'fan' });
+    // your club reacts to its own result
+    if (mine()) {
+      const me = list.find((y) => y.id === C().user);
+      if (me && champ !== C().user) post(clubAcct(C().user), me.place <= 2 ? pick(['So close. Proud of this team. 💪', 'Runners-up. We\'ll be back stronger.']) : me.place <= 4 ? pick(['Top 4. Good, not good enough. Back to work.', 'Semi-finals. We keep building.']) : pick(['Not our weekend. We\'ll regroup.', 'Tough one. Heads up, back to the drawing board.', 'Thank you for the support, we owe you a better showing.']), { kind: 'club', mood: me.place <= 4 ? '' : 'bad' });
+    }
+  }
+  /** 1v1 and 2v2 Opens and World Championships. */
+  function onSide(T, st, region, title, e) {
+    const ch = e.champ || [], ru = e.runner || [];
+    if (!ch.length) return;
+    const names = ch.map((p) => p.name).join(' & '), solo = e.mode === 1;
+    const home = e.world || region === K.homeReg() || (mine() && ch.some((p) => p.team === C().user));
+    if (!home) { if (Math.random() < 0.3) post(pressAcct(), `🌍 ${esc(names)} ${solo ? 'wins' : 'win'} the ${esc(title)}.`, { kind: 'press' }); return; }
+    post(playerAcct(ch[0]), solo ? pick(['just me and the ball. 1v1 CHAMPION 🗡️', 'nobody to blame, nobody to share it with. ' + (e.world ? 'WORLD CHAMPION 🌍' : 'CHAMPION 🏆'), 'the solo grind paid off 😤', '1v1 is the purest test. passed. ✅']) : pick([`me and ${esc(ch[1] ? ch[1].name : 'my duo')} are ${e.world ? 'WORLD CHAMPIONS 🌍' : 'champions 🏆'}`, 'best duo in the world? you tell me 😏', 'two players, one brain cell, one trophy 🏆', 'GG. duo of the year incoming.']), { kind: 'player', big: !!e.world, mood: 'good' });
+    if (!solo && ch[1]) post(playerAcct(ch[1]), pick([`@${esc(ch[0].name)} told you we'd do it 🤝`, 'couldn\'t ask for a better partner 🤝', 'trophy #' + careerOf(ch[1]).t + '? who\'s counting 😌']), { kind: 'player', mood: 'good' });
+    if (ru.length) post(playerAcct(ru[0]), pick(['the 1v1 bracket is cruel. gg.', 'second. not bad, not enough.', 'gg ' + esc(names) + ', you were better today.']), { kind: 'player', mood: 'bad' });
+    post(casterAcct(), solo ? pick([`1v1s are the most stressful thing I've ever called. ${esc(names)} was ice cold. 🧊`, `Nowhere to hide in a 1v1. ${esc(names)} didn't need to. 🎙️`]) : pick([`The 2v2 chemistry from ${esc(names)} was unreal. 🎙️`, `${esc(names)} played like one player with four hands.`]), { kind: 'press' });
+    if (Math.random() < 0.6) post(memeAcct(), pick(MEME.side), { kind: 'fan' });
+    if (e.world) pollPost(pressAcct(), `Was ${esc(names)}'s ${solo ? '1v1' : '2v2'} title the most impressive of the season?`, [{ l: 'Yes, clearly', w: 1.3 }, { l: 'Close second', w: 1 }, { l: 'Nah, the 3v3 Worlds', w: 0.8 }]);
+    post(fanAcct(), pick([`${esc(names)} ${solo ? 'is' : 'are'} so underrated it's crazy`, `the ${solo ? '1v1' : '2v2'} scene deserves more love after that`, `who else stayed up for the ${esc(title)} final 🙋`]), { kind: 'fan', mood: 'good' });
+    if (mine() && e.mine) post(clubAcct(C().user), `${esc(e.mine.name)} finished ${esc(e.mine.label)} at the ${esc(title)}. ${e.mine.place === 1 ? 'CHAMPION! 🏆' : 'Proud of you. 💪'}`, { kind: 'club', mood: e.mine.place === 1 ? 'good' : '' });
+  }
+  /** National-team tournaments: federations, players on duty, patriotic fans. */
+  function onNation(T, st, title, e) {
+    if (!e.champ) return;
+    post(fedAcct(e.champ, e.champFlag), `${e.champFlag || ''} ${pick(['CHAMPIONS OF THE WORLD', 'WE DID IT', 'FOR OUR COUNTRY'])}! ${esc(title)} 🏆 ${pick(['A whole nation is proud.', 'Written in history.', 'Thank you for the support from home.'])} ${hashTag(e.champ)}`, { kind: 'club', big: true, mood: 'good' });
+    const star = (e.champPs || [])[0];
+    if (star) post(playerAcct(star), pick([`representing ${esc(e.champ)} is the biggest honour 🫡 ${e.champFlag || ''}`, `${e.champFlag || ''} national champions. for my family, for my country.`, 'club trophies are great. this one hits different. 🏆']), { kind: 'player', big: true, mood: 'good' });
+    if (e.runner) post(fedAcct(e.runner, e.runnerFlag), `${e.runnerFlag || ''} Runners-up at the ${esc(title)}. Heads high, we go again. ${hashTag(e.runner)}`, { kind: 'club', mood: 'bad' });
+    post(fanAcct(), pick([`${e.champFlag || ''}${e.champFlag || ''}${e.champFlag || ''} LETS GOOOO`, `crying in the club rn ${e.champFlag || ''}`, `the whole country watching esports today, love to see it`, `${esc(e.champ)} deserved that. what a final`]), { kind: 'fan', mood: 'good' });
+    if (e.runner) post(fanAcct(), pick([`${e.runnerFlag || ''} we were robbed honestly`, `next time ${e.runnerFlag || ''} next time`, 'national team curse continues 🥲']), { kind: 'fan', mood: 'bad' });
+    post(casterAcct(), pick([`Nothing beats national team week. ${esc(e.champ)} take the ${esc(title)}! 🎙️`, `The anthems, the flags, the noise. ${esc(title)} delivered.`]), { kind: 'press' });
+    if (Math.random() < 0.6) post(memeAcct(), pick(MEME.nation), { kind: 'fan' });
+    if (mine() && (e.mine || []).length) post(clubAcct(C().user), `Our players on international duty: ${(e.mine || []).map((p) => esc(p.name) + ' ' + (p.flag || '')).join(', ')}. ${(e.won || []).length ? 'And one of them is a national champion! 🏆' : 'Welcome back, back to club work. 💪'}`, { kind: 'club' });
   }
 
   /* ======================= manager career ======================= */
@@ -401,6 +482,13 @@
     // award counts on players' careers
     awards.forEach((a) => { const ws = a.team || (a.winner && a.winner.pid ? [a.winner] : []); ws.forEach((w) => { const p = C().players[w.pid]; if (p) { const cr = careerOf(p); cr.aw++; if (a.key === 'mvp') cr.mvp++; } }); });
     const mvpA = awards.find((a) => a.key === 'mvp');
+    const thanked = new Set();
+    awards.forEach((a) => {
+      if (a.team) { post(pressAcct(), `⭐ Team of the Year ${season}: ${a.team.map((w) => esc(w.name)).join(', ')}.`, { kind: 'press', big: true }); return; }
+      const wp = a.winner && a.winner.pid && C().players[a.winner.pid];
+      if (wp && !thanked.has(wp.id) && thanked.add(wp.id) && (a.key === 'mvp' || a.key === 'young' || Math.random() < 0.5)) post(playerAcct(wp), pick([`${esc(a.title)}? 🥹 thank you all.`, `blessed. ${esc(a.title)} ${season} 🏅`, `none of this without my teammates. 🏅`]), { kind: 'player', big: a.key === 'mvp', mood: 'good' });
+    });
+    if (mvpA) pollPost(pressAcct(), `🗳️ Did the right player win MVP ${season}?`, [{ l: mvpA.winner.name, w: 1.3 }].concat((mvpA.nominees || []).filter((n) => n.name !== mvpA.winner.name).slice(0, 2).map((n) => ({ l: n.name }))));
     if (mvpA) K.news('award', `🏅 <b>${esc(mvpA.winner.name)}</b> (${esc(mvpA.winner.teamName)}) is the ${season} MVP. The full awards ceremony is in the season review.`);
     if (mine()) {
       const won = awards.filter((a) => (a.winner && (a.winner.team === C().user || a.winner.name === 'You')) || (a.team || []).some((w) => w.team === C().user));
@@ -508,6 +596,19 @@
       const dark = Object.keys(C().teams).filter((id) => K.ovr(id) >= K.ovr(fav[1]) - 6 && !fav.includes(id)).sort(() => Math.random() - 0.5)[0];
       K.news('preview', `🔎 Preview: <b>${esc(tname(fav[0]))}</b> and <b>${esc(tname(fav[1]))}</b> start as favourites for the ${esc(st.name)}${dark ? `; analysts tip <b>${esc(tname(dark))}</b> as the dark horse` : ''}.`, { champ: fav[0] });
       post(pressAcct(), `${esc(st.name)} week is here. Our pick: ${esc(tname(fav[0]))}. Fight us. ${hashTag(st.name)}`, { kind: 'press' });
+      const cand = Object.keys(C().teams).sort((a, b) => K.ovr(b) - K.ovr(a)).slice(0, 4);
+      pollPost(pressAcct(), `🗳️ Who wins ${/^Major/.test(st.name) ? '' : 'the '}${esc(st.name)}?`, cand.map((id, i) => ({ l: tname(id), w: 1.4 - i * 0.2 })));
+      post(streamAcct(), `${esc(st.name)} watch party all week, every series live with chat 📺`, { kind: 'fan' });
+    }
+    // build-up to Opens in your region, and the 1v1 / 2v2 and national events
+    if (st.type === 'open' && Math.random() < 0.7) post(pick([fanAcct(), casterAcct(), streamAcct()]), pick([`${esc(st.name)} starts today. who's your dark horse? 👀`, `Swiss stage chaos incoming. ${esc(st.name)} let's go 🍿`, `${esc(st.name)} pick'em locked in. ${esc(tname(Object.keys(C().teams).filter((id) => C().teams[id].region === K.homeReg()).sort((a, b) => K.ovr(b) - K.ovr(a))[0]))} to win it.`]), { kind: 'fan' });
+    if ((st.type === 'side' || st.type === 'sidew') && Math.random() < 0.8) post(casterAcct(), `${st.mode === 1 ? '1v1' : '2v2'} week! ${st.type === 'sidew' ? 'The World Championship: four entrants, one title.' : 'Regional Opens, winners go to the World Championship.'} 🎙️`, { kind: 'press' });
+    if (st.type === 'nation') { post(pressAcct(), `🌍 ${esc(st.name)} week: national teams take over. Club rivals become teammates.`, { kind: 'press' }); const by = {}; Object.values(C().players).forEach((p) => { if (p.team && p.country) (by[p.country] = by[p.country] || []).push(p.rating); });
+      const fav = Object.entries(by).filter(([, r]) => r.length >= 3).map(([c, r]) => [c, r.sort((a, b) => b - a).slice(0, 3).reduce((a, b) => a + b, 0)]).sort((a, b) => b[1] - a[1]).slice(0, 4);
+      if (fav.length >= 2) pollPost(pressAcct(), `🗳️ Who wins the ${esc(st.name)}?`, fav.map(([c], i) => ({ l: c, w: 1.4 - i * 0.2 }))); }
+    if (st.type === 'window') {
+      post(itkAcct(), pick(['👀 Big names on the move this window. Stay tuned.', 'Hearing a top club is ready to break the transfer record. More soon. 🧵', 'Three clubs are in talks for the same player. Expect movement this week.', 'Agents are busy. This could be the wildest window yet. 📞']), { kind: 'fan' });
+      if (Math.random() < 0.7) post(memeAcct(), pick(MEME.market), { kind: 'fan' });
     }
     // transfer windows: rumours (some about your players) and incoming bids
     if (st.type === 'window' && x.bidsKey !== C().season + '|' + C().step && mine()) {
@@ -866,7 +967,7 @@
     const k = (n) => (n >= 10000 ? (n / 1000).toFixed(0) + 'k' : n >= 1000 ? (n / 1000).toFixed(1) + 'k' : n);
     return `<div class="fc-panel-body x-soc"><h3 class="fc-h">Social</h3>
       ${trend.length ? `<div class="x-trend"><small>Trending</small>${trend.map(([h, n]) => `<span>${esc(h)} <i>${n}</i></span>`).join('')}</div>` : ''}
-      <div class="x-feed">${S.slice(0, 40).map((s) => `<article class="x-post ${s.mood || ''}"><span class="x-av" style="--c:${esc(s.a.c || '#475569')}">${esc((s.a.n || '?').replace(/[^A-Za-z0-9]/g, '').slice(0, 1).toUpperCase() || '?')}</span><div><header><b>${esc(s.a.n)}</b>${s.a.v ? '<i class="x-ver" title="Verified">✔</i>' : ''}<small>@${esc(s.a.h)} · ${esc(s.when)}</small></header><p>${s.t}</p><footer><button class="x-cbtn${open.has(s.id) ? ' on' : ''}" data-action="x-cmt" data-v="${s.id}" aria-expanded="${open.has(s.id)}">💬 ${k(s.cn || Math.round(s.rts * 0.6))}</button><span>🔁 ${k(s.rts)}</span><span>♥ ${k(s.likes)}</span></footer>${open.has(s.id) ? thread(s) : ''}</div></article>`).join('') || '<p class="muted">Nothing posted yet. Play an event to get people talking.</p>'}</div></div>`;
+      <div class="x-feed">${S.slice(0, 40).map((s) => `<article class="x-post ${s.mood || ''}"><span class="x-av" style="--c:${esc(s.a.c || '#475569')}">${esc((s.a.n || '?').replace(/[^A-Za-z0-9]/g, '').slice(0, 1).toUpperCase() || '?')}</span><div><header><b>${esc(s.a.n)}</b>${s.a.v ? '<i class="x-ver" title="Verified">✔</i>' : ''}<small>@${esc(s.a.h)} · ${esc(s.when)}</small></header><p>${s.t}</p>${s.poll ? `<div class="x-poll">${s.poll.map(([l, v], i) => `<div class="x-opt${i === s.poll.reduce((bi, x, j, a) => (x[1] > a[bi][1] ? j : bi), 0) ? ' top' : ''}"><i style="width:${v}%"></i><span>${esc(l)}</span><b>${v}%</b></div>`).join('')}<small>${k(s.votes || 0)} votes · final results</small></div>` : ''}<footer><button class="x-cbtn${open.has(s.id) ? ' on' : ''}" data-action="x-cmt" data-v="${s.id}" aria-expanded="${open.has(s.id)}">💬 ${k(s.cn || Math.round(s.rts * 0.6))}</button><span>🔁 ${k(s.rts)}</span><span>♥ ${k(s.likes)}</span></footer>${open.has(s.id) ? thread(s) : ''}</div></article>`).join('') || '<p class="muted">Nothing posted yet. Play an event to get people talking.</p>'}</div></div>`;
   }
 
   /* ======================= awards ceremony ======================= */
@@ -938,7 +1039,7 @@
 
   global.RLCareerX = {
     attach(core) { K = core; },
-    migrate, onNew, onEvent, onReview, onRetire, onStep, onNewSeason, onDeal, onWindow,
+    migrate, onNew, onEvent, onSide, onNation, onReview, onRetire, onStep, onNewSeason, onDeal, onWindow,
     tacticFor, negotiate: (pid) => {
       const b = C().x.negBlock && C().x.negBlock[pid];
       if (b && b === C().season + '|' + C().step) { K.api().toast('They are not willing to talk again during this window.'); return; }

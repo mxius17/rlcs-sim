@@ -905,6 +905,7 @@
     const clubName = C.teams[entry.champClub] ? C.teams[entry.champClub].name : 'free agent';
     if (!V() && entry.champClub === C.user) { C.trophies.push({ season: C.season, title: title + ' · ' + entry.champName }); news('trophy', `🏆 <b>${esc(entry.champName)}</b> ${st.mode === 1 ? 'wins' : 'win'} the ${esc(title)} for ${esc(userTeam().name)}!`, { ev: st.key, region, champ: C.user, place: 1 }); }
     else if (st.type === 'sidew' || region === sideHome()) news('result', `<b>${esc(entry.champName)}</b> (${esc(clubName)}) ${st.mode === 1 ? 'wins' : 'win'} the ${esc(title)}${st.type === 'side' ? ` and ${st.mode === 1 ? 'qualifies' : 'qualify'} for the World Championship` : ''}${entry.me ? ` · ${esc(entry.me.name)} finished <b>${entry.me.label}</b>` : ''}.`, { ev: st.key, region, champ: entry.champClub, mine: entry.me ? entry.me.label : null });
+    if (X()) { const ps = (id) => (id ? sidePids(id).map((pid) => C.players[pid]).filter(Boolean) : []); X().onSide(T, st, region, title, { champ: ps(champ), runner: ps(T.runnerUp), mine: entry.me, mode: st.mode, world: st.type === 'sidew' }); }
   }
   /** A national-team event: results, news, your players on international duty. No club money, no RLCS points. */
   function applyNation(T, st, title) {
@@ -916,6 +917,7 @@
     mine.forEach((p) => { if (p.country === (co && co.name)) { p.intl = (p.intl || []).concat(title); } });
     const won = mine.filter((p) => co && p.country === co.name);
     news(won.length ? 'trophy' : 'result', `${co ? esc(co.tag) + ' ' : ''}<b>${esc(co ? co.name : '')}</b> win the ${esc(title)}${T.runnerUp && nationObj(T.runnerUp) ? `, beating ${esc(nationObj(T.runnerUp).name)} in the final` : ''}.${won.length ? ` Your ${won.map((p) => esc(p.name)).join(' and ')} ${won.length === 1 ? 'is a' : 'are'} national champion${won.length === 1 ? '' : 's'}!` : mine.length ? ` Your players on duty: ${mine.map((p) => esc(p.name) + ' (' + esc(p.country) + ', ' + placeOf(p.country) + ')').join(', ')}.` : ''}`, { ev: st.key, champ: null });
+    if (X()) { const ro = T.runnerUp ? nationObj(T.runnerUp) : null; X().onNation(T, st, title, { champ: co ? co.name : '', champFlag: co ? co.tag : '', runner: ro ? ro.name : '', runnerFlag: ro ? ro.tag : '', champPs: co ? nationPlayers(co.name) : [], mine, won }); }
   }
   function runStep(userT) {
     const st = step();
