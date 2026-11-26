@@ -6,7 +6,26 @@
  */
 (function (global) {
   'use strict';
-  const KEY = 'rlsim.career.v1';
+  const KEY0 = 'rlsim.career.v1';
+  /* ---- save slots: each career lives under its own key; slot 1 keeps the original key so older saves carry over ---- */
+  const SLOTS_KEY = 'rlsim.career.slots', MAX_SLOTS = 8;
+  const slotKey = (id) => (id === '1' ? KEY0 : KEY0 + '.s' + id);
+  let KEY = KEY0;
+  /** { active: '1', list: { id: { name, tag, color, logo, viewer, season, step, at } } } */
+  let slots = { active: '1', list: {} };
+  function loadSlots() {
+    try { const raw = localStorage.getItem(SLOTS_KEY); if (raw) slots = Object.assign({ active: '1', list: {} }, JSON.parse(raw)); } catch (e) { /* storage blocked */ }
+    // a save from before slots existed: register it as slot 1
+    try { if (!slots.list['1'] && localStorage.getItem(KEY0)) slots.list['1'] = { name: 'Career', at: Date.now() }; } catch (e) { /* storage blocked */ }
+    if (!slots.active) slots.active = '1';
+    KEY = slotKey(slots.active);
+  }
+  function saveSlots() { try { localStorage.setItem(SLOTS_KEY, JSON.stringify(slots)); } catch (e) { /* storage full */ } }
+  /** What the save list shows for the loaded career. */
+  function slotMeta() {
+    const t = C.user ? teamObj(C.user) : null;
+    return { name: t ? t.name : 'Neutral viewer', tag: t ? t.tag : 'GM', color: t ? t.color : '#8b5cf6', tid: C.user || '', viewer: !C.user, reg: C.vreg || '', season: C.season, step: SCHEDULE[C.step] ? SCHEDULE[C.step].name : '', trophies: (C.trophies || []).length, at: Date.now() };
+  }
   let api, E, C = null, teamCache = {}, cacheVer = 0;
 
   const REGIONS = ['EU', 'NA', 'SAM', 'MENA', 'OCE', 'APAC', 'SSA'];
@@ -268,7 +287,7 @@
   }
 
   /* ---------------- persistence ---------------- */
-  function load() { try { const raw = localStorage.getItem(KEY); C = raw ? JSON.parse(raw) : null; } catch (e) { C = null; } fixAges(); fixEconomy(); fixHosts(); fixSchedule(); fixScheduleEwc(); fixScheduleNations(); if (C && !C.academyV1) { fixAcademy(); save(); } bump(); }
+  function load() { loadSlots(); try { const raw = localStorage.getItem(KEY); C = raw ? JSON.parse(raw) : null; } catch (e) { C = null; } fixAges(); fixEconomy(); fixHosts(); fixSchedule(); fixScheduleEwc(); fixScheduleNations(); if (C && !C.academyV1) { fixAcademy(); save(); } bump(); if (C) { try { slots.list[slots.active] = Object.assign(slotMeta(), { at: (slots.list[slots.active] || {}).at || Date.now() }); saveSlots(); } catch (e) { /* meta is best effort */ } } }
   /** Saves from before the 1v1/2v2 Championships: Worlds and the review moved four steps later. */
   function fixSchedule() {
     if (!C || C.schedV2) return;
@@ -334,7 +353,9 @@
     save();
   }
   let saveWarned = false;
-  function save() { try { if (C) localStorage.setItem(KEY, JSON.stringify(C)); else localStorage.removeItem(KEY); } catch (e) { if (!saveWarned && api && api.toast) { saveWarned = true; setTimeout(() => api.toast('Your career could not be saved (browser storage is full or blocked). Back up from Settings.'), 0); } } }
+  function save() {
+    try { if (C) { try { slots.list[slots.active] = slotMeta(); } catch (e) { /* meta is best effort */ } } else delete slots.list[slots.active]; saveSlots(); } catch (e) { /* ignore */ }
+    try { if (C) localStorage.setItem(KEY, JSON.stringify(C)); else localStorage.removeItem(KEY); } catch (e) { if (!saveWarned && api && api.toast) { saveWarned = true; setTimeout(() => api.toast('Your career could not be saved (browser storage is full or blocked). Back up from Settings.'), 0); } } }
   function bump() { cacheVer++; teamCache = {}; }
 
   /* ---------------- teams & players ---------------- */
@@ -1241,7 +1262,7 @@
     const desc = `${esc(t.name)} ${rank === 1 ? 'are the highest-rated team' : 'are ranked ' + E.ordinal(rank) + ' of ' + regTeams.length} in ${esc(api.regions[t.region])} going into the 2027 RLCS season, with a team rating of ${t.ovr}. The roster is led by ${esc(lineup.slice().sort((a, b) => b.rating - a.rating)[0].name)} (${lineup.slice().sort((a, b) => b.rating - a.rating)[0].rating})${lineup.length > 3 ? `, with ${esc(lineup[3].name)} as the substitute` : ''}.`;
     app.innerHTML = `
       <div class="cs ${motion}">
-        <div class="cs-title"><button class="btn sm" data-action="nav" data-v="home">← Main menu</button><h1>Choose your club</h1><span class="muted">${lib.length} teams · RLCS 2027</span></div>
+        <div class="cs-title"><button class="btn sm" data-action="nav" data-v="home">← Main menu</button>${slotList().length ? `<button class="btn sm" data-action="career-saves">💾 Saves (${slotList().length})</button>` : ''}<h1>Choose your club</h1><span class="muted">${lib.length} teams · RLCS 2027</span></div>
         ${viewerCard()}
         <div class="cs-card">
           <div class="cs-left">
@@ -1334,7 +1355,7 @@
     const table = standings(reg, st.type === 'worlds' || st.type === 'review' ? 'season' : splitKey);
     const slots = st.type === 'worlds' || st.type === 'review' ? WORLDS_SLOTS[reg] : MAJOR_SLOTS[reg];
     const T = api.state.T;
-    const activeEvent = T && T.career && T.career.season === C.season && T.career.step === C.step && !T.career.recorded;
+    const activeEvent = T && T.career && T.career.season === C.season && T.career.step === C.step && !T.career.recorded && sameSlot(T);
     let next = '';
     const regPick = viewer ? `<div class="vw-reg"><small>Home region</small><div class="seg">${REGIONS.map((k) => `<button class="${k === reg ? 'active' : ''}" data-action="career-vreg" data-v="${k}" title="${esc(api.regions[k])}">${k}</button>`).join('')}</div></div>` : '';
     if (st.type === 'nation') {
@@ -1518,7 +1539,7 @@
       <div class="fc ${enter ? 'fc-enter' : ''} ${tabChanged ? 'fc-tabin' : ''}${hostTheme(st) ? ' fc-host' : ''}" style="${hostVars(hostTheme(st))}">
         <div class="fc-top">
           ${viewer ? `<button class="fc-club vw-club" data-action="nav" data-v="home" title="Main menu"><span class="vw-eye" aria-hidden="true">◉</span><span class="fc-club-name">Neutral viewer</span><span class="vw-sub">${esc(reg)}</span></button>` : ''}<button class="fc-club${viewer ? ' hidden' : ''}" data-action="nav" data-v="home" title="Back to modes">${api.badge(t, 'sm')}<span class="fc-club-name">${esc(t.name)}</span><i class="fc-club-bar" style="--b:${C.board}%"></i><span class="fc-thumb ${C.board >= 60 ? 'good' : C.board >= 35 ? 'mid' : 'bad'}" aria-label="Board ${C.board}%">${C.board >= 60 ? '👍' : C.board >= 35 ? '✋' : '👎'}</span></button>
-          <div class="fc-top-r"><button class="fc-chip" data-action="career-view" data-v="news" aria-label="Inbox${unread ? ', ' + unread + ' unread' : ''}">✉ Inbox${unread ? ` <i>${Math.min(99, unread)}</i>` : ''}</button><button class="fc-chip" data-action="${viewer ? 'career-vmarket' : 'career-market'}">⇄ ${viewer ? 'Transfers' : 'Market'}</button><button class="fc-chip" data-action="nav" data-v="home">← Main menu</button>${viewer ? '<button class="fc-chip" data-action="career-quit" title="End this career">⏻ End</button>' : ''}</div>
+          <div class="fc-top-r"><button class="fc-chip" data-action="career-view" data-v="news" aria-label="Inbox${unread ? ', ' + unread + ' unread' : ''}">✉ Inbox${unread ? ` <i>${Math.min(99, unread)}</i>` : ''}</button><button class="fc-chip" data-action="${viewer ? 'career-vmarket' : 'career-market'}">⇄ ${viewer ? 'Transfers' : 'Market'}</button><button class="fc-chip" data-action="career-saves" title="Career saves">💾 Saves</button><button class="fc-chip" data-action="nav" data-v="home">← Main menu</button>${viewer ? '<button class="fc-chip" data-action="career-quit" title="End this career">⏻ End</button>' : ''}</div>
         </div>
         <div class="fc-tabs" role="tablist" style="--tabs:${TABS.length}"><span class="fc-key" aria-hidden="true">Q</span>${TABS.map(([k, l]) => `<button role="tab" aria-selected="${k === tab}" class="${k === tab ? 'on' : ''}" data-action="career-tab" data-v="${k}"><span class="fc-tab-ico" aria-hidden="true">${{ central: '⌂', squad: '☷', transfers: '⇄', teams: '◫', office: '▤', history: '★' }[k]}</span><span class="fc-tab-l">${l}</span></button>`).join('')}<span class="fc-key" aria-hidden="true">E</span></div>
         ${body}
@@ -1910,7 +1931,7 @@
       const ev = eventCfg(st);
       if (!ev.cfg.size) { api.toast('Not enough national teams — simulate it instead.'); return; }
       ev.cfg.managed = null; save();
-      api.launch(ev.cfg, eventTitle(st), { career: { season: C.season, step: C.step }, theme: st.key });
+      api.launch(ev.cfg, eventTitle(st), { career: { season: C.season, step: C.step, slot: slots.active }, theme: st.key });
       return;
     }
     if (st.type === 'side' || st.type === 'sidew') {
@@ -1934,8 +1955,33 @@
     const tk = themeKeyFor(st);
     api.launch(ev.cfg, eventTitle(st, reg), Object.assign({ career: { season: C.season, step: C.step } }, tk ? { theme: tk } : {}));
   }
+  const sameSlot = (T) => !T.career.slot || T.career.slot === slots.active;
+  /* ---- the saves screen ---- */
+  function slotList() { return Object.keys(slots.list).sort((a, b) => (slots.list[b].at || 0) - (slots.list[a].at || 0)).map((id) => Object.assign({ id, active: id === slots.active && !!C }, slots.list[id])); }
+  function freeSlot() { for (let i = 1; i <= MAX_SLOTS; i++) if (!slots.list[String(i)]) return String(i); return null; }
+  const ago = (t) => { if (!t) return ''; const m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'just now' : m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m / 60) + ' h ago' : Math.round(m / 1440) + ' d ago'; };
+  function openSaves() {
+    const list = slotList(), free = freeSlot();
+    const row = (x) => `<div class="sv-row${x.active ? ' on' : ''}">
+        <span class="sv-badge" style="--tc:${api.esc(x.color || '#555')}">${x.viewer ? '◉' : api.esc(x.tag || '??')}</span>
+        <span class="sv-meta"><b>${api.esc(x.name || 'Career')}${x.active ? ' <i class="sv-cur">Playing</i>' : ''}</b><small>${x.season ? 'RLCS ' + x.season + ' · ' + api.esc(x.step || '') : 'Saved career'}${x.trophies ? ' · ' + x.trophies + ' 🏆' : ''} · ${ago(x.at)}</small></span>
+        <span class="sv-act">${x.active ? '' : `<button class="btn sm primary" data-action="career-slot-load" data-v="${x.id}">Load</button>`}<button class="btn sm danger" data-action="career-slot-del" data-v="${x.id}" aria-label="Delete ${api.esc(x.name || 'career')}">Delete</button></span></div>`;
+    api.openModal(`${api.modalHead('Career saves', `${list.length} of ${MAX_SLOTS} slots used. Each save keeps its own club, squad, money and history.`)}
+      <div class="modal-body"><div class="sv-list">${list.length ? list.map(row).join('') : '<p class="muted">No careers saved yet.</p>'}</div></div>
+      <div class="modal-foot"><button class="btn" data-action="close-modal">Close</button><button class="btn primary" data-action="career-slot-new" ${free ? '' : 'disabled title="All slots are full: delete a save first"'}>+ New career</button></div>`, { size: 'md' });
+    { const f = document.querySelector('#modalRoot .sv-row .btn.primary') || document.querySelector('#modalRoot [data-action="career-slot-new"]:not([disabled])'); if (f) f.focus({ preventScroll: true }); }
+  }
+  function resetUi() { const ui = api.state.ui; ui.ctab = 'central'; ui.cview = 'next'; ui.cnews = 0; ui.cpick = null; ui.thSel = null; }
+  function switchSlot(id) {
+    if (C) save();
+    slots.active = id; saveSlots();
+    KEY = slotKey(id); C = null;
+    load(); resetUi();
+  }
+  /** Start a fresh career in an empty slot (the current one stays saved). Returns false when every slot is taken. */
+  function newSlot() { const id = freeSlot(); if (!id) return false; switchSlot(id); return true; }
   function recordFromT(T) {
-    if (!C || !T.career || T.career.recorded || T.career.season !== C.season || T.career.step !== C.step) return;
+    if (!C || !T.career || T.career.recorded || T.career.season !== C.season || T.career.step !== C.step || !sameSlot(T)) return;
     T.career.recorded = true;
     runStep(T);
   }
@@ -1966,7 +2012,20 @@
       case 'career-quit':
         api.openModal(`${api.modalHead('End this career?', 'Your save for this career will be deleted. This cannot be undone.')}<div class="modal-foot"><button class="btn" data-action="close-modal">Cancel</button><button class="btn danger" data-action="career-quit-confirm">End career</button></div>`, { size: 'sm' });
         return true;
-      case 'career-quit-confirm': C = null; save(); api.closeModal(); api.render(); return true;
+      case 'career-quit-confirm': C = null; save(); api.closeModal(); { const nx = slotList()[0]; if (nx) switchSlot(nx.id); } api.render(); return true;
+      case 'career-saves': openSaves(); return true;
+      case 'career-slot-load': switchSlot(v); api.closeModal(); api.go('career'); api.render(); api.toast('Loaded ' + ((C && slots.list[v] && slots.list[v].name) || 'career') + '.'); return true;
+      case 'career-slot-new': if (!newSlot()) { api.toast('All ' + MAX_SLOTS + ' save slots are in use. Delete one first.'); return true; } api.closeModal(); api.go('career'); api.render(); return true;
+      case 'career-slot-del': {
+        const x = slots.list[v]; if (!x) return true;
+        api.openModal(`${api.modalHead('Delete this save?', 'This career is deleted for good. This cannot be undone.')}<div class="modal-body"><p><b>${api.esc(x.name || 'Career')}</b> · ${x.season ? 'RLCS ' + x.season + ' · ' + api.esc(x.step || '') : ''}</p></div><div class="modal-foot"><button class="btn" data-action="career-saves">Back</button><button class="btn danger" data-action="career-slot-del-ok" data-v="${v}">Delete save</button></div>`, { size: 'sm' });
+        return true;
+      }
+      case 'career-slot-del-ok': {
+        if (v === slots.active) { C = null; save(); const nx = slotList()[0]; if (nx) switchSlot(nx.id); else bump(); resetUi(); }
+        else { try { localStorage.removeItem(slotKey(v)); } catch (e) { /* storage blocked */ } delete slots.list[v]; saveSlots(); }
+        openSaves(); if (api.state.view === 'career' || api.state.view === 'home') api.render(); api.toast('Save deleted.'); return true;
+      }
       case 'career-play': playEvent(); return true;
       case 'career-sim': { const b = el; b.disabled = true; b.textContent = 'Simulating…'; setTimeout(() => { runStep(null); api.render(); }, 30); return true; }
       case 'career-sim-rest': { const T = api.state.T; simRest(T); api.render(); return true; }
@@ -2059,10 +2118,14 @@
     },
     render, onAction, recordFromT, simRest,
     has: () => !!C,
+    /** Save slots: list (newest first), how many are free, and switching / starting a new one. */
+    /** No career loaded (e.g. backed out of a new one) but others are saved: load the most recent. */
+    ensure: () => { if (!C) { const nx = slotList()[0]; if (nx) switchSlot(nx.id); } },
+    saves: () => slotList(), maxSaves: MAX_SLOTS, freeSave: () => !!freeSlot(), openSaves: () => openSaves(), newSave: () => newSlot(), loadSave: (id) => switchSlot(id),
     /** Photo (real or generated) of a career player, by name: used by the tournament ceremony. */
     photoByName: (name, country) => { if (!C) return null; const p = Object.values(C.players).find((x) => x.name === name && (!country || x.country === country)) || Object.values(C.players).find((x) => x.name === name); return p ? photoOf(p) : null; },
     /** Delete the current career (home screen "Start new career"). */
-    end: () => { C = null; save(); const ui = api.state.ui; ui.ctab = 'central'; ui.cview = 'next'; ui.cnews = 0; },
+    end: () => { C = null; save(); resetUi(); },
     teamObj: (id) => (C ? teamObj(id) : null),
     summary: () => (C ? { team: V() ? { name: 'Neutral viewer' } : teamObj(C.user), season: C.season, step: SCHEDULE[C.step].name } : null),
     canAdvance: canAdvanceCheck,

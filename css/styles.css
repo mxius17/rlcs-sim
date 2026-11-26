@@ -3898,3 +3898,15 @@ html[data-text="large"].menu-home .hub, html[data-text="xl"].menu-home .hub { mi
 html[data-view="career"] .toast-root { bottom: 84px; }
 @media (min-width: 900px) { html[data-view="career"] .toast-root { bottom: 18px; } }
 html[data-text="large"] #app, html[data-text="xl"] #app { overflow-x: clip; }
+
+/* ---------------- career save slots ---------------- */
+.sv-list { display: grid; gap: 8px; }
+.sv-row { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 6px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-left: 3px solid transparent; }
+.sv-row.on { border-left-color: var(--mn-hl, #ff8a1f); background: rgba(255,255,255,.08); }
+.sv-badge { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 6px; background: var(--tc); color: #fff; font: 800 italic 14px/1 var(--cond); text-shadow: 0 1px 2px rgba(0,0,0,.5); }
+.sv-meta { min-width: 0; display: grid; gap: 3px; }
+.sv-meta b { font: 800 italic 17px/1.1 var(--cond); text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sv-meta small { font-size: 12px; opacity: .7; }
+.sv-cur { font-style: normal; font: 700 10px/1 var(--mono, monospace); letter-spacing: .08em; padding: 2px 6px; margin-left: 6px; border-radius: 3px; background: var(--mn-hl, #ff8a1f); color: #0b1022; vertical-align: middle; }
+.sv-act { display: flex; gap: 6px; }
+@media (max-width: 520px) { .sv-row { grid-template-columns: auto 1fr; } .sv-act { grid-column: 1 / -1; justify-content: flex-end; } }

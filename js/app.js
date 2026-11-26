@@ -1562,7 +1562,8 @@
     const worlds = allTeams().filter((t) => t.worlds && t.season === '2026').sort((a, b) => parseInt(a.worlds, 10) - parseInt(b.worlds, 10) || b.ovr - a.ovr);
     const regionCounts = {}; rankedTeams().forEach((t) => (regionCounts[t.region] = (regionCounts[t.region] || 0) + 1));
     const live = T && !T.finished, played = T ? Object.values(T.matches).filter((m) => m.result && !m.result.bye).length : 0;
-    const has = window.RLCareer.has(), cs = window.RLCareer.summary();
+    window.RLCareer.ensure();
+    const has = window.RLCareer.has(), cs = window.RLCareer.summary(), nSaves = window.RLCareer.saves().length;
     const ko = HAS27 ? comps.find((c) => c.id === 'k27') : null;
     const koTeams = ko ? ko.teams().map(getTeam).sort((a, b) => b.ovr - a.ovr) : [];
     const days = Math.max(0, Math.ceil((new Date('2026-12-09T00:00:00Z') - new Date()) / 86400000));
@@ -1584,7 +1585,8 @@
         art: cs && cs.team ? `<div class="hub-art-badge">${badge(cs.team, 'xl')}</div>` : `<div class="hub-art-mono">GM</div>`,
         tiles: () => [
           { t: 'Continue career', s: cs ? `${esc(cs.team.name)} · RLCS ${cs.season} · ${esc(cs.step)}` : 'No career to continue yet', m: '▶', c: '#f2b632', a: 'nav', v: 'career', big: true, dis: !has, art: cs && cs.team ? `<span class="mt-hero">${badge(cs.team, 'xl')}</span>` : '' },
-          { t: 'Start new career', s: 'Pick a club, or follow the season as a neutral viewer.', m: '+', c: '#d97706', a: 'home-career-new', v: '' },
+          { t: 'Start new career', s: has ? 'Starts in a new save slot. Your current career stays saved.' : 'Pick a club, or follow the season as a neutral viewer.', m: '+', c: '#d97706', a: 'home-career-new', v: '' },
+          { t: 'Career saves', s: nSaves ? `${nSaves} of ${window.RLCareer.maxSaves} slots used · load, switch or delete` : 'Every career you start gets its own save slot.', m: '💾', c: '#a78bfa', a: 'career-saves', v: '', dis: !nSaves },
           live ? { t: 'Resume tournament', s: `${esc(T.title || E.FORMATS[T.format].name)} · ${entrants(T)} · ${played} series played`, m: 'LIVE', c: '#22c55e', a: 'resume', v: '' }
             : { t: 'New tournament', s: 'Tournaments you start are saved on this device so you can pick them up later.', m: 'NEW', c: '#2f8cff', a: 'nav', v: 'setup' },
           { t: 'Teams & rankings', s: 'Every roster, rating and region.', m: 'TOP', c: '#60a5fa', a: 'nav', v: 'teams' },
@@ -2091,8 +2093,9 @@
       case 'brand-pick': s.theme = v || null; closeModal(); persistRender(); break;
       case 'home-career-new': {
         if (!window.RLCareer.has()) { go('career'); break; }
-        const c = window.RLCareer.summary();
-        openModal(`${modalHead('Start a new career?', 'Your current career will be deleted. This cannot be undone.')}<div class="modal-body"><p>${esc(c.team.name)} · RLCS ${c.season} · ${esc(c.step)}</p></div><div class="modal-foot"><button class="btn" data-action="close-modal">Keep my career</button><button class="btn danger" data-action="home-career-new-ok">Delete and start new</button></div>`, { size: 'sm' });
+        // the current career stays in its slot; the new one gets an empty slot
+        if (window.RLCareer.newSave()) { go('career'); toast('Your previous career is saved. Switch back any time from Career saves.'); }
+        else { window.RLCareer.openSaves(); toast(`All ${window.RLCareer.maxSaves} save slots are in use. Delete one to start another career.`); }
         break;
       }
       case 'home-career-new-ok': window.RLCareer.end(); closeModal(); toast('Career ended. Choose how to start your new one.'); go('career'); break;
