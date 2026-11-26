@@ -29,8 +29,13 @@
   let api, E, C = null, teamCache = {}, cacheVer = 0;
 
   const REGIONS = ['EU', 'NA', 'SAM', 'MENA', 'OCE', 'APAC', 'SSA'];
+  /** Career extras (js/careerx.js): personalities, tactics, negotiations, awards, Hall of Fame, records, social, scouting, power shifts. */
+  const X = () => (global.RLCareerX && C && C.x ? global.RLCareerX : null);
   const MAJOR_SLOTS = { EU: 5, NA: 4, SAM: 2, MENA: 2, OCE: 1, APAC: 1, SSA: 1 };
   const WORLDS_SLOTS = { EU: 6, NA: 5, SAM: 3, MENA: 3, OCE: 1, APAC: 1, SSA: 1 };
+  // regional power shifts can move slots between regions (C.x.slotsM / C.x.slotsW)
+  const slotM = () => (C && C.x && C.x.slotsM) || MAJOR_SLOTS;
+  const slotW = () => (C && C.x && C.x.slotsW) || WORLDS_SLOTS;
   const CITIES = ['Copenhagen', 'Sydney', 'Riyadh', 'Los Angeles', 'London', 'Rio de Janeiro', 'Berlin', 'Tokyo', 'Dallas', 'Madrid', 'Toronto', 'Stockholm', 'Seoul', 'Mexico City',
     'Paris', 'São Paulo', 'Singapore', 'Amsterdam', 'Dubai', 'New York', 'Buenos Aires', 'Melbourne', 'Barcelona', 'Johannesburg', 'Chicago', 'Lisbon', 'Doha', 'Bangkok',
     'Milan', 'Montréal', 'Istanbul', 'Auckland', 'Warsaw', 'Santiago', 'Atlanta', 'Rotterdam', 'Cairo', 'Hong Kong', 'Vienna', 'Seattle', 'Abu Dhabi', 'Bogotá',
@@ -287,7 +292,7 @@
   }
 
   /* ---------------- persistence ---------------- */
-  function load() { loadSlots(); try { const raw = localStorage.getItem(KEY); C = raw ? JSON.parse(raw) : null; } catch (e) { C = null; } fixAges(); fixEconomy(); fixHosts(); fixSchedule(); fixScheduleEwc(); fixScheduleNations(); if (C && !C.academyV1) { fixAcademy(); save(); } bump(); if (C) { try { slots.list[slots.active] = Object.assign(slotMeta(), { at: (slots.list[slots.active] || {}).at || Date.now() }); saveSlots(); } catch (e) { /* meta is best effort */ } } }
+  function load() { loadSlots(); try { const raw = localStorage.getItem(KEY); C = raw ? JSON.parse(raw) : null; } catch (e) { C = null; } fixAges(); fixEconomy(); fixHosts(); fixSchedule(); fixScheduleEwc(); fixScheduleNations(); if (C && !C.academyV1) { fixAcademy(); save(); } bump(); if (C && global.RLCareerX) { const fresh = !C.x; C.x = C.x || {}; global.RLCareerX.migrate(); if (fresh) save(); } if (C) { try { slots.list[slots.active] = Object.assign(slotMeta(), { at: (slots.list[slots.active] || {}).at || Date.now() }); saveSlots(); } catch (e) { /* meta is best effort */ } } }
   /** Saves from before the 1v1/2v2 Championships: Worlds and the review moved four steps later. */
   function fixSchedule() {
     if (!C || C.schedV2) return;
@@ -643,6 +648,7 @@
     bump();
     setObjectives();
     news('career', V() ? `You follow the ${C.season} RLCS season as a neutral viewer, with ${esc(api.regions[C.vreg])} as your home region.` : `You take charge of <b>${esc(userTeam().name)}</b> for the ${C.season} RLCS season.`);
+    if (global.RLCareerX) { C.x = {}; global.RLCareerX.onNew(); }
     save();
   }
   function resetPoints() { C.points = {}; Object.keys(C.teams).forEach((id) => (C.points[id] = { s1: 0, s2: 0, season: 0 })); C.results = {}; C.seasonFin = { prize: 0, sponsor: 0, salaries: 0, transfers: 0 }; Object.values(C.players).forEach((p) => (p.stats = { gp: 0, g: 0, a: 0, sv: 0, score: 0 })); }
@@ -723,12 +729,12 @@
   }
   function majorField(splitKey) {
     let ids = [];
-    REGIONS.forEach((r) => (ids = ids.concat(standings(r, splitKey).slice(0, MAJOR_SLOTS[r]))));
+    REGIONS.forEach((r) => (ids = ids.concat(standings(r, splitKey).slice(0, slotM()[r]))));
     return ids.sort((a, b) => (C.points[b][splitKey] - C.points[a][splitKey]) || ovr(b) - ovr(a));
   }
   function worldsField() {
     let ids = [];
-    REGIONS.forEach((r) => (ids = ids.concat(standings(r, 'season').slice(0, WORLDS_SLOTS[r]))));
+    REGIONS.forEach((r) => (ids = ids.concat(standings(r, 'season').slice(0, slotW()[r]))));
     return ids.sort((a, b) => (C.points[b].season - C.points[a].season) || ovr(b) - ovr(a));
   }
   /** A region's best 16 players (1v1) or duos (the two best starters of each club, 2v2). */
@@ -751,7 +757,7 @@
   /** EWC field: the 16 best clubs of the season by RLCS points, with the Major regional slots. */
   function ewcField() {
     let ids = [];
-    REGIONS.forEach((r) => (ids = ids.concat(standings(r, 'season').slice(0, MAJOR_SLOTS[r]))));
+    REGIONS.forEach((r) => (ids = ids.concat(standings(r, 'season').slice(0, slotM()[r]))));
     return ids.sort((a, b) => (C.points[b].season - C.points[a].season) || ovr(b) - ovr(a));
   }
   /** The national teams of an event: the strongest nations (three players each), the host nation always in. */
@@ -835,8 +841,9 @@
     const same = list.filter((x) => x.place === place).length;
     return same > 1 ? place + '-' + (place + same - 1) : E.ordinal(place);
   }
-  function simInstant(cfg) {
+  function simInstant(cfg, stType) {
     const T = E.buildTournament(cfg, api.getTeam);
+    if (stType && X() && !V() && cfg.teams.includes(C.user)) { T.managed = C.user; Object.assign(T, X().tacticFor(stType)); }
     E.refresh(T);
     let guard = 0;
     while (guard++ < 5000) {
@@ -877,6 +884,7 @@
     else C.results[st.key] = entry;
     if (champ === C.user) { C.trophies.push({ season: C.season, title }); news('trophy', `🏆 <b>${esc(userTeam().name)}</b> win the ${esc(title)}!`, { ev: st.key, region, champ, place: 1 }); }
     else if (kind !== 'open' || region === homeReg()) news('result', `<b>${esc(C.teams[champ].name)}</b> win the ${esc(title)}${me ? ` · you finished <b>${placeLabel(me.place, list)}</b>` : ''}.`, { ev: st.key, region, champ, mine: me ? placeLabel(me.place, list) : null });
+    if (X()) X().onEvent(T, st, region, title, list);
   }
 
   /** Finished 1v1/2v2 event: prize money to each player's club, results, news and trophies. No 3v3 points or stats. */
@@ -934,12 +942,12 @@
         if (r === myReg && userT) { applyEvent(userT, st, r, title); return; }
         const ev = eventCfg(st, r);
         if (r === myReg) noteQualifier(ev, title);
-        applyEvent(simInstant(ev.cfg), st, r, title);
+        applyEvent(simInstant(ev.cfg, st.type), st, r, title);
       });
     } else {
       const title = eventTitle(st);
       if (userT) applyEvent(userT, st, null, title);
-      else { const ev = eventCfg(st); if (!V() && !ev.cfg.teams.includes(C.user)) news('info', `${esc(userTeam().name)} did not qualify for the ${esc(title)}.`); applyEvent(simInstant(ev.cfg), st, null, title); }
+      else { const ev = eventCfg(st); if (!V() && !ev.cfg.teams.includes(C.user)) news('info', `${esc(userTeam().name)} did not qualify for the ${esc(title)}.`); applyEvent(simInstant(ev.cfg, st.type), st, null, title); }
     }
     advance();
   }
@@ -954,6 +962,7 @@
   function advance() {
     C.step++;
     if (C.step >= SCHEDULE.length) C.step = SCHEDULE.length - 1;
+    if (X()) X().onStep();
     bump(); save();
   }
 
@@ -993,6 +1002,7 @@
     C.deals = C.deals || [];
     C.deals.unshift({ season: C.season, when: C.season + ' · ' + step().short, pid: p.id, name: p.name, flag: p.flag || '', rating: p.rating, from: from ? C.teams[from].name : 'Free agent', fromId: from || null, to: C.teams[to].name, toId: to, fee });
     C.deals = C.deals.slice(0, 120);
+    if (X() && fee) X().onDeal(p, from, to, fee);
   }
   function aiWindow() {
     const pre = C.step === 0;
@@ -1073,6 +1083,7 @@
     }
     ai.forEach(aiFill);
     headlines.reverse().forEach(([m, h]) => news('transfer', h, m)); // biggest clubs' deals end up on top
+    if (X()) X().onWindow();
     bump();
   }
 
@@ -1139,10 +1150,12 @@
       p.age++;
       if (p.team === C.user && p.rating !== old) devLines.push(`${esc(p.name)} ${p.rating > old ? '▲' : '▼'} ${old} → ${p.rating}`);
     });
+    if (X()) X().onReview({ objOk: objRes.filter((o) => o.ok).length, worlds: worlds ? worlds.label : null, regRank });
     const retired = [];
     Object.values(C.players).forEach((p) => {
       if (p.age >= 29 && Math.random() < (p.age - 27) * 0.18 && !(p.team === C.user && p.rating >= 85)) retired.push(p);
     });
+    if (X()) X().onRetire(retired);
     retired.forEach((p) => { removeFromTeam(p.id); C.fa = C.fa.filter((x) => x !== p.id); delete C.players[p.id]; if (p.rating >= 82) news('info', `${esc(p.name)} retires.`); });
     const expiring = [];
     Object.values(C.players).forEach((p) => {
@@ -1184,6 +1197,7 @@
     resetPoints();
     bump();
     setObjectives();
+    if (X()) X().onNewSeason();
     news('career', `The ${C.season} season begins. The pre-season transfer window is open.`);
     save();
   }
@@ -1353,7 +1367,7 @@
     const reg = me.region;
     const splitKey = st.split ? 's' + st.split : (C.step <= 5 ? 's1' : 's2');
     const table = standings(reg, st.type === 'worlds' || st.type === 'review' ? 'season' : splitKey);
-    const slots = st.type === 'worlds' || st.type === 'review' ? WORLDS_SLOTS[reg] : MAJOR_SLOTS[reg];
+    const slots = st.type === 'worlds' || st.type === 'review' ? slotW()[reg] : slotM()[reg];
     const T = api.state.T;
     const activeEvent = T && T.career && T.career.season === C.season && T.career.step === C.step && !T.career.recorded && sameSlot(T);
     let next = '';
@@ -1377,7 +1391,7 @@
         <div class="kv"><span>Season MVP</span><span>${R.mvp ? esc(R.mvp.name) + ' · ' + esc(C.teams[R.mvp.team] ? C.teams[R.mvp.team].name : '') : '—'}</span></div>
         <div class="kv"><span>Top scorer</span><span>${R.topG ? esc(R.topG.name) + ' · ' + R.topG.g + ' goals' : '—'}</span></div>
         ${(R.retired || []).length ? `<div class="tile-kicker" style="margin-top:12px">Retirements</div><p class="help">${R.retired.slice(0, 8).map(esc).join(' · ')}</p>` : ''}
-        <div class="action-row"><button class="btn primary" data-action="career-next-season">Start ${C.season + 1} season →</button></div>`;
+        <div class="action-row"><button class="btn primary" data-action="career-next-season">Start ${C.season + 1} season →</button></div>${X() ? X().awardsButton() : ''}`;
     } else if (viewer) {
       const title = eventTitle(st, reg);
       next = `<p><b>${esc(title)}</b> · ${st.type === 'open' ? '16 teams · Swiss stage, then an eight-team playoff' : st.type === 'major' ? '16 teams · groups, then the Final Eight' : st.type === 'ewc' ? '16 clubs · four groups of four, then an eight-team knockout · $1,010,000, no RLCS points' : '20 teams · four groups of five, then an eight-team knockout'}.</p>
@@ -1402,7 +1416,8 @@
         ${(R.acLines || []).length ? `<div class="tile-kicker" style="margin-top:12px">Academy</div><p class="help">${R.acLines.join(' · ')}</p>` : ''}
         ${R.devLines.length ? `<div class="tile-kicker" style="margin-top:12px">Your players</div><p class="help">${R.devLines.join(' · ')}</p>` : ''}
         ${R.expiring.filter((pid) => C.players[pid] && C.players[pid].contract <= 0).length ? `<div class="tile-kicker" style="margin-top:12px">Expiring contracts</div>${R.expiring.filter((pid) => C.players[pid] && C.players[pid].contract <= 0).map((pid) => { const p = C.players[pid]; const go = (R.letGo || []).includes(pid); return `<div class="kv"><span>${esc(p.name)} · ${p.rating} · age ${ageLabel(p)}</span><span class="toolbar"><span class="pill ${go ? 'bad' : 'good'}">${go ? 'Leaving' : 'Re-signs 2y · ' + money(salaryFor(p.rating)) + '/yr'}</span><button class="btn xs" data-action="career-letgo" data-id="${pid}">${go ? 'Keep' : 'Let go'}</button></span></div>`; }).join('')}<p class="help">Players marked to re-sign get a new two-season deal when the next season starts, if the budget allows.</p>` : ''}
-        <div class="action-row"><button class="btn primary" data-action="career-next-season">Start ${C.season + 1} season →</button></div>`;
+        ${X() ? X().offersHTML() : ''}
+        <div class="action-row"><button class="btn primary" data-action="career-next-season">Start ${C.season + 1} season →</button></div>${X() ? X().awardsButton() : ''}`;
     } else {
       const ev = st.type === 'open' ? null : eventCfg(st);
       const inIt = st.type === 'open' ? true : ev.cfg.teams.includes(C.user);
@@ -1417,7 +1432,8 @@
     const salaries = roster.reduce((s, p) => s + p.salary, 0);
     const ui = api.state.ui;
     let tab = ui.ctab || 'central'; const view = ui.cview || 'next';
-    if (viewer && (tab === 'squad' || tab === 'office')) tab = ui.ctab = 'central';
+    if (viewer && (tab === 'squad' || tab === 'office' || tab === 'tactics')) tab = ui.ctab = 'central';
+    if (tab === 'tactics' && !X()) tab = ui.ctab = 'central';
     const hubKey = [tab, view, C.season, C.step, ui.cnews || 0].join('|'), enter = hubKey !== lastHubKey;
     const tabChanged = !lastHubKey || lastHubKey.split('|')[0] !== tab;
     lastHubKey = hubKey; lastPick = null;
@@ -1439,7 +1455,7 @@
     const squadHtml = `<div class="leader-list">${roster.map((p, i) => `<div class="leader"><span class="rk">${i < 3 ? 'ST' : 'SUB'}</span><span class="who"><b>${p.flag || ''} ${esc(p.name)}</b><small>Age ${ageLabel(p)} · ${p.contract}y · ${money(p.salary)}/yr${p.stats.gp ? ' · ' + p.stats.g + 'G ' + p.stats.sv + 'Sv' : ''}</small></span><span class="val">${p.rating}</span></div>`).join('')}</div>`;
     const objHtml = C.objectives.map((o) => `<div class="kv"><span>${esc(o.t)}</span><span class="pill">${C.season}</span></div>`).join('');
     const trophyHtml = C.trophies.length ? C.trophies.slice().reverse().slice(0, 8).map((x) => `<div class="kv"><span>🏆 ${esc(x.title)}</span></div>`).join('') : '<p class="muted" style="font-size:13px">No trophies yet.</p>';
-    const newsHtml = `<div class="pulse">${newsList.map((n, i) => `<div class="story ${n.kind === 'trophy' ? 'win' : n.kind === 'transfer' ? 'upset' : ''}${i < fresh ? ' fresh' : ''}"><small>${i < fresh ? '<span class="new-tag">New</span>' : ''}${esc(n.when)}</small>${n.html}</div>`).join('')}</div>`;
+    const newsHtml = `<div class="pulse">${newsList.map((n, i) => `<div class="story ${n.kind === 'trophy' ? 'win' : n.kind === 'transfer' ? 'upset' : ''}${i < fresh ? ' fresh' : ''}"><small>${i < fresh ? '<span class="new-tag">New</span>' : ''}${X() ? `<span class="nk nk-${esc(n.kind)}">${esc(X().kindLabel(n.kind))}</span>` : ''}${esc(n.when)}</small>${n.html}</div>`).join('')}</div>`;
     const historyHtml = viewer ? '' : C.history.length ? `<div class="table-wrap"><table class="st"><thead><tr><th class="l">Season</th><th>Points</th><th>Region</th><th>Best Open</th><th>Majors</th><th>Worlds</th><th class="l">World champion</th><th class="l">1v1 / 2v2 champions</th><th class="l">Nations Cup / FIFAe</th><th class="l">Objectives</th></tr></thead><tbody>
       ${C.history.map((h) => `<tr><td class="l">${h.season}</td><td>${h.points}</td><td>${E.ordinal(h.regRank)}</td><td>${h.bestOpen}</td><td>${h.majors}/2</td><td>${esc(h.worlds)}</td><td class="l">${esc(h.champion)}</td><td class="l">${esc(h.d1 || '—')} / ${esc(h.d2 || '—')}</td><td class="l">${esc(h.enc || '—')} / ${esc(h.fifae || '—')}</td><td class="l">${h.objectives.map((o) => (o.ok ? '✓ ' : '✗ ') + esc(o.t)).join(' · ')}</td></tr>`).join('')}
       </tbody></table></div>` : '<p class="muted" style="font-size:13px">Your finished seasons will appear here.</p>';
@@ -1455,12 +1471,13 @@
         <div class="fc-feature-foot"><button class="fc-link" data-action="career-view" data-v="news">Go to News</button>
           <span class="fc-dots">${nS > 1 ? `<button class="fc-arrow" data-action="career-news" data-v="${(ni - 1 + nS) % nS}" aria-label="Previous slide">‹</button>` : ''}${slides.map((_, k) => `<button class="fc-dot ${k === ni ? 'on' : ''}" data-action="career-news" data-v="${k}" aria-label="Slide ${k + 1}"></button>`).join('')}${nS > 1 ? `<button class="fc-arrow" data-action="career-news" data-v="${(ni + 1) % nS}" aria-label="Next slide">›</button>` : ''}</span></div>
       </div>`;
-    const VIEWS = [['next', 'Next up', st.name], ['standings', 'Standings', api.regions[reg]], ['schedule', 'Season schedule', 'RLCS ' + C.season], viewer ? ['objectives', 'Power rankings', 'Top 16 worldwide'] : ['objectives', 'Objectives', C.objectives.length + (C.objectives.length === 1 ? ' goal' : ' goals')], ['news', 'News', newsList.length + (newsList.length === 1 ? ' story' : ' stories')]];
+    const VIEWS = [['next', 'Next up', st.name], ['standings', 'Standings', api.regions[reg]], ['schedule', 'Season schedule', 'RLCS ' + C.season], viewer ? ['objectives', 'Power rankings', 'Top 16 worldwide'] : ['objectives', 'Objectives', C.objectives.length + (C.objectives.length === 1 ? ' goal' : ' goals')], ['news', 'News', newsList.length + (newsList.length === 1 ? ' story' : ' stories')], ['social', 'Social', X() ? ((C.x.social || []).length + ' posts') : '']].filter(([k]) => k !== 'social' || X());
     const mainView = view === 'standings' ? `<div class="fc-panel-body"><h3 class="fc-h">${esc(api.regions[reg])} standings</h3><p class="help">${st.type === 'worlds' || st.type === 'review' ? 'Season points · top ' + slots + ' reach Worlds' : 'Split ' + (splitKey === 's1' ? 1 : 2) + ' points · top ' + slots + ' reach the Major'}</p>${tableHtml}</div>`
       : view === 'schedule' ? `<div class="fc-panel-body"><h3 class="fc-h">Season ${C.season}</h3>${timelineHtml}</div>`
       : view === 'objectives' && viewer ? `<div class="fc-panel-body"><h3 class="fc-h">Power rankings</h3><p class="help">The 16 strongest teams in the world by team rating, with this season's circuit points.</p>${powerHtml()}</div>`
       : view === 'objectives' ? `<div class="fc-panel-body"><h3 class="fc-h">Board objectives</h3>${objHtml}<h3 class="fc-h" style="margin-top:18px">Trophy cabinet <span class="pill gold">${C.trophies.length}</span></h3>${trophyHtml}</div>`
       : view === 'news' ? `<div class="fc-panel-body"><h3 class="fc-h">News</h3>${newsHtml}</div>`
+      : view === 'social' && X() ? X().socialHTML()
       : feature;
     // ---- next-up side card (all the season actions live here) ----
     const sideCard = `<aside class="fc-side">
@@ -1470,9 +1487,9 @@
           <div class="fc-rings">${viewer ? (() => { const n88 = Object.values(C.players).filter((p) => p.team && p.rating >= 88).length, base = (C.base || talentBase()).n88; return ring(t.ovr - 60, 40, 'Region leader', `<span data-count="${t.ovr}">${t.ovr}</span>`, '◆') + ring(n88, Math.round(base * 1.5), 'Stars 88+', `<span data-count="${n88}">${n88}</span>`, '★'); })() : ring(t.ovr - 60, 40, 'Team rating', `<span data-count="${t.ovr}">${t.ovr}</span>`, '◆')}${viewer ? '' : ring(C.board, 100, 'Board', `<span data-count="${C.board}" data-suf="%">${C.board}%</span>`, '☺')}${ring(C.step + 1, SCHEDULE.length, 'Season', (C.step + 1) + '/' + SCHEDULE.length, '▶')}</div></div>
         <div class="fc-next">${next}${(st.type === 'major' || st.type === 'ewc' || st.type === 'worlds' || st.type === 'sidew') && window.RLCutscene ? `<button class="fc-intro" data-action="career-intro">▶ Watch the ${esc(st.type === 'major' ? majorCity(st) : st.type === 'ewc' ? 'Esports World Cup' : worldsCity() + ' Worlds Week')} intro</button>` : ''}</div>
       </aside>`;
-    const tiles = `<nav class="fc-tiles" aria-label="Career hub">${VIEWS.map(([k, l, sub]) => `<button class="fc-tile ${k === view && tab === 'central' ? 'on' : ''}" data-action="career-view" data-v="${k}"><b>${l}</b><small>${esc(sub)}</small><span class="fc-tile-ico" aria-hidden="true">${{ next: '▶', standings: '☰', schedule: '▦', objectives: '✔', news: '▤' }[k]}</span></button>`).join('')}</nav>`;
+    const tiles = `<nav class="fc-tiles" aria-label="Career hub">${VIEWS.map(([k, l, sub]) => `<button class="fc-tile ${k === view && tab === 'central' ? 'on' : ''}" data-action="career-view" data-v="${k}"><b>${l}</b><small>${esc(sub)}</small><span class="fc-tile-ico" aria-hidden="true">${{ next: '▶', standings: '☰', schedule: '▦', objectives: '✔', news: '▤', social: '#' }[k]}</span></button>`).join('')}</nav>`;
     // ---- tabs ----
-    const TABS = [['central', 'Central'], ['squad', 'Squad'], ['transfers', 'Transfers'], ['teams', 'Teams'], ['office', 'Office'], ['history', 'History']].filter(([k]) => !viewer || !['squad', 'office'].includes(k));
+    const TABS = [['central', 'Central'], ['squad', 'Squad'], ['tactics', 'Tactics'], ['transfers', 'Transfers'], ['teams', 'Teams'], ['office', 'Office'], ['history', 'History']].filter(([k]) => (!viewer || !['squad', 'office', 'tactics'].includes(k)) && (k !== 'tactics' || X()));
     let body;
     const avgAge = roster.length ? (roster.reduce((x, p) => x + p.age, 0) / roster.length).toFixed(1) : '—';
     const fin = C.seasonFin || { prize: 0, sponsor: 0, salaries: 0, transfers: 0 };
@@ -1507,12 +1524,13 @@
             <div class="table-wrap"><table class="st"><thead><tr><th class="l">Player</th><th>Left</th><th>Salary</th><th>Value</th><th></th></tr></thead><tbody>${contracts}</tbody></table></div></div></section>
           <section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Season leaders</h3><div class="fc-stats sq-leaders">${leaders}</div>
             <h3 class="fc-h" style="margin-top:18px">Trophy cabinet <span class="pill gold">${C.trophies.length}</span></h3>${trophyHtml}</div></section></div>`;
-    } else if (tab === 'transfers') body = transferHub(st, me, roster, salaries);
-    else if (tab === 'teams') body = teamsPage(reg);
+    } else if (tab === 'tactics') body = X().tacticsHTML();
+    else if (tab === 'transfers') body = transferHub(st, me, roster, salaries);
+    else if (tab === 'teams') body = (X() ? X().powerHTML() : '') + teamsPage(reg);
     else if (tab === 'office') {
       const evRows = SCHEDULE.filter((x) => x.type === 'open' || x.type === 'major' || x.type === 'ewc' || x.type === 'worlds' || x.type === 'nation').map((x) => { const i = SCHEDULE.indexOf(x); const res = myEventStatus(x); const where = x.type === 'open' ? api.regions[reg] : hostCity(x); const th = hostTheme(x); return `<tr class="${i === C.step ? 'hl' : ''}"><td class="l"><span class="of-dot" style="background:${th ? th.a : 'var(--line-strong)'}"></span>${esc(x.name)}</td><td class="l muted">${esc(where || '')}</td><td>${res ? esc(res) : i === C.step ? '<b>Next</b>' : i < C.step ? '—' : '<span class="muted">Upcoming</span>'}</td></tr>`; }).join('');
       const mood = C.board >= 75 ? 'The board is delighted with the direction of the club.' : C.board >= 60 ? 'The board is happy. Keep hitting the season objectives.' : C.board >= 40 ? 'The board is getting nervous. Results need to improve.' : 'The board is close to losing patience. Your job is at risk.';
-      body = `<div class="fc-grid2"><section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Finances</h3>
+      body = `${X() ? X().managerHTML() : ''}<div class="fc-grid2"><section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Finances</h3>
           <div class="fc-stats"><div><small>Budget</small><b data-count="${me.budget}" data-fmt="money">${money(me.budget)}</b></div><div><small>Salaries / season</small><b data-count="${salaries}" data-fmt="money">${money(salaries)}</b></div>
           <div><small>Prize money this season</small><b>${money(fin.prize || 0)}</b></div><div><small>Spent on transfers</small><b>${money(fin.transfers || 0)}</b></div>
           <div><small>Circuit points</small><b data-count="${C.points[C.user].season}">${C.points[C.user].season}</b><small>Split 1: ${C.points[C.user].s1} · Split 2: ${C.points[C.user].s2}</small></div><div><small>Region rank</small><b>${regionRankLabel()}</b><small>${esc(api.regions[reg])}</small></div>
@@ -1524,7 +1542,7 @@
         <section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Season ${C.season} results</h3>
           <div class="table-wrap"><table class="st"><thead><tr><th class="l">Event</th><th class="l">Where</th><th>Your result</th></tr></thead><tbody>${evRows}</tbody></table></div>
           <div class="action-row"><button class="btn danger" data-action="career-quit">End career</button></div></div></section>`;
-    } else if (tab === 'history' && viewer) { body = viewerHistory();
+    } else if (tab === 'history' && viewer) { body = viewerHistory() + (X() ? X().historyExtras() : '');
     } else if (tab === 'history') {
       const H = C.history;
       const bestW = H.map((h) => h.worlds).filter((w) => w && w !== 'DNQ');
@@ -1532,7 +1550,7 @@
       const cabinet = C.trophies.length ? `<div class="hi-cab">${C.trophies.slice().reverse().map((x) => `<div class="hi-trophy"><span aria-hidden="true">🏆</span><b>${esc(x.title)}</b><small>${x.season}</small></div>`).join('')}</div>` : '<p class="muted" style="font-size:13px">No trophies yet. Win an Open, a Major or Worlds to fill the cabinet.</p>';
       body = `<section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Career history</h3>${historyHtml}</div></section>
         <div class="fc-grid2"><section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Trophy cabinet <span class="pill gold">${C.trophies.length}</span></h3>${cabinet}</div></section>
-          <section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Records</h3><div class="fc-stats">${rec.map(([l, v]) => `<div><small>${l}</small><b>${v}</b></div>`).join('')}</div></div></section></div>`;
+          <section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Records</h3><div class="fc-stats">${rec.map(([l, v]) => `<div><small>${l}</small><b>${v}</b></div>`).join('')}</div></div></section></div>${X() ? X().historyExtras() : ''}`;
     }
     else if (tab === 'central') body = `<div class="fc-central"><section class="fc-panel fc-main">${mainView}</section>${sideCard}</div>${tiles}`;
     app.innerHTML = `
@@ -1541,9 +1559,9 @@
           ${viewer ? `<button class="fc-club vw-club" data-action="nav" data-v="home" title="Main menu"><span class="vw-eye" aria-hidden="true">◉</span><span class="fc-club-name">Neutral viewer</span><span class="vw-sub">${esc(reg)}</span></button>` : ''}<button class="fc-club${viewer ? ' hidden' : ''}" data-action="nav" data-v="home" title="Back to modes">${api.badge(t, 'sm')}<span class="fc-club-name">${esc(t.name)}</span><i class="fc-club-bar" style="--b:${C.board}%"></i><span class="fc-thumb ${C.board >= 60 ? 'good' : C.board >= 35 ? 'mid' : 'bad'}" aria-label="Board ${C.board}%">${C.board >= 60 ? '👍' : C.board >= 35 ? '✋' : '👎'}</span></button>
           <div class="fc-top-r"><button class="fc-chip" data-action="career-view" data-v="news" aria-label="Inbox${unread ? ', ' + unread + ' unread' : ''}">✉ Inbox${unread ? ` <i>${Math.min(99, unread)}</i>` : ''}</button><button class="fc-chip" data-action="${viewer ? 'career-vmarket' : 'career-market'}">⇄ ${viewer ? 'Transfers' : 'Market'}</button><button class="fc-chip" data-action="career-saves" title="Career saves">💾 Saves</button><button class="fc-chip" data-action="nav" data-v="home">← Main menu</button>${viewer ? '<button class="fc-chip" data-action="career-quit" title="End this career">⏻ End</button>' : ''}</div>
         </div>
-        <div class="fc-tabs" role="tablist" style="--tabs:${TABS.length}"><span class="fc-key" aria-hidden="true">Q</span>${TABS.map(([k, l]) => `<button role="tab" aria-selected="${k === tab}" class="${k === tab ? 'on' : ''}" data-action="career-tab" data-v="${k}"><span class="fc-tab-ico" aria-hidden="true">${{ central: '⌂', squad: '☷', transfers: '⇄', teams: '◫', office: '▤', history: '★' }[k]}</span><span class="fc-tab-l">${l}</span></button>`).join('')}<span class="fc-key" aria-hidden="true">E</span></div>
+        <div class="fc-tabs" role="tablist" style="--tabs:${TABS.length}"><span class="fc-key" aria-hidden="true">Q</span>${TABS.map(([k, l]) => `<button role="tab" aria-selected="${k === tab}" class="${k === tab ? 'on' : ''}" data-action="career-tab" data-v="${k}"><span class="fc-tab-ico" aria-hidden="true">${{ central: '⌂', squad: '☷', tactics: '◎', transfers: '⇄', teams: '◫', office: '▤', history: '★' }[k]}</span><span class="fc-tab-l">${l}</span></button>`).join('')}<span class="fc-key" aria-hidden="true">E</span></div>
         ${body}
-        <div class="fc-legend"><span><kbd>Q</kbd><kbd>E</kbd> Switch tabs</span><span><kbd>1</kbd>–<kbd>5</kbd> Hub tiles</span><span class="fc-legend-r">${esc(api.regions[reg])} · ${esc(st.name)}</span></div>
+        <div class="fc-legend"><span><kbd>Q</kbd><kbd>E</kbd> Switch tabs</span><span><kbd>1</kbd>–<kbd>${X() ? 6 : 5}</kbd> Hub tiles</span><span class="fc-legend-r">${esc(api.regions[reg])} · ${esc(st.name)}</span></div>
       </div>`;
     if (enter) countUp(app);
     const tq = app.querySelector('#thQ');
@@ -1566,6 +1584,9 @@
       C.cutSeen = (C.cutSeen || []).concat(cutKey).slice(-40); save();
       setTimeout(() => playNationIntro(st), 350);
     }
+    // the season's awards ceremony plays once when the review is reached
+    if (st.type === 'review' && tab === 'central' && X() && X().hasAwards() && !X().awardsSeen() && autoI && !document.querySelector('#modalRoot .modal')) { X().markAwards(); setTimeout(() => X().openAwards(C.season), 450); }
+    else if (st.type === 'review' && X() && X().hasAwards() && !autoI) X().markAwards();
     // the 1v1 and 2v2 Opens keep their branding but have no intro
   }
   /** National-team intro (js/nations.js): the parade of flags, then the favourites or the two FIFAe groups. */
@@ -1636,7 +1657,7 @@
   /** Carousel slides: recent stories with artwork matched to the story, mixed with spotlights from the career. */
   function buildSlides(st, me, t, reg, newsList) {
     const slides = [];
-    const pushStory = (n) => n && slides.push(Object.assign({ tag: n.kind === 'trophy' ? 'Trophy' : n.kind === 'transfer' ? 'Transfer' : n.kind === 'result' ? 'Result' : n.kind === 'academy' ? 'Academy' : 'News' }, n));
+    const pushStory = (n) => n && slides.push(Object.assign({ tag: n.kind === 'trophy' ? 'Trophy' : n.kind === 'transfer' ? 'Transfer' : n.kind === 'result' ? 'Result' : n.kind === 'academy' ? 'Academy' : X() ? X().kindLabel(n.kind) : 'News' }, n));
     // spotlight: next event in its colours
     let nextUp = null;
     if (st.type === 'open' || st.type === 'major' || st.type === 'worlds' || st.type === 'ewc' || st.type === 'nation') {
@@ -1810,13 +1831,14 @@
         <div class="th-stat"><small>Roster</small><b>${roster.length}/4</b><span class="th-slots" aria-hidden="true">${[0, 1, 2, 3].map((i) => `<i class="${i < roster.length ? 'f' : ''}${i === 3 ? ' sub' : ''}"></i>`).join('')}</span></div>`}
         <div class="th-stat"><small>${V() ? 'Watchlist' : 'Shortlist'}</small><b>${C.shortlist.length}</b><span>players tracked</span></div>
       </div>`;
-    const TT = [['scout', 'Scout players'], ['fa', 'Free agents · ' + C.fa.length], ['shortlist', (V() ? 'Watchlist · ' : 'Shortlist · ') + C.shortlist.length], ['squad', 'My squad'], ['activity', V() ? 'Transfer news' : 'Activity']].filter(([k]) => !V() || k !== 'squad');
+    const TT = [['scout', 'Scout players'], ...(X() ? [['rank', 'Talent rankings']] : []), ['fa', 'Free agents · ' + C.fa.length], ['shortlist', (V() ? 'Watchlist · ' : 'Shortlist · ') + C.shortlist.length], ['squad', 'My squad'], ['activity', V() ? 'Transfer news' : 'Activity']].filter(([k]) => !V() || k !== 'squad');
     const tabs = `<div class="th-tabs" role="tablist">${TT.map(([k, l]) => `<button role="tab" aria-selected="${k === tab}" class="${k === tab ? 'on' : ''}" data-action="th-tab" data-v="${k}">${esc(l)}</button>`).join('')}</div>`;
     const tools = tab === 'squad' || tab === 'activity' ? '' : `<div class="th-tools">
         <div class="search"><input class="input" id="thQ" placeholder="Search players or teams" value="${esc(ui.thQ || '')}" aria-label="Search players or teams" /></div>
         ${tab === 'scout' ? `<div class="seg th-reg">${[['all', 'All'], ...REGIONS.map((k) => [k, k])].map(([k, v]) => `<button class="${k === reg ? 'active' : ''}" data-action="th-reg" data-v="${k}">${v}</button>`).join('')}</div>` : ''}
         <label class="th-sort">Sort <select class="select" id="thSort">${[['ovr', 'Rating'], ['pot', 'Potential'], ['value', 'Value'], ['age', 'Youngest']].map(([k, v]) => `<option value="${k}" ${k === sort ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
       </div>`;
+    if (tab === 'rank' && X()) return `<div class="th"><div class="th-crumb">Career <span aria-hidden="true">›</span> <b>Transfer hub</b></div>${stats}${tabs}${X().talentHTML()}</div>`;
     let list;
     if (tab === 'activity') {
       const minor = C.minor || [];
@@ -1860,11 +1882,12 @@
           <div class="th-grid">
             <div><small>Market value</small><b>${money(valueFor(p))}</b></div>
             <div><small>${mine ? 'Salary' : 'Asking salary'}</small><b>${money(mine ? p.salary : askingSalary(p, C.user))}</b></div>
-            <div><small>Potential</small><b>~${p.pot}</b></div>
+            <div><small>Potential</small><b>${X() && p.team !== C.user ? (() => { const e = X().potEst(p); return e.lo === e.hi ? e.lo : e.lo + '–' + e.hi; })() : '~' + p.pot}</b></div>
             <div><small>Contract</small><b>${p.team ? p.contract + ' season' + (p.contract === 1 ? '' : 's') : 'None'}</b></div>
             <div><small>Games · goals</small><b>${p.stats.gp} · ${p.stats.g}</b></div>
             <div><small>Assists · saves</small><b>${p.stats.a} · ${p.stats.sv}</b></div>
           </div>
+          ${X() ? `<div class="x-th-pers">${X().persChip(p)}${p.team === C.user ? X().moraleBar(p) : ''}${p.clause ? `<small>Release clause ${money(p.clause)}</small>` : ''}${p.promise ? '<small>Promised a starting spot</small>' : ''}</div>` : ''}
           <div class="th-note"><span class="th-note-i" aria-hidden="true">!</span><span>${scoutNote(p)}</span></div>
           <div class="th-actions">${acts}</div>
           ${why ? `<p class="help">${why}</p>` : ''}
@@ -1872,12 +1895,13 @@
     }
     return `<div class="th">
         <div class="th-crumb">Career <span aria-hidden="true">›</span> <b>Transfer hub</b></div>
-        ${stats}${tabs}
+        ${X() ? X().bidsHTML() : ''}${stats}${tabs}
         <div class="th-main"><section class="fc-panel th-list${tab === 'activity' ? ' th-list-feed' : ''}">${tools}${list}</section><aside class="fc-panel th-detail">${detail}</aside></div>
       </div>`;
   }
 
   function openOffer(pid) {
+    if (X() && !V()) return X().negotiate(pid);
     const p = C.players[pid];
     const me = userTeam();
     const fa = !p.team;
@@ -1953,7 +1977,7 @@
     ev.cfg.managed = V() ? null : C.user;
     save();
     const tk = themeKeyFor(st);
-    api.launch(ev.cfg, eventTitle(st, reg), Object.assign({ career: { season: C.season, step: C.step } }, tk ? { theme: tk } : {}));
+    api.launch(ev.cfg, eventTitle(st, reg), Object.assign({ career: { season: C.season, step: C.step } }, tk ? { theme: tk } : {}, X() && !V() ? X().tacticFor(st.type) : {}));
   }
   const sameSlot = (T) => !T.career.slot || T.career.slot === slots.active;
   /* ---- the saves screen ---- */
@@ -1997,6 +2021,7 @@
 
   function onAction(a, el) {
     const id = el.dataset.id, v = el.dataset.v;
+    if (a.startsWith('x-') && X() && X().onAction(a, el)) return true;
     if (['career-play', 'career-sim', 'career-close-window', 'career-next-season'].includes(a) && C && !V() && userTeam().roster.length < 3) { api.toast('You need at least three players. Sign someone in the transfer market.'); return true; }
     switch (a) {
       case 'career-pick': newCareer(id, api.state.ui.cdiff || 'normal'); api.go('career'); return true;
@@ -2051,7 +2076,7 @@
         if (!p || p.academy !== C.user) return true;
         if (me.roster.length >= 4) { api.toast('Your roster is full (4).'); return true; }
         if (!(isWindow() || step().type === 'review')) { api.toast('Promote academy players during a transfer window.'); return true; }
-        leaveAcademy(id); joinTeam(id, C.user, Math.max(5000, Math.round(salaryFor(p.rating) * 0.6 / 1000) * 1000), 3);
+        leaveAcademy(id); joinTeam(id, C.user, Math.max(5000, Math.round(salaryFor(p.rating) * 0.6 / 1000) * 1000), 3); p.fromAcademy = true;
         news('academy', `<b>${esc(p.name)}</b> (${p.rating}, age ${p.age}) signs a first pro contract with ${esc(me.name)}.`, { pid: id, to: C.user });
         bump(); save(); api.toast(p.name + ' joins the roster on a three-season deal.'); api.render(); return true;
       }
@@ -2098,7 +2123,13 @@
     /** The theme key of the upcoming event (for its background music, js/bgm.js). */
     themeKey() { try { return C && api && api.state.view === 'career' ? themeKeyFor(step()) : null; } catch (e) { return null; } },
     init(a) {
-      api = a; E = a.E; load();
+      api = a; E = a.E;
+      if (global.RLCareerX) global.RLCareerX.attach({
+        get C() { return C; }, api: () => api, esc: (s) => api.esc(s), news, teamObj, userTeam, V, homeReg, step, isWindow, REGIONS, money, ovr, standings,
+        salaryFor, valueFor, askingSalary, minTierFor, tierOf, tierName, joinTeam, removeFromTeam, aiFill, recordDeal, bump, save, avatar, ageLabel, diff,
+        openMarket, setObjectives, render: () => api.render(), slots: () => ({ major: slotM(), worlds: slotW() }),
+      });
+      load();
       document.addEventListener('keydown', (ev) => {
         if (api.state.view !== 'career' || ev.ctrlKey || ev.metaKey || ev.altKey) return;
         if (!C) {
@@ -2110,10 +2141,10 @@
           return;
         }
         if (document.querySelector('#modalRoot .modal') || /input|select|textarea/i.test((ev.target && ev.target.tagName) || '')) return;
-        const TABS = (C && C.viewer ? ['central', 'transfers', 'teams', 'history'] : ['central', 'squad', 'transfers', 'teams', 'office', 'history']), VIEWS = ['next', 'standings', 'schedule', 'objectives', 'news'];
+        const TABS = (C && C.viewer ? ['central', 'transfers', 'teams', 'history'] : ['central', 'squad'].concat(X() ? ['tactics'] : [], ['transfers', 'teams', 'office', 'history'])), VIEWS = ['next', 'standings', 'schedule', 'objectives', 'news', 'social'];
         const ui = api.state.ui, k = ev.key.toLowerCase();
         if (k === 'q' || k === 'e') { const i = TABS.indexOf(ui.ctab || 'central'); ui.ctab = TABS[(i + (k === 'e' ? 1 : TABS.length - 1)) % TABS.length]; api.render(); }
-        else if (/^[1-5]$/.test(k)) { ui.ctab = 'central'; ui.cview = VIEWS[+k - 1]; api.render(); }
+        else if (/^[1-6]$/.test(k) && (k !== '6' || X())) { ui.ctab = 'central'; ui.cview = VIEWS[+k - 1]; api.render(); }
       });
     },
     render, onAction, recordFromT, simRest,

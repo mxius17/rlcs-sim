@@ -635,12 +635,22 @@
   function matchupParams(T, A, B) {
     const style = SIM_STYLES[T.settings.simStyle] || SIM_STYLES.standard;
     const goals = (GOAL_LEVELS[T.settings.goalLevel] || GOAL_LEVELS.normal).g;
-    const psA = A.id === T.managed ? PLAYSTYLES[T.playstyle] || PLAYSTYLES.balanced : PLAYSTYLES.balanced;
-    const psB = B.id === T.managed ? PLAYSTYLES[T.playstyle] || PLAYSTYLES.balanced : PLAYSTYLES.balanced;
+    const psA = A.id === T.managed ? withTactic(T, PLAYSTYLES[T.playstyle] || PLAYSTYLES.balanced, B) : PLAYSTYLES.balanced;
+    const psB = B.id === T.managed ? withTactic(T, PLAYSTYLES[T.playstyle] || PLAYSTYLES.balanced, A) : PLAYSTYLES.balanced;
     const sA = teamStrength(A) + psA.str, sB = teamStrength(B) + psB.str;
     // 1v1 and 2v2: fewer goals than 3v3 (more space, but one or two attackers)
     const n = Math.min(3, (A.players || []).length || 3, (B.players || []).length || 3);
     return { style, goals: goals * (n === 1 ? 0.74 : n === 2 ? 0.9 : 1), psA, psB, sA, sB };
+  }
+
+  /** Career mode's tactics (T.tactic: { atk, def, str, demo, counters: { oppStyle: bonus } }) layered on the series playstyle.
+   *  T.oppStyle maps opponent team ids to their own style, so a tactic can counter (or be countered by) it. */
+  function withTactic(T, ps, opp) {
+    const tc = T.tactic;
+    if (!tc) return ps;
+    const os = (T.oppStyle || {})[opp.id];
+    const counter = os && tc.counters ? tc.counters[os] || 0 : 0;
+    return { name: ps.name, desc: ps.desc, atk: ps.atk * (tc.atk || 1), def: ps.def * (tc.def || 1), str: ps.str + (tc.str || 0) + counter, demo: Math.max(ps === PLAYSTYLES.demo ? 2 : 1, tc.demo || 1) };
   }
 
   /** Simulate one game. Returns {ga, gb, ot, otTime, events:[...], pstats} */
@@ -713,7 +723,7 @@
             events.push({ t, type: 'save', side, shooter: shooter.name, saver: saver.name, epic: rnd() < 0.12 });
           } else events.push({ t, type: 'miss', side, shooter: shooter.name });
         }
-        const demos = poisson((side === 'A' && psA === PLAYSTYLES.demo) || (side === 'B' && psB === PLAYSTYLES.demo) ? 3.4 : 1.7);
+        const ps = side === 'A' ? psA : psB, demos = poisson(1.7 * (ps.demo || (ps === PLAYSTYLES.demo ? 2 : 1)));
         for (let i = 0; i < demos; i++) {
           const who = list[Math.floor(rnd() * list.length)]; const vic = olist[Math.floor(rnd() * olist.length)];
           who.dm++; who.score += 15;
