@@ -3984,24 +3984,3 @@ html.menu-home .hub .hc-list .hub-tab.on { color: #fff; background: none; box-sh
 @media (max-height: 560px) and (min-width: 600px) { html.menu-home .hub .hc-list { display: none; } .hub-car { margin-top: 0; } }
 .hc-arrow:focus-visible { outline-width: 2px; border-radius: 4px; }
 
-/* ---------------- accounts ---------------- */
-.acct-btn { font: 800 15px/1 var(--cond); }
-.acct-btn[data-st="in"], .acct-btn[data-st="syncing"], .acct-btn[data-st="error"] { background: #f6f6f4 !important; color: #121a3a !important; position: relative; }
-.acct-btn[data-st="syncing"]::after, .acct-btn[data-st="error"]::after { content: ""; position: absolute; top: 4px; right: 4px; width: 7px; height: 7px; border-radius: 50%; background: #22c55e; animation: acctPulse 1s infinite alternate; }
-.acct-btn[data-st="error"]::after { background: #ef4444; animation: none; }
-@keyframes acctPulse { to { opacity: .3; } }
-.acct-form { display: grid; gap: 12px; }
-.acct-tabs { justify-self: start; }
-.acct-err { min-height: 1em; margin: 0; color: #ff6b6b; font-size: 13px; }
-.acct-err:empty { display: none; }
-.acct-row { display: flex; gap: 8px; flex-wrap: wrap; }
-.acct-card { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
-.acct-card b { display: block; word-break: break-all; }
-.acct-card small { opacity: .7; font-size: 12px; }
-.acct-av { width: 44px; height: 44px; flex: none; display: grid; place-items: center; border-radius: 50%; background: #f6f6f4; color: #121a3a; font: 800 italic 22px/1 var(--cond); }
-.acct-choose { display: grid; gap: 10px; }
-.acct-opt { display: grid; gap: 4px; text-align: left; padding: 14px 16px; border-radius: 6px; border: 1px solid rgba(255,255,255,.14); border-left: 4px solid var(--mn-hl, #ff8a1f); background: rgba(255,255,255,.05); color: inherit; cursor: pointer; }
-.acct-opt:hover { background: rgba(255,255,255,.1); }
-.acct-opt b { font: 800 italic 19px/1.05 var(--cond); text-transform: uppercase; }
-.acct-opt small { font-size: 12.5px; opacity: .8; }
-.acct-opt em { font-style: normal; font-size: 12px; opacity: .6; }

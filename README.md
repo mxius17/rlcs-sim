@@ -38,17 +38,3 @@ Open `index.html` in a browser. There is no build step and nothing to install.
 **Two roster sets.** `js/data.js` holds the RLCS 2026 rosters (unchanged). `js/data27.js` holds the RLCS 2027 rosters as of 17 November 2026. These were built from the 2027 Club Championship Kick-Off and Kick-Off Open participant lists, plus every player transfer listed on Liquipedia from 21 September to 17 November 2026, applied to the 2026 rosters. RLCS 2027 events shown are the Kick-Off Opens, the London Kick-Off, the seven regional Club Leagues and the Club Finale. Slots that haven't been decided yet are filled with the best-rated eligible teams and marked as projected.
 
 `js/data.js` is generated from the Liquipedia pages for the RLCS 2026 World Championship (September 2026) and the Paris Major regional opens. Liquipedia content is licensed CC-BY-SA 3.0. Team ratings are estimates based on 2026 results, and you can edit them in the app.
-
-## Accounts & cross-device sync
-
-Sign in with e-mail (👤 button, or Settings › Account) to keep careers, tournaments and settings in sync on every device.
-It runs on Firebase (Authentication + Cloud Firestore, free plan):
-
-1. Create a project at https://console.firebase.google.com.
-2. Authentication › Sign-in method › enable **Email/Password**.
-3. Firestore Database › create a database, then paste `firestore.rules` into its **Rules** tab and publish.
-4. Project settings › Your apps › add a **Web app**, copy `js/firebase-config.example.js` to `js/firebase-config.local.js`
-   (git-ignored) and paste the config in. Deploy that file as `js/firebase-config.js`, replacing the placeholder.
-5. Authentication › Settings › **Authorized domains**: add the domain the site runs on.
-
-Without that file the simulator works as before (saves stay in the browser) and the account button says accounts aren't set up.
