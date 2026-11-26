@@ -1554,6 +1554,15 @@
   function setHubTab(t) { state.ui.homeTab = t; try { localStorage.setItem('rlsim.homeTab', t); } catch (e) { /* private mode */ } }
   /** Where the menu is: [] = the top level (tabs + feature), [tab] = a sub-menu, [tab, key] = one level deeper. */
   const hubPath = () => state.ui.homePath || (state.ui.homePath = []);
+  /** Carousel: show another section (at the top level its deck; inside a sub-menu, that section's sub-menu). */
+  function hubSel(k, dir) {
+    if (hubPath().length) { hubGo([k]); return; }
+    const prev = hubTab(); setHubTab(k); state.ui.hubDir = dir || (hubTabsOn().indexOf(k) < hubTabsOn().indexOf(prev) ? -1 : 1);
+    renderHome();
+    const d = app.querySelector('#hubDeck'); if (d) d.classList.add(state.ui.hubDir < 0 ? 'in-l' : 'in-r');
+    const c = app.querySelector(dir ? `.hc-arrow.${dir < 0 ? 'l' : 'r'}` : `#hubTab-${k}`); if (c) c.focus({ preventScroll: true });
+    if (window.RLSfx) window.RLSfx.play('hover');
+  }
   function hubGo(path) { state.ui.homePath = path; state.ui.compQuery = ''; if (path[0]) setHubTab(path[0]); renderHome(); const f = app.querySelector('.hub-grid .mt, .hub-tab.on'); if (f) f.focus({ preventScroll: true }); }
 
   /** Everything the menu shows, built fresh on each render. */
@@ -1720,15 +1729,16 @@
         <div class="hh-right">${!deep && F.tool ? `<div class="hh-tool">${F.tool}</div>` : ''}<button class="hh-back" data-action="hub-back"><kbd>Esc</kbd>Back</button></div></header>
         ${hubSections(tiles, !deep && F.sections)}`;
     } else {
-      stage = `<div class="hub-main">
-          <article class="hub-feat" id="hubFeat" style="--hc:${F.c}">${featHTML(F, tab)}</article>
-          <div class="hub-fig" aria-hidden="true">${F.fig}<span class="hub-spot"></span></div>
-          <aside class="hub-promo" aria-label="Featured" aria-roledescription="carousel">
-            ${promos.map((p, i) => `<div class="hp-slide${i === hubSlide ? ' on' : ''}" aria-hidden="${i === hubSlide ? 'false' : 'true'}">
-              <span class="hp-eye">Featured</span><h3>${p.t}</h3><p>${p.s}</p><div class="hp-art">${p.art}</div>
-              <button class="hp-go" data-action="${p.a}" data-v="${p.v}" ${i === hubSlide ? '' : 'tabindex="-1"'}><span>Take me there</span></button></div>`).join('')}
-            <div class="hp-dots">${promos.map((p, i) => `<button class="${i === hubSlide ? 'on' : ''}" data-action="hub-promo" data-v="${i}" aria-label="Show: ${esc(p.t)}"></button>`).join('')}</div>
-          </aside>
+      // the deck: the section's main item as one big tile, the next six in a 3×2 grid ("See all" takes the last slot when there are more)
+      let items = []; try { items = F.tiles(); } catch (e) { items = []; }
+      const n = items.length, kind = HUB_KIND[tab] || 'item';
+      const small = n > 7 ? items.slice(1, 6) : items.slice(1, 7);
+      const big = items[0] ? menuTile(Object.assign({}, items[0], { big: true, art: (items[0].art || '') + `<span class="hd-fig" aria-hidden="true">${F.fig}</span>` }), 0) : '';
+      const more = n > 7 ? menuTile({ t: `See all ${n} ${kind}s`, s: `Everything in ${F.label}`, m: '+' + (n - 6), c: F.c, a: 'hub-tab', v: tab, more: true }, 6) : '';
+      const pad = Math.max(0, 6 - small.length - (more ? 1 : 0));
+      stage = `<div class="hub-deck" id="hubDeck" data-k="${tab}">
+          <div class="hd-big">${big}</div>
+          <div class="hd-grid">${small.map((x, i) => menuTile(x, i + 1)).join('')}${more}${Array.from({ length: pad }, (_, i) => i === 0 && n > 1 ? `<button class="mt hd-open" type="button" data-action="hub-tab" data-v="${tab}" style="--c:${F.c}"><span class="mt-txt"><b>Open ${esc(F.label)}</b><small>${n} ${kind}${n === 1 ? '' : 's'} · ${esc(HUB_BLURB[tab] || '')}</small></span><span class="mt-go" aria-hidden="true">›</span></button>` : '<span class="hd-empty" aria-hidden="true"></span>').join('')}</div>
         </div>`;
     }
     app.innerHTML = `<div class="home hubbed">
@@ -1743,11 +1753,18 @@
           </div>
         </div>
         ${stage}
-        <nav class="hub-tabs" aria-label="Home sections">
-          ${HUB_GROUPS.map(([gl, ks]) => { const on = ks.filter((k) => tabs.includes(k)); if (!on.length) return ''; return `<div class="htg" style="--n:${on.length}"><span class="htg-l">${gl}</span><div class="htg-tabs">${on.map((k) => { let n = 0; try { n = TABS[k].tiles().length; } catch (e) { n = 0; } return `<button class="hub-tab${k === tab ? ' on' : ''}${k === tab && path.length ? ' in' : ''}" id="hubTab-${k}" ${k === tab ? 'aria-current="true"' : ''} data-action="hub-tab" data-v="${k}" style="--tc:${TABS[k].c}" title="${esc(HUB_BLURB[k] || '')}"><span>${TABS[k].label}</span><small>${n} ${HUB_KIND[k] || 'item'}${n === 1 ? '' : 's'}</small><i aria-hidden="true">${TABS[k].icon}</i></button>`; }).join('')}</div></div>`; }).join('')}
+        <nav class="hub-car" aria-label="Menu sections">
+          ${(() => { const i = Math.max(0, tabs.indexOf(tab)), L = tabs.length, pv = tabs[(i - 1 + L) % L], nx = tabs[(i + 1) % L];
+            const cnt = (k) => { let n = 0; try { n = TABS[k].tiles().length; } catch (e) { n = 0; } return `${n} ${HUB_KIND[k] || 'item'}${n === 1 ? '' : 's'}`; };
+            return `<button class="hc-arrow l" data-action="hub-step" data-v="-1" aria-label="Previous section: ${esc(TABS[pv].label)}">◀</button>
+            <button class="hc-side l" data-action="hub-sel" data-v="${pv}" tabindex="-1" aria-hidden="true" style="--tc:${TABS[pv].c}"><b>${TABS[pv].label}</b></button>
+            <button class="hc-cur" data-action="hub-tab" data-v="${tab}" style="--tc:${F.c}" aria-label="Open ${esc(F.label)}"><small>${esc(HUB_BLURB[tab] || '')}</small><b>${F.label}</b><span>${cnt(tab)} ›</span></button>
+            <button class="hc-side r" data-action="hub-sel" data-v="${nx}" tabindex="-1" aria-hidden="true" style="--tc:${TABS[nx].c}"><b>${TABS[nx].label}</b></button>
+            <button class="hc-arrow r" data-action="hub-step" data-v="1" aria-label="Next section: ${esc(TABS[nx].label)}">▶</button>`; })()}
         </nav>
+        <div class="hub-tabs hc-list" role="tablist" aria-label="All sections">${tabs.map((k) => `<button class="hub-tab${k === tab ? ' on' : ''}" id="hubTab-${k}" role="tab" aria-selected="${k === tab}" data-action="${path.length ? 'hub-tab' : 'hub-sel'}" data-v="${k}" style="--tc:${TABS[k].c}">${TABS[k].label}</button>`).join('')}</div>
         <div class="hub-foot">
-          <span class="hub-hint">${path.length || q ? '<b>Click a tile</b> to open it' : '<b>Point at a section</b> to see what’s inside · <b>click</b> to open it'}</span><span class="hub-hint"><kbd>←</kbd><kbd>→</kbd>Move</span><span class="hub-hint"><kbd>⏎</kbd>Open</span>${path.length || q ? '<span class="hub-hint"><kbd>Esc</kbd>Back</span>' : ''}<span class="hub-hint"><kbd>/</kbd>Search</span>
+          <span class="hub-hint">${path.length || q ? '<b>Click a tile</b> to open it' : '<b>◀ ▶</b> switch section · <b>click a tile</b> to open it'}</span><span class="hub-hint"><kbd>Q</kbd><kbd>E</kbd>Section</span><span class="hub-hint"><kbd>←</kbd><kbd>→</kbd>Move</span><span class="hub-hint"><kbd>⏎</kbd>Open</span>${path.length || q ? '<span class="hub-hint"><kbd>Esc</kbd>Back</span>' : ''}<span class="hub-hint"><kbd>/</kbd>Search</span>
           <div class="search hub-search"><input class="input" id="compQuery" placeholder="Search competitions…" value="${esc(state.ui.compQuery || '')}" aria-label="Search competitions" /></div>
         </div>
         <p class="hub-credits">Unofficial fan simulator · Data: <a href="https://liquipedia.net/rocketleague/Main_Page" target="_blank" rel="noopener">Liquipedia</a> (CC-BY-SA 3.0) · Flags: <a href="https://github.com/jdecked/twemoji" target="_blank" rel="noopener">Twemoji</a> (CC-BY 4.0) · ${esc(dataStamp())}</p>
@@ -1764,7 +1781,7 @@
     // arrow keys move between tabs or tiles
     app.querySelector('.hub').addEventListener('keydown', (ev) => {
       const t = ev.target; if (/^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName)) return;
-      const list = t.classList.contains('hub-tab') ? [...app.querySelectorAll('.hub-tab')] : t.classList.contains('mt') ? [...app.querySelectorAll('.hub-grid .mt')] : null;
+      const list = t.classList.contains('hub-tab') ? [...app.querySelectorAll('.hub-tab')] : t.classList.contains('mt') ? [...app.querySelectorAll('.hub-grid .mt, .hub-deck .mt')] : null;
       if (!list) return;
       const i = list.indexOf(t); let j = -1;
       if (ev.key === 'ArrowRight') j = Math.min(list.length - 1, i + 1); else if (ev.key === 'ArrowLeft') j = Math.max(0, i - 1);
@@ -1797,6 +1814,11 @@
     if (document.querySelector('.modal-backdrop, .cut, .hero:not(.gone)')) return;
     const t = ev.target, typing = t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
     if (ev.key === '/' && !typing) { const q = document.getElementById('compQuery'); if (q) { ev.preventDefault(); q.focus(); } return; }
+    // Q / E (like a controller's bumpers) switch section; so do ← → when nothing in the menu has focus, or the carousel does
+    const onCar = t && t.closest && t.closest('.hub-car');
+    if (!typing && !state.ui.compQuery && ((ev.key === 'q' || ev.key === 'Q' || ev.key === 'e' || ev.key === 'E') || ((ev.key === 'ArrowLeft' || ev.key === 'ArrowRight') && (onCar || t === document.body)))) {
+      ev.preventDefault(); const ts = hubTabsOn(), i = Math.max(0, ts.indexOf(hubPath()[0] || hubTab())), d = /^[qQ]$|ArrowLeft/.test(ev.key) ? -1 : 1; hubSel(ts[(i + d + ts.length) % ts.length], d); return;
+    }
     if (ev.key === 'Escape' || (ev.key === 'Backspace' && !typing)) {
       if (state.ui.compQuery) { ev.preventDefault(); state.ui.compQuery = ''; renderHome(); return; }
       if (hubPath().length && !(typing && ev.key === 'Backspace')) { ev.preventDefault(); const p = hubPath().slice(0, -1); hubGo(p); if (!p.length) { const b = document.getElementById('hubTab-' + hubTab()); if (b) b.focus(); } }
@@ -2057,6 +2079,8 @@
       case 'resume': go('tournament'); break;
       case 'comp': openComp(v); break;
       case 'hub-tab': hubGo([v]); break;
+      case 'hub-sel': hubSel(v); break;
+      case 'hub-step': { const ts = hubTabsOn(), i = Math.max(0, ts.indexOf(hubPath()[0] || hubTab())); hubSel(ts[(i + (+v) + ts.length) % ts.length], +v); break; }
       case 'hub-open': hubGo([hubPath()[0] || hubTab(), v]); break;
       case 'hub-back': hubGo(hubPath().slice(0, -1)); break;
       case 'hub-crumb': hubGo(hubPath().slice(0, +v)); break;
