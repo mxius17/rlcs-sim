@@ -4124,3 +4124,39 @@ html.menu-home .hub .hc-list .hub-tab.on { color: #fff; background: none; box-sh
 .x-cmt footer { font-size: 11.5px; }
 .x-thread-f { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding-top: 8px; flex-wrap: wrap; }
 .x-thread-f small { font-size: 11.5px; opacity: .6; }
+
+/* ---------------- responsive fixes (full audit) ---------------- */
+/* the breadcrumb above each page title never runs past the edge on small phones */
+html:is([data-view="tournament"], [data-view="setup"], [data-view="teams"], [data-view="team"]) body .page-head::before { max-width: calc(100% - 44px); overflow: hidden; text-overflow: ellipsis; }
+/* landscape phones: keep the competition search (only the keyboard hints go) */
+@media (max-height: 560px) and (min-width: 600px) {
+  .hub-foot { display: flex; gap: 8px; }
+  .hub-foot .hub-hint { display: none; }
+  .hub-foot .hub-search { margin-left: auto; flex: 0 1 280px; }
+}
+/* event pages on phones: the key art sits behind a solid wash so the title stays readable */
+@media (max-width: 720px) {
+  html.ev .app.event-theme.has-art .page-head { background: linear-gradient(180deg, color-mix(in srgb, var(--e1) 82%, #000), color-mix(in srgb, var(--e1) 70%, #000)), var(--e-art) center / cover; }
+}
+/* phones: the section carousel stays pinned to the bottom (overflow: clip keeps sticky working) */
+@media (max-width: 760px) {
+  html.menu-home .hub { overflow: clip; }
+}
+/* landscape phones: the deck fits above the carousel, and the big tile drops its logo strip */
+@media (max-height: 560px) and (min-width: 600px) {
+  html.menu-home .hub { gap: 8px; padding-top: 10px; padding-bottom: 8px; }
+  .hub-deck { min-height: 0; height: max(170px, calc(100dvh - 190px)); flex: none; }
+  .hd-big .mt-badges { display: none; }
+  .hd-big .mt.big .mt-txt b { font-size: clamp(22px, 3.4vw, 32px); }
+  .hd-grid .mt .mt-txt b { font-size: 16px; }
+  .hd-grid .mt .mt-txt small { -webkit-line-clamp: 1; }
+}
+@media (max-height: 560px) and (min-width: 600px) {
+  .hub-deck { grid-template-columns: minmax(0, 1fr) minmax(0, 1.9fr); }
+  .hd-big { height: auto; }
+  .hd-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); grid-auto-rows: auto; }
+  .hd-empty { display: block; }
+  .hd-grid .mt { padding: 8px 10px; }
+  .hd-grid .mt .mt-mono { font-size: 44px; }
+  .hub-car { position: static; margin: 0; padding: 0; background: none; }
+}
