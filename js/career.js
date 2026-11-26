@@ -333,7 +333,8 @@
     C.agesV2 = true;
     save();
   }
-  function save() { try { if (C) localStorage.setItem(KEY, JSON.stringify(C)); else localStorage.removeItem(KEY); } catch (e) { /* storage full or blocked */ } }
+  let saveWarned = false;
+  function save() { try { if (C) localStorage.setItem(KEY, JSON.stringify(C)); else localStorage.removeItem(KEY); } catch (e) { if (!saveWarned && api && api.toast) { saveWarned = true; setTimeout(() => api.toast('Your career could not be saved (browser storage is full or blocked). Back up from Settings.'), 0); } } }
   function bump() { cacheVer++; teamCache = {}; }
 
   /* ---------------- teams & players ---------------- */

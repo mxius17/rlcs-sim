@@ -3887,3 +3887,14 @@ html.ev .mc .feed .ev.goal .t { color: color-mix(in srgb, var(--mn-hl) 70%, #0d1
 html[data-view="career"] .to-top { bottom: 84px; }
 @media (min-width: 900px) { html[data-view="career"] .to-top { bottom: 16px; } }
 @media print { .to-top { display: none; } }
+
+/* ---------------- quality of life 2: reduced motion, text size, toasts ---------------- */
+/* intros and ceremonies keep their own animation (they are skippable and already honour the device setting) */
+html.rm *:not(.cut, .cut *, .side-cer, .side-cer *), html.rm *:not(.cut, .cut *, .side-cer, .side-cer *)::before, html.rm *:not(.cut, .cut *, .side-cer, .side-cer *)::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+html[data-text="large"] #app, html[data-text="large"] #modalRoot .modal { zoom: 1.1; }
+html[data-text="xl"] #app, html[data-text="xl"] #modalRoot .modal { zoom: 1.22; }
+html[data-text="large"].menu-home .hub, html[data-text="xl"].menu-home .hub { min-height: auto; }
+.toast { cursor: pointer; max-width: min(520px, calc(100vw - 32px)); }
+html[data-view="career"] .toast-root { bottom: 84px; }
+@media (min-width: 900px) { html[data-view="career"] .toast-root { bottom: 18px; } }
+html[data-text="large"] #app, html[data-text="xl"] #app { overflow-x: clip; }

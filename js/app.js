@@ -29,6 +29,19 @@
   let live = null; // live playback state (not persisted)
   let themeTouched = false;
 
+  let saveWarned = false;
+  /** Saving failed (storage full or blocked): say so once, so progress isn't lost silently. */
+  function saveFailed() {
+    if (saveWarned) return; saveWarned = true;
+    setTimeout(() => toast('Could not save in this browser (storage full or blocked). Back up your data from Settings.', { label: 'Settings', fn: () => openSettings() }), 0);
+  }
+  /** Display preferences: reduced motion and text size. */
+  function applyDisplay() {
+    const st = state.settings, root = document.documentElement;
+    const sysRM = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    root.classList.toggle('rm', st.motion === 'reduced' || ((st.motion || 'system') === 'system' && sysRM));
+    root.dataset.text = st.textSize || 'normal';
+  }
   function load() {
     try {
       const raw = localStorage.getItem(STORE_KEY);
@@ -45,7 +58,7 @@
   function save() {
     try {
       localStorage.setItem(STORE_KEY, JSON.stringify({ setup: state.setup, customTeams: state.customTeams, teamEdits: state.teamEdits, T: state.T, settings: state.settings, view: state.view }));
-    } catch (e) { /* storage full or blocked */ }
+    } catch (e) { saveFailed(); }
   }
 
   /* ---------------- Teams ---------------- */
@@ -224,8 +237,11 @@
   /* ---------------- Toast & Modal ---------------- */
   function toast(msg, action) {
     const root = $('#toastRoot');
+    [...root.children].forEach((x) => { if (x.dataset.msg === msg) x.remove(); }); // the same message twice just restarts it
+    while (root.children.length >= 3) root.firstChild.remove();
     const el = document.createElement('div');
-    el.className = 'toast';
+    el.className = 'toast'; el.dataset.msg = msg; el.title = 'Click to dismiss';
+    el.addEventListener('click', (e) => { if (!e.target.closest('button')) el.remove(); });
     el.innerHTML = `<span>${esc(msg)}</span>${action ? `<button type="button">${esc(action.label)}</button>` : ''}`;
     if (action) el.querySelector('button').onclick = () => { action.fn(); el.remove(); };
     root.appendChild(el);
@@ -1308,16 +1324,19 @@
         <div class="field"><label for="setSfx">Sound effects</label><div class="sfx-row"><label class="sfx-switch"><input type="checkbox" id="setSfx" ${window.RLSfx && window.RLSfx.on ? 'checked' : ''} /> <span>Enabled</span></label><input type="range" id="setVol" min="0" max="100" value="${Math.round((window.RLSfx ? window.RLSfx.volume : 0.55) * 100)}" aria-label="Sound effects volume" /></div></div>
         <div class="field"><label for="setMusic">Intro music</label><div class="sfx-row"><label class="sfx-switch"><input type="checkbox" id="setMusic" ${window.RLSfx && window.RLSfx.music ? 'checked' : ''} /> <span>Enabled</span></label><input type="range" id="setMVol" min="0" max="100" value="${Math.round((window.RLSfx ? window.RLSfx.musicVolume : 0.5) * 100)}" aria-label="Music volume" /></div><p class="help" style="margin:4px 0 0">Themed music for the Major, Esports World Cup and Worlds Week intros.</p></div>
         <div class="field"><label for="setBgm">Background music</label><div class="sfx-row"><label class="sfx-switch"><input type="checkbox" id="setBgm" ${window.RLSfx && window.RLSfx.bgm ? 'checked' : ''} /> <span>Enabled</span></label><input type="range" id="setBVol" min="0" max="100" value="${Math.round((window.RLSfx ? window.RLSfx.bgmVolume : 0.4) * 100)}" aria-label="Background music volume" /></div><p class="help" style="margin:4px 0 0">A chill loop while you browse. It pauses during intros and ceremonies.</p></div>
+        <div class="field"><label for="setMotion">Animations</label><select class="select" id="setMotion">${[['system', 'Follow my device'], ['full', 'Full'], ['reduced', 'Reduced (no menu motion)']].map(([k, v]) => `<option value="${k}" ${(st.motion || 'system') === k ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
+        <div class="field"><label>Text size</label><div class="seg" id="setText">${[['normal', 'Normal'], ['large', 'Large'], ['xl', 'Larger']].map(([k, v]) => `<button type="button" class="${(st.textSize || 'normal') === k ? 'active' : ''}" data-action="set-text" data-v="${k}">${v}</button>`).join('')}</div></div>
         <div class="field"><label for="setIntros">Intros and ceremonies</label><label class="sfx-switch"><input type="checkbox" id="setIntros" ${st.autoIntros !== false ? 'checked' : ''} /> <span>Play automatically</span></label><p class="help" style="margin:4px 0 0">When off, Major intros and trophy ceremonies wait for you to start them (the Watch intro and Replay ceremony buttons).</p></div>
         <div class="field"><label for="setConfirm">Live matches</label><label class="sfx-switch"><input type="checkbox" id="setConfirm" ${st.confirmLeave !== false ? 'checked' : ''} /> <span>Ask before leaving a series mid-game</span></label></div>
         <hr class="divider" />
         <p class="help">Data: ${esc(DATA.source)} · updated ${esc(DATA.updated)}.</p>
+        <div class="field"><label>Backup</label><p class="help" style="margin:0 0 8px">Everything in one file: tournaments, career, custom teams, roster edits and settings. Use it to move to another browser or keep a safe copy.</p><div class="toolbar"><button class="btn" data-action="backup-all">Back up all data</button><button class="btn" data-action="restore-all">Restore from backup</button></div></div>
         <button class="btn danger" data-action="reset-all">Reset all saved data</button>
       </div>
       <div class="modal-foot"><button class="btn primary" data-action="save-settings">Save</button></div>`, { size: 'sm' });
   }
   const SHORTCUTS = [
-    ['Anywhere', [['?', 'Show this help'], ['M', 'Sound effects on / off'], ['Alt + H', 'Main menu'], ['Esc', 'Close a pop-up']]],
+    ['Anywhere', [['?', 'Show this help'], ['/', 'Search this page'], ['M', 'Sound effects on / off'], ['Alt + H', 'Main menu'], ['Esc', 'Close a pop-up']]],
     ['Main menu', [['← →', 'Move between sections and tiles'], ['⏎', 'Open'], ['Esc', 'Back a level'], ['/', 'Search competitions']]],
     ['Live series', [['Space', 'Pause / resume'], ['1 – ' + SPEEDS.length, 'Playback speed'], ['[ ]', 'Slower / faster'], ['N', 'Skip this game'], ['R', 'Reveal the result']]],
     ['Intros & ceremonies', [['Space / → / ⏎', 'Next'], ['Esc', 'Skip']]],
@@ -1476,6 +1495,10 @@
     s.title = c.name;
     s.theme = c.theme || null;
   }
+  // where each page was scrolled to, so Back lands where you left it
+  const scrollMem = {};
+  const scrollKey = () => state.view + (state.view === 'team' ? '/' + (state.ui.teamId || '') : '');
+  function rememberScroll() { scrollMem[scrollKey()] = window.scrollY; }
   /** True while a series is being watched and has not finished: leaving would throw the live view away. */
   const liveBusy = () => !!(live && !live.done && state.settings.confirmLeave !== false);
   function confirmLeaveLive(then) {
@@ -1487,6 +1510,7 @@
     if (!opts.force && liveBusy() && view !== state.view) { confirmLeaveLive(() => go(view, Object.assign({}, opts, { force: true }))); return; }
     stopLive();
     const from = state.view;
+    rememberScroll();
     state.view = view;
     const h = view === 'home' ? '' : view === 'setup' ? '#custom-tournament' : view === 'team' ? '#team/' + encodeURIComponent(state.ui.teamId || '') : '#' + view;
     // a real history entry per page, so the browser / phone Back button goes back a page instead of leaving the site
@@ -2115,7 +2139,7 @@
       case 'sim-day': simDay(); break;
       case 'sim-all': simAll(); break;
       case 'live-pause': if (live) { live.playing = !live.playing; el.textContent = live.playing ? 'Pause' : 'Resume'; } break;
-      case 'live-speed': if (live) { live.speed = +v; el.parentElement.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b === el)); } break;
+      case 'live-speed': if (live) { live.speed = +v; state.settings.speed = +v; save(); el.parentElement.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b === el)); } break;
       case 'live-skip-game': if (live) { const g = live.res.games[live.gi]; live.t = g.ot ? 300 + g.otTime : 300; live.pauseUntil = 0; live.playing = true; } break;
       case 'live-reveal': if (live) finishLive(); break;
       case 'view-mode': state.settings.mode = v; save(); render(); break;
@@ -2134,8 +2158,33 @@
         break;
       }
       case 'open-settings': openSettings(); break;
-      case 'save-settings': state.settings.speed = +$('#setSpeed').value; state.settings.mode = $('#setMode').value; if ($('#setIntros')) state.settings.autoIntros = $('#setIntros').checked; if ($('#setConfirm')) state.settings.confirmLeave = $('#setConfirm').checked; if (window.RLSfx && $('#setSfx')) window.RLSfx.set({ on: $('#setSfx').checked, vol: +$('#setVol').value / 100, music: $('#setMusic').checked, mvol: +$('#setMVol').value / 100, bgm: $('#setBgm').checked, bvol: +$('#setBVol').value / 100 }); syncSfxBtn(); closeModal(); persistRender(); break;
+      case 'save-settings': state.settings.speed = +$('#setSpeed').value; state.settings.mode = $('#setMode').value; if ($('#setMotion')) state.settings.motion = $('#setMotion').value; if ($('#setIntros')) state.settings.autoIntros = $('#setIntros').checked; if ($('#setConfirm')) state.settings.confirmLeave = $('#setConfirm').checked; if (window.RLSfx && $('#setSfx')) window.RLSfx.set({ on: $('#setSfx').checked, vol: +$('#setVol').value / 100, music: $('#setMusic').checked, mvol: +$('#setMVol').value / 100, bgm: $('#setBgm').checked, bvol: +$('#setBVol').value / 100 }); syncSfxBtn(); applyDisplay(); closeModal(); persistRender(); break;
       case 'sfx-toggle': if (window.RLSfx) { window.RLSfx.toggle(); syncSfxBtn(); toast(window.RLSfx.on ? 'Sound effects on' : 'Sound effects off'); if (state.view === 'home') renderHome(); } break;
+      case 'set-text': state.settings.textSize = v; el.parentElement.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b === el)); applyDisplay(); save(); break;
+      case 'backup-all': {
+        const data = {};
+        try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith('rlsim')) data[k] = localStorage.getItem(k); } } catch (e) { toast('Storage is blocked in this browser.'); break; }
+        const d = new Date(), stamp = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        download('rl-sim-backup-' + stamp + '.json', { kind: 'rlsim-backup', v: 1, savedAt: d.toISOString(), data });
+        break;
+      }
+      case 'restore-all':
+        openModal(`${modalHead('Restore from backup', 'Choose a backup file, or paste its text. This replaces everything saved in this browser.')}
+          <div class="modal-body"><div class="field"><label for="bkFile">Backup file</label><input class="input" type="file" id="bkFile" accept="application/json,.json" /></div><textarea class="input mono" id="bkText" rows="6" style="width:100%;font-size:12px" placeholder='{"kind":"rlsim-backup", ...}' aria-label="Backup text"></textarea></div>
+          <div class="modal-foot"><button class="btn" data-action="close-modal">Cancel</button><button class="btn danger" data-action="restore-go">Replace my data</button></div>`, { size: 'md' });
+        $('#bkFile').addEventListener('change', (e) => { const f = e.target.files[0]; if (f) f.text().then((t) => { $('#bkText').value = t; }); });
+        break;
+      case 'restore-go': {
+        let b; try { b = JSON.parse($('#bkText').value); } catch (e) { b = null; }
+        if (!b || b.kind !== 'rlsim-backup' || !b.data || typeof b.data !== 'object') { toast('That is not a simulator backup file.'); break; }
+        stopLive();
+        try {
+          Object.keys(localStorage).filter((k) => k.startsWith('rlsim')).forEach((k) => localStorage.removeItem(k));
+          Object.entries(b.data).forEach(([k, val]) => { if (k.startsWith('rlsim') && typeof val === 'string') localStorage.setItem(k, val); });
+        } catch (e) { toast('Could not write to storage in this browser.'); break; }
+        location.hash = ''; location.reload();
+        break;
+      }
       case 'reset-all':
         openModal(`${modalHead('Reset all saved data?', 'This deletes your setup, custom teams, roster edits and saved tournament in this browser.')}<div class="modal-foot"><button class="btn" data-action="close-modal">Cancel</button><button class="btn danger" data-action="reset-confirm">Delete everything</button></div>`, { size: 'sm' });
         break;
@@ -2197,6 +2246,7 @@
       if (ev.altKey && (ev.key === 'h' || ev.key === 'H' || ev.code === 'KeyH')) { ev.preventDefault(); closeModal(); go('home'); return; }
       if (!ev.altKey && !modalRoot.innerHTML) {
         if (ev.key === '?') { ev.preventDefault(); openShortcuts(); return; }
+        if (ev.key === '/' && state.view !== 'home') { const box = [...app.querySelectorAll('input[type=search], input[id$="Q"], input[id*="Filter"], input[id*="Query"], .search input')].find((x) => x.offsetParent); if (box) { ev.preventDefault(); box.focus(); box.select(); return; } }
         if (ev.key === 'm' || ev.key === 'M') { const b = document.getElementById('sfxBtn'); if (b) b.click(); return; }
         // live series controls
         if (live && !live.done && document.getElementById('matchCentre')) {
@@ -2224,6 +2274,12 @@
     window.addEventListener('scroll', () => { if (tick) return; tick = requestAnimationFrame(() => { tick = 0; tb.classList.toggle('on', state.view !== 'home' && window.scrollY > window.innerHeight * 1.2); }); }, { passive: true });
   }
 
+  // a live series pauses while the tab is in the background, so you don't miss the goals
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { if (live && live.playing) { live.playing = false; live.autoPaused = true; const b = document.querySelector('[data-action="live-pause"]'); if (b) b.textContent = 'Resume'; } }
+    else if (live && live.autoPaused) { live.autoPaused = false; toast('Paused while you were away.', { label: 'Resume', fn: () => { const b = document.querySelector('[data-action="live-pause"]'); if (b && live && !live.playing) b.click(); } }); }
+  });
+
   /* ---------------- Boot ---------------- */
   load();
   { // drop saved team ids that no longer exist (e.g. after a roster data refresh)
@@ -2232,6 +2288,8 @@
     if (state.setup.managed && !known.has(state.setup.managed)) state.setup.managed = '';
   }
   syncSfxBtn();
+  applyDisplay();
+  if (window.matchMedia) { const mq = window.matchMedia('(prefers-reduced-motion: reduce)'); if (mq.addEventListener) mq.addEventListener('change', applyDisplay); }
   window.RLCareer.init({
     E, state, esc, badge, toast, openModal, closeModal, modalHead, launch, go, render: () => render(), getTeam,
     regions: REGIONS, libraryTeams: () => rankedTeams(HAS27 ? '2027' : '2026').filter((t) => !t.custom).map((t) => Object.assign({}, t)),
@@ -2247,7 +2305,7 @@
   $('#dataStamp').textContent = dataStamp();
   const fromHash = () => { const h = (location.hash || '').replace('#', ''); if (h.startsWith('team/')) { state.ui.teamId = decodeURIComponent(h.slice(5)); return 'team'; } return h === 'custom-tournament' ? 'setup' : h === 'tournament' && state.T ? 'tournament' : h === 'teams' ? 'teams' : h === 'career' ? 'career' : 'home'; };
   state.view = fromHash();
-  const onHist = () => { const v = fromHash(); if (v === state.view && v !== 'team') return; stopLive(); closeModal(); state.view = v; render(); window.scrollTo({ top: 0 }); };
+  const onHist = () => { const prevKey = scrollKey(), y0 = window.scrollY; const v = fromHash(); if (v === state.view && v !== 'team') return; scrollMem[prevKey] = y0; stopLive(); closeModal(); state.view = v; render(); const y = scrollMem[scrollKey()] || 0; window.scrollTo({ top: 0 }); if (y) requestAnimationFrame(() => window.scrollTo({ top: y })); };
   window.addEventListener('hashchange', onHist);
   window.addEventListener('popstate', onHist);
   render();
