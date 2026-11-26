@@ -1330,6 +1330,7 @@
         <div class="field"><label for="setConfirm">Live matches</label><label class="sfx-switch"><input type="checkbox" id="setConfirm" ${st.confirmLeave !== false ? 'checked' : ''} /> <span>Ask before leaving a series mid-game</span></label></div>
         <hr class="divider" />
         <p class="help">Data: ${esc(DATA.source)} · updated ${esc(DATA.updated)}.</p>
+        <div class="field"><label>Account</label>${window.RLAccount && window.RLAccount.email() ? `<p class="help" style="margin:0 0 8px">Signed in as <b>${esc(window.RLAccount.email())}</b>. Your saves sync across devices.</p><button class="btn" data-action="account">Account &amp; sync</button>` : `<p class="help" style="margin:0 0 8px">Sign in with e-mail to keep your careers, tournaments and settings in sync on all your devices.</p><button class="btn" data-action="account">Sign in or create account</button>`}</div>
         <div class="field"><label>Backup</label><p class="help" style="margin:0 0 8px">Everything in one file: tournaments, career, custom teams, roster edits and settings. Use it to move to another browser or keep a safe copy.</p><div class="toolbar"><button class="btn" data-action="backup-all">Back up all data</button><button class="btn" data-action="restore-all">Restore from backup</button></div></div>
         <button class="btn danger" data-action="reset-all">Reset all saved data</button>
       </div>
@@ -1747,6 +1748,7 @@
         <div class="hub-top">
           <button class="hub-brand" data-action="hub-crumb" data-v="0" aria-label="RL Esports Simulator: main menu"><span class="brand-mark">RL</span><b>ESPORTS <em>SIMULATOR</em></b></button>
           <div class="hub-top-r">
+            <button class="hub-ico hub-acct acct-btn" data-action="account" title="Account" aria-label="Account">👤</button>
             <button class="hub-ico" data-action="open-guide" title="How it works" aria-label="How it works">?</button>
             <button class="hub-ico hub-sfx" data-action="sfx-toggle" title="Sound effects" aria-label="Sound effects">${window.RLSfx && !window.RLSfx.on ? '🔇' : '🔊'}</button>
             <button class="hub-ico" data-action="open-settings" title="Settings" aria-label="Settings">⚙</button>
@@ -2047,6 +2049,7 @@
     else if (state.view === 'team') renderTeamPage();
     else if (state.view === 'career') window.RLCareer.render(app);
     else { state.view = 'home'; renderHome(); }
+    if (window.RLAccount) setTimeout(syncAcct, 0);
     // page entrance animation: only when the page (or tournament / stage tab / archive season) changes.
     // Worked out after rendering (views pick defaults such as the stage tab while they render); the class is
     // applied before the browser paints, so the new content still animates in.
@@ -2187,6 +2190,7 @@
       case 'open-settings': openSettings(); break;
       case 'save-settings': state.settings.speed = +$('#setSpeed').value; state.settings.mode = $('#setMode').value; if ($('#setMotion')) state.settings.motion = $('#setMotion').value; if ($('#setIntros')) state.settings.autoIntros = $('#setIntros').checked; if ($('#setConfirm')) state.settings.confirmLeave = $('#setConfirm').checked; if (window.RLSfx && $('#setSfx')) window.RLSfx.set({ on: $('#setSfx').checked, vol: +$('#setVol').value / 100, music: $('#setMusic').checked, mvol: +$('#setMVol').value / 100, bgm: $('#setBgm').checked, bvol: +$('#setBVol').value / 100 }); syncSfxBtn(); applyDisplay(); closeModal(); persistRender(); break;
       case 'sfx-toggle': if (window.RLSfx) { window.RLSfx.toggle(); syncSfxBtn(); toast(window.RLSfx.on ? 'Sound effects on' : 'Sound effects off'); if (state.view === 'home') renderHome(); } break;
+      case 'account': if (window.RLAccount) window.RLAccount.open(); break;
       case 'set-text': state.settings.textSize = v; el.parentElement.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b === el)); applyDisplay(); save(); break;
       case 'backup-all': {
         const data = {};
@@ -2316,6 +2320,10 @@
   }
   syncSfxBtn();
   applyDisplay();
+  // accounts (js/account.js): the account buttons show whether you're signed in and syncing
+  function syncAcct() { const st = window.RLAccount ? window.RLAccount.state() : 'off', em = window.RLAccount ? window.RLAccount.email() : '';
+    document.querySelectorAll('.acct-btn').forEach((b) => { b.dataset.st = st; b.title = em ? 'Signed in as ' + em + (st === 'syncing' ? ' · syncing…' : st === 'error' ? ' · sync problem' : '') : 'Sign in to sync your saves'; b.setAttribute('aria-label', b.title); b.textContent = em ? em[0].toUpperCase() : '👤'; }); }
+  if (window.RLAccount) { window.RLAccount.init({ openModal, closeModal, modalHead, toast, esc, onChange: syncAcct }); }
   if (window.matchMedia) { const mq = window.matchMedia('(prefers-reduced-motion: reduce)'); if (mq.addEventListener) mq.addEventListener('change', applyDisplay); }
   window.RLCareer.init({
     E, state, esc, badge, toast, openModal, closeModal, modalHead, launch, go, render: () => render(), getTeam,
@@ -2336,4 +2344,5 @@
   window.addEventListener('hashchange', onHist);
   window.addEventListener('popstate', onHist);
   render();
+  syncAcct();
 })();

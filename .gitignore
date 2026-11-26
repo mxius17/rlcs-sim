@@ -31,3 +31,6 @@ Thumbs.db
 *.log
 .vscode/
 .idea/
+
+# Real Firebase web config for accounts (see js/firebase-config.js); kept out of git per this repo's key policy
+js/firebase-config.local.js
