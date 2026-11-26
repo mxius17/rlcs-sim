@@ -1263,7 +1263,7 @@
   function viewerCard() {
     const vr = api.state.ui.vreg || 'EU';
     return `<div class="cs-viewer"><span class="vw-eye" aria-hidden="true">◉</span><div class="cs-viewer-t"><b>Just want to watch?</b><small>Follow the whole circuit as a neutral viewer: no club, no board, no budget. Simulate or watch every Open, Major and Worlds while the clubs make their own transfers.</small></div>
-      <div class="cs-viewer-r"><div class="seg" aria-label="Home region">${REGIONS.map((k) => `<button class="${k === vr ? 'active' : ''}" data-action="career-vpick" data-v="${k}" title="${esc(api.regions[k])}">${k}</button>`).join('')}</div><button class="btn" data-action="career-viewer" data-v="${vr}">Start as neutral viewer →</button></div></div>`;
+      <div class="cs-viewer-r"><div class="seg" aria-label="Home region">${REGIONS.map((k) => `<button class="${k === vr ? 'active' : ''}" data-action="career-vpick" data-v="${k}" title="${esc(api.regions[k])}">${k}</button>`).join('')}</div><button class="btn" data-action="career-viewer" data-v="${vr}">Start as neutral viewer <svg class="ic ic-right" aria-hidden="true"><use href="#i-right"></use></svg></button></div></div>`;
   }
   function renderStart(app) {
     const ui = api.state.ui;
@@ -1277,7 +1277,7 @@
           <div class="search"><input class="input" id="careerQ" placeholder="Search teams" value="${esc(ui.careerQ || '')}" aria-label="Search teams" /></div></div>
         <div class="cs-list">${lib.slice(0, 120).map((x) => `<button class="cs-item ${t && x.id === t.id ? 'on' : ''}" data-action="career-preview" data-id="${esc(x.id)}">${api.badge(x, 'sm')}<span><b>${esc(x.name)}</b><small>${esc(x.region)} · ${x.ovr}</small></span></button>`).join('') || '<p class="muted">No teams match.</p>'}</div>
       </div>`;
-    if (!t) { app.innerHTML = `<div class="cs"><div class="cs-title"><button class="btn sm" data-action="nav" data-v="home">← Main menu</button><h1>Choose your club</h1></div>${list}</div>`; bindQ(app); return; }
+    if (!t) { app.innerHTML = `<div class="cs"><div class="cs-title"><button class="btn sm" data-action="nav" data-v="home"><svg class="ic ic-left" aria-hidden="true"><use href="#i-left"></use></svg> Main menu</button><h1>Choose your club</h1></div>${list}</div>`; bindQ(app); return; }
     const idx = lib.indexOf(t);
     const prev = lib[(idx - 1 + lib.length) % lib.length], next = lib[(idx + 1) % lib.length];
     const motion = lastPick === null ? 'cs-enter' : lastPick !== t.id ? (idx >= lastPickIdx ? 'cs-swap cs-from-r' : 'cs-swap cs-from-l') : '';
@@ -1304,14 +1304,14 @@
     const desc = `${esc(t.name)} ${rank === 1 ? 'are the highest-rated team' : 'are ranked ' + E.ordinal(rank) + ' of ' + regTeams.length} in ${esc(api.regions[t.region])} going into the 2027 RLCS season, with a team rating of ${t.ovr}. The roster is led by ${esc(lineup.slice().sort((a, b) => b.rating - a.rating)[0].name)} (${lineup.slice().sort((a, b) => b.rating - a.rating)[0].rating})${lineup.length > 3 ? `, with ${esc(lineup[3].name)} as the substitute` : ''}.`;
     app.innerHTML = `
       <div class="cs ${motion}">
-        <div class="cs-title"><button class="btn sm" data-action="nav" data-v="home">← Main menu</button>${slotList().length ? `<button class="btn sm" data-action="career-saves">💾 Saves (${slotList().length})</button>` : ''}<h1>Choose your club</h1><span class="muted">${lib.length} teams · RLCS 2027</span></div>
+        <div class="cs-title"><button class="btn sm" data-action="nav" data-v="home"><svg class="ic ic-left" aria-hidden="true"><use href="#i-left"></use></svg> Main menu</button>${slotList().length ? `<button class="btn sm" data-action="career-saves"><svg class="ic ic-save" aria-hidden="true"><use href="#i-save"></use></svg> Saves (${slotList().length})</button>` : ''}<h1>Choose your club</h1><span class="muted">${lib.length} teams · RLCS 2027</span></div>
         ${viewerCard()}
         <div class="cs-card">
           <div class="cs-left">
             <div class="cs-box"><b>${esc(api.regions[t.region])}</b><span class="cs-region" style="--rc:${REG_COL[t.region] || 'var(--azure)'}">${esc(t.region)}</span></div>
             <div class="cs-club">
               <h2>${esc(t.name)}</h2>
-              <div class="cs-crest"><button class="cs-nav" data-action="career-preview" data-id="${esc(prev.id)}" aria-label="Previous club">◀</button>${api.badge(t, 'xl')}<button class="cs-nav" data-action="career-preview" data-id="${esc(next.id)}" aria-label="Next club">▶</button></div>
+              <div class="cs-crest"><button class="cs-nav" data-action="career-preview" data-id="${esc(prev.id)}" aria-label="Previous club"><svg class="ic ic-chev-left" aria-hidden="true"><use href="#i-chev-left"></use></svg></button>${api.badge(t, 'xl')}<button class="cs-nav" data-action="career-preview" data-id="${esc(next.id)}" aria-label="Next club"><svg class="ic ic-chev-right" aria-hidden="true"><use href="#i-chev-right"></use></svg></button></div>
               <div class="cs-stars" aria-label="${stars} stars">${starHtml}</div>
             </div>
             <div class="cs-box"><b>RLCS 2027</b><span class="cs-league">Club Championship</span></div>
@@ -1331,7 +1331,7 @@
           </div>
         </div>
         <div class="cs-diff"><span class="cs-diff-l">Difficulty</span><div class="seg" role="radiogroup" aria-label="Difficulty">${Object.entries(DIFF).map(([k, d]) => `<button role="radio" aria-checked="${k === dk}" class="${k === dk ? 'active' : ''}" data-action="career-diff" data-v="${k}">${d.name}</button>`).join('')}</div><small>${esc(DIFF[dk].blurb)}</small></div>
-        <div class="cs-legend"><button class="cs-key" data-action="career-pick" data-id="${esc(t.id)}"><kbd>↵</kbd> Advance</button><button class="cs-key" data-action="nav" data-v="home"><kbd>Esc</kbd> Back</button><span class="cs-key"><kbd>←</kbd><kbd>→</kbd> Swap teams</span><button class="btn primary cs-go" data-action="career-pick" data-id="${esc(t.id)}">Start career with ${esc(t.name)} →</button></div>
+        <div class="cs-legend"><button class="cs-key" data-action="career-pick" data-id="${esc(t.id)}"><kbd><svg class="ic ic-enter" aria-hidden="true"><use href="#i-enter"></use></svg></kbd> Advance</button><button class="cs-key" data-action="nav" data-v="home"><kbd>Esc</kbd> Back</button><span class="cs-key"><kbd>←</kbd><kbd>→</kbd> Swap teams</span><button class="btn primary cs-go" data-action="career-pick" data-id="${esc(t.id)}">Start career with ${esc(t.name)} <svg class="ic ic-right" aria-hidden="true"><use href="#i-right"></use></svg></button></div>
         ${list}
       </div>`;
     bindQ(app);
@@ -1373,9 +1373,9 @@
       <p class="help">The off-season belongs to the national teams: each nation picks its three best players. No club prize money and no RLCS points, just national pride. The hosts rotate every year; the host nation, ${esc(nationHost(st.key, C.season).nation)}, is always in the field.${st.key === 'fifae' ? ' Saudi Arabia won the first edition in 2024, France the second in 2025.' : ''}</p>
       ${V() ? '' : duty.length ? `<p class="help">Your players on international duty: <b>${duty.map((p) => esc((p.flag || '') + ' ' + p.name)).join('</b>, <b>')}</b>.</p>` : '<p class="help">None of your players were called up by their country.</p>'}
       ${ids.length ? `<div class="tile-kicker" style="margin-top:6px">The favourites · ${ids.length} nations</div><div class="sf-grid">${chips}</div>` : '<p class="help">Not enough national teams this season.</p>'}
-      <div class="action-row">${activeEvent ? `<button class="btn primary" data-action="resume">Resume event →</button><button class="btn" data-action="career-sim-rest">Simulate the rest</button>`
-        : `${ids.length ? '<button class="btn primary" data-action="career-play">▶ Watch event</button>' : ''}<button class="btn ${ids.length ? '' : 'primary'}" data-action="career-sim">Simulate event</button>`}</div>
-      ${ids.length && window.RLNationsIntro ? `<button class="fc-intro" data-action="career-intro">▶ Watch the ${esc(ev.name)} intro</button>` : ''}`;
+      <div class="action-row">${activeEvent ? `<button class="btn primary" data-action="resume">Resume event <svg class="ic ic-right" aria-hidden="true"><use href="#i-right"></use></svg></button><button class="btn" data-action="career-sim-rest">Simulate the rest</button>`
+        : `${ids.length ? '<button class="btn primary" data-action="career-play"><svg class="ic ic-play" aria-hidden="true"><use href="#i-play"></use></svg> Watch event</button>' : ''}<button class="btn ${ids.length ? '' : 'primary'}" data-action="career-sim">Simulate event</button>`}</div>
+      ${ids.length && window.RLNationsIntro ? `<button class="fc-intro" data-action="career-intro"><svg class="ic ic-play" aria-hidden="true"><use href="#i-play"></use></svg> Watch the ${esc(ev.name)} intro</button>` : ''}`;
   }
   /** Hub panel for the 1v1/2v2 Opens and World Championships: the field, your entrants, watch or simulate. */
   function sideNext(st, activeEvent) {
@@ -1392,8 +1392,8 @@
     const mineTxt = V() || !ev ? '' : mine.length ? `<p class="help">Your entr${mine.length === 1 ? 'y' : 'ies'}: <b>${mine.map((id) => esc(entName(id))).join('</b>, <b>')}</b>. Prize money goes to the club.</p>` : `<p class="help">None of your players made the ${W ? 'World Championship' : 'top 16'}.</p>`;
     const field = ids.length ? `<div class="sf-grid">${ids.map((id, i) => { const o = sideObj(id); if (!o) return ''; const me = sideClub(id) === C.user; return `<span class="sf-chip${me ? ' me' : ''}"><i>${W ? esc(o.region) : i + 1}</i><span><b>${o.players.map((p) => p.flag || '').join('')} ${esc(o.name)}</b><small>${esc(o.club)} · ${o.ovr}</small></span></span>`; }).join('')}</div>` : '';
     return `<p><b>${esc(title)}</b> · ${desc}.</p><p class="help">${help}</p>${mineTxt}${field}
-      <div class="action-row">${activeEvent ? `<button class="btn primary" data-action="resume">Resume event →</button><button class="btn" data-action="career-sim-rest">Simulate the rest</button>`
-        : `${ids.length ? `<button class="btn primary" data-action="career-play">▶ ${mine.length ? 'Play' : 'Watch'} event</button>` : ''}<button class="btn ${ids.length ? '' : 'primary'}" data-action="career-sim">Simulate event${W ? '' : 's'}</button>`}</div>`;
+      <div class="action-row">${activeEvent ? `<button class="btn primary" data-action="resume">Resume event <svg class="ic ic-right" aria-hidden="true"><use href="#i-right"></use></svg></button><button class="btn" data-action="career-sim-rest">Simulate the rest</button>`
+        : `${ids.length ? `<button class="btn primary" data-action="career-play"><svg class="ic ic-play" aria-hidden="true"><use href="#i-play"></use></svg> ${mine.length ? 'Play' : 'Watch'} event</button>` : ''}<button class="btn ${ids.length ? '' : 'primary'}" data-action="career-sim">Simulate event${W ? '' : 's'}</button>`}</div>`;
   }
   function renderHub(app) {
     const st = step();
@@ -1414,7 +1414,7 @@
       next = sideNext(st, activeEvent);
     } else if (viewer && st.type === 'window') {
       next = `<p>The transfer window is open. Clubs make their moves when you close it: follow the deals in the Transfers tab.</p>
-        <div class="action-row"><button class="btn" data-action="career-vmarket">Transfer news</button><button class="btn primary" data-action="career-close-window">Close window →</button></div>${regPick}`;
+        <div class="action-row"><button class="btn" data-action="career-vmarket">Transfer news</button><button class="btn primary" data-action="career-close-window">Close window <svg class="ic ic-right" aria-hidden="true"><use href="#i-right"></use></svg></button></div>${regPick}`;
     } else if (viewer && st.type === 'review') {
       if (!C.review) { seasonReview(); save(); }
       const R = C.review, H = C.history[0] || {};
@@ -1428,17 +1428,17 @@
         <div class="kv"><span>Season MVP</span><span>${R.mvp ? esc(R.mvp.name) + ' · ' + esc(C.teams[R.mvp.team] ? C.teams[R.mvp.team].name : '') : '—'}</span></div>
         <div class="kv"><span>Top scorer</span><span>${R.topG ? esc(R.topG.name) + ' · ' + R.topG.g + ' goals' : '—'}</span></div>
         ${(R.retired || []).length ? `<div class="tile-kicker" style="margin-top:12px">Retirements</div><p class="help">${R.retired.slice(0, 8).map(esc).join(' · ')}</p>` : ''}
-        <div class="action-row"><button class="btn primary" data-action="career-next-season">Start ${C.season + 1} season →</button></div>${X() ? X().awardsButton() : ''}`;
+        <div class="action-row"><button class="btn primary" data-action="career-next-season">Start ${C.season + 1} season <svg class="ic ic-right" aria-hidden="true"><use href="#i-right"></use></svg></button></div>${X() ? X().awardsButton() : ''}`;
     } else if (viewer) {
       const title = eventTitle(st, reg);
       next = `<p><b>${esc(title)}</b> · ${fmtDesc(st)}.</p>
         <p class="help">${st.type === 'open' ? 'You watch the Open in your home region; the other six regions play theirs at the same time.' : 'Watch it match by match, or simulate it and read the results.'}</p>
         <div class="action-row">
-          ${activeEvent ? `<button class="btn primary" data-action="resume">Resume event →</button><button class="btn" data-action="career-sim-rest">Simulate the rest</button>` : `<button class="btn primary" data-action="career-play">▶ Watch event</button><button class="btn" data-action="career-sim">Simulate event</button>`}
+          ${activeEvent ? `<button class="btn primary" data-action="resume">Resume event <svg class="ic ic-right" aria-hidden="true"><use href="#i-right"></use></svg></button><button class="btn" data-action="career-sim-rest">Simulate the rest</button>` : `<button class="btn primary" data-action="career-play"><svg class="ic ic-play" aria-hidden="true"><use href="#i-play"></use></svg> Watch event</button><button class="btn" data-action="career-sim">Simulate event</button>`}
         </div>${st.type === 'open' && !activeEvent ? regPick : ''}`;
     } else if (st.type === 'window') {
       next = `<p>The transfer window is open. Sign players, extend contracts or sell, then close the window to start ${SCHEDULE[C.step + 1] ? (SCHEDULE[C.step + 1].type === 'kickoff' ? 'the ' : '') + esc(SCHEDULE[C.step + 1].name) : 'the next event'}. AI teams make their moves when the window closes.</p>
-        <div class="action-row"><button class="btn primary" data-action="career-market">Open transfer market</button><button class="btn" data-action="career-close-window">Close window →</button></div>`;
+        <div class="action-row"><button class="btn primary" data-action="career-market">Open transfer market</button><button class="btn" data-action="career-close-window">Close window <svg class="ic ic-right" aria-hidden="true"><use href="#i-right"></use></svg></button></div>`;
     } else if (st.type === 'review') {
       if (!C.review) { seasonReview(); save(); }
       const R = C.review;
@@ -1454,7 +1454,7 @@
         ${R.devLines.length ? `<div class="tile-kicker" style="margin-top:12px">Your players</div><p class="help">${R.devLines.join(' · ')}</p>` : ''}
         ${R.expiring.filter((pid) => C.players[pid] && C.players[pid].contract <= 0).length ? `<div class="tile-kicker" style="margin-top:12px">Expiring contracts</div>${R.expiring.filter((pid) => C.players[pid] && C.players[pid].contract <= 0).map((pid) => { const p = C.players[pid]; const go = (R.letGo || []).includes(pid); return `<div class="kv"><span>${esc(p.name)} · ${p.rating} · age ${ageLabel(p)}</span><span class="toolbar"><span class="pill ${go ? 'bad' : 'good'}">${go ? 'Leaving' : 'Re-signs 2y · ' + money(salaryFor(p.rating)) + '/yr'}</span><button class="btn xs" data-action="career-letgo" data-id="${pid}">${go ? 'Keep' : 'Let go'}</button></span></div>`; }).join('')}<p class="help">Players marked to re-sign get a new two-season deal when the next season starts, if the budget allows.</p>` : ''}
         ${X() ? X().offersHTML() : ''}
-        <div class="action-row"><button class="btn primary" data-action="career-next-season">Start ${C.season + 1} season →</button></div>${X() ? X().awardsButton() : ''}`;
+        <div class="action-row"><button class="btn primary" data-action="career-next-season">Start ${C.season + 1} season <svg class="ic ic-right" aria-hidden="true"><use href="#i-right"></use></svg></button></div>${X() ? X().awardsButton() : ''}`;
     } else {
       const ev = st.type === 'open' ? null : eventCfg(st);
       const inIt = st.type === 'open' ? true : ev.cfg.teams.includes(C.user);
@@ -1462,7 +1462,7 @@
       next = `<p><b>${esc(title)}</b> · ${fmtDesc(st)}.</p>
         ${st.type === 'open' ? '<p class="help">The top 12 in your region\'s points go straight in; teams ranked 13th–28th play a knockout qualifier for the last four places.</p>' : inIt ? `<p class="help">You have qualified. Every other region's teams are in the field as well.</p>` : `<p class="help">You did not qualify for this event. You can still simulate it and follow the results.</p>`}
         <div class="action-row">
-          ${activeEvent ? `<button class="btn primary" data-action="resume">Resume event →</button><button class="btn" data-action="career-sim-rest">Simulate the rest</button>` : `${inIt ? '<button class="btn primary" data-action="career-play">▶ Play event</button>' : ''}<button class="btn ${inIt ? '' : 'primary'}" data-action="career-sim">Simulate event</button>`}
+          ${activeEvent ? `<button class="btn primary" data-action="resume">Resume event <svg class="ic ic-right" aria-hidden="true"><use href="#i-right"></use></svg></button><button class="btn" data-action="career-sim-rest">Simulate the rest</button>` : `${inIt ? '<button class="btn primary" data-action="career-play"><svg class="ic ic-play" aria-hidden="true"><use href="#i-play"></use></svg> Play event</button>' : ''}<button class="btn ${inIt ? '' : 'primary'}" data-action="career-sim">Simulate event</button>`}
         </div>`;
     }
     const roster = me.roster.map((id) => C.players[id]);
@@ -1523,9 +1523,9 @@
         <div class="fc-side-row"><span class="fc-day">${C.step + 1}</span><span><small>${esc(st.type === 'window' ? 'Transfer window' : st.type === 'review' ? 'Season review' : st.type === 'open' ? 'Regional Open' : st.type === 'major' ? 'Major' : st.type === 'kickoff' ? 'Season opener' : st.type === 'ewc' ? 'Club event · not RLCS' : st.type === 'nation' ? 'Off-season · national teams' : st.type === 'side' ? (st.mode === 1 ? '1v1' : '2v2') + ' Championship' : st.type === 'sidew' ? 'Worlds week' : 'World Championship')}</small><b>${esc(st.short || st.name)}</b></span><span class="fc-ico" aria-hidden="true">${st.type === 'window' ? '⇄' : st.type === 'review' ? '★' : '🏆'}</span></div>
         <div class="fc-side-mid"><small>${viewer ? 'Neutral viewer · home region ' + esc(api.regions[reg]) : esc(t.name) + ' · ' + regionRankLabel() + ' in ' + esc(api.regions[reg])}</small>
           <div class="fc-rings">${viewer ? (() => { const n88 = Object.values(C.players).filter((p) => p.team && p.rating >= 88).length, base = (C.base || talentBase()).n88; return ring(t.ovr - 60, 40, 'Region leader', `<span data-count="${t.ovr}">${t.ovr}</span>`, '◆') + ring(n88, Math.round(base * 1.5), 'Stars 88+', `<span data-count="${n88}">${n88}</span>`, '★'); })() : ring(t.ovr - 60, 40, 'Team rating', `<span data-count="${t.ovr}">${t.ovr}</span>`, '◆')}${viewer ? '' : ring(C.board, 100, 'Board', `<span data-count="${C.board}" data-suf="%">${C.board}%</span>`, '☺')}${ring(C.step + 1, SCHEDULE.length, 'Season', (C.step + 1) + '/' + SCHEDULE.length, '▶')}</div></div>
-        <div class="fc-next">${next}${ffHtml(activeEvent)}${(st.type === 'major' || st.type === 'kickoff' || st.type === 'ewc' || st.type === 'worlds' || st.type === 'sidew') && window.RLCutscene ? `<button class="fc-intro" data-action="career-intro">▶ Watch the ${esc(st.type === 'major' ? majorCity(st) : st.type === 'kickoff' ? 'Kick-Off' : st.type === 'ewc' ? 'Esports World Cup' : worldsCity() + ' Worlds Week')} intro</button>` : ''}</div>
+        <div class="fc-next">${next}${ffHtml(activeEvent)}${(st.type === 'major' || st.type === 'kickoff' || st.type === 'ewc' || st.type === 'worlds' || st.type === 'sidew') && window.RLCutscene ? `<button class="fc-intro" data-action="career-intro"><svg class="ic ic-play" aria-hidden="true"><use href="#i-play"></use></svg> Watch the ${esc(st.type === 'major' ? majorCity(st) : st.type === 'kickoff' ? 'Kick-Off' : st.type === 'ewc' ? 'Esports World Cup' : worldsCity() + ' Worlds Week')} intro</button>` : ''}</div>
       </aside>`;
-    const tiles = `<nav class="fc-tiles" aria-label="Career hub">${VIEWS.map(([k, l, sub]) => `<button class="fc-tile ${k === view && tab === 'central' ? 'on' : ''}" data-action="career-view" data-v="${k}"><b>${l}</b><small>${esc(sub)}</small><span class="fc-tile-ico" aria-hidden="true">${{ next: '▶', standings: '☰', schedule: '▦', objectives: '✔', news: '▤', social: '#' }[k]}</span></button>`).join('')}</nav>`;
+    const tiles = `<nav class="fc-tiles" aria-label="Career hub">${VIEWS.map(([k, l, sub]) => `<button class="fc-tile ${k === view && tab === 'central' ? 'on' : ''}" data-action="career-view" data-v="${k}"><b>${l}</b><small>${esc(sub)}</small><span class="fc-tile-ico" aria-hidden="true">${{ next: '<svg class="ic ic-play" aria-hidden="true"><use href="#i-play"></use></svg>', standings: '<svg class="ic ic-list" aria-hidden="true"><use href="#i-list"></use></svg>', schedule: '<svg class="ic ic-calendar" aria-hidden="true"><use href="#i-calendar"></use></svg>', objectives: '<svg class="ic ic-goal" aria-hidden="true"><use href="#i-goal"></use></svg>', news: '<svg class="ic ic-news" aria-hidden="true"><use href="#i-news"></use></svg>', social: '<svg class="ic ic-hash" aria-hidden="true"><use href="#i-hash"></use></svg>' }[k]}</span></button>`).join('')}</nav>`;
     // ---- tabs ----
     const TABS = [['central', 'Central'], ['squad', 'Squad'], ['tactics', 'Tactics'], ['transfers', 'Transfers'], ['teams', 'Teams'], ['office', 'Office'], ['history', 'History']].filter(([k]) => (!viewer || !['squad', 'office', 'tactics'].includes(k)) && (k !== 'tactics' || X()));
     let body;
@@ -1555,7 +1555,7 @@
           <p class="help">Prospects join at 15–16, develop faster than other players and can be promoted to your roster during a transfer window. Anyone still in the academy at 19 leaves. A higher level means more places, faster growth, better wonderkid odds and sharper scouting of potential.</p>
           <div class="ac-grid">${acCards}${acEmpty}</div></div></section>`;
       body = `<section class="fc-panel"><div class="fc-panel-body">
-          <div class="sq-head"><h3 class="fc-h">Squad · OVR ${t.ovr}</h3><span class="sq-meta">Average age ${avgAge} · wage bill ${money(salaries)}/season · ${roster.length}/4 players</span><button class="btn primary" data-action="th-tab" data-v="squad">Manage in transfer hub →</button></div>
+          <div class="sq-head"><h3 class="fc-h">Squad · OVR ${t.ovr}</h3><span class="sq-meta">Average age ${avgAge} · wage bill ${money(salaries)}/season · ${roster.length}/4 players</span><button class="btn primary" data-action="th-tab" data-v="squad">Manage in transfer hub <svg class="ic ic-right" aria-hidden="true"><use href="#i-right"></use></svg></button></div>
           <div class="sq-cards">${cards}${slots}</div></div></section>
         ${academyHtml}
         <div class="fc-grid2"><section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Contracts</h3>
@@ -1594,10 +1594,10 @@
     app.innerHTML = `
       <div class="fc ${enter ? 'fc-enter' : ''} ${tabChanged ? 'fc-tabin' : ''}${hostTheme(st) ? ' fc-host' : ''}" style="${hostVars(hostTheme(st))}">
         <div class="fc-top">
-          ${viewer ? `<button class="fc-club vw-club" data-action="nav" data-v="home" title="Main menu"><span class="vw-eye" aria-hidden="true">◉</span><span class="fc-club-name">Neutral viewer</span><span class="vw-sub">${esc(reg)}</span></button>` : ''}<button class="fc-club${viewer ? ' hidden' : ''}" data-action="nav" data-v="home" title="Back to modes">${api.badge(t, 'sm')}<span class="fc-club-name">${esc(t.name)}</span><i class="fc-club-bar" style="--b:${C.board}%"></i><span class="fc-thumb ${C.board >= 60 ? 'good' : C.board >= 35 ? 'mid' : 'bad'}" aria-label="Board ${C.board}%">${C.board >= 60 ? '👍' : C.board >= 35 ? '✋' : '👎'}</span></button>
-          <div class="fc-top-r"><button class="fc-chip" data-action="career-view" data-v="news" aria-label="Inbox${unread ? ', ' + unread + ' unread' : ''}">✉ Inbox${unread ? ` <i>${Math.min(99, unread)}</i>` : ''}</button><button class="fc-chip" data-action="${viewer ? 'career-vmarket' : 'career-market'}">⇄ ${viewer ? 'Transfers' : 'Market'}</button><button class="fc-chip" data-action="career-saves" title="Career saves">💾 Saves</button><button class="fc-chip" data-action="nav" data-v="home">← Main menu</button>${viewer ? '<button class="fc-chip" data-action="career-quit" title="End this career">⏻ End</button>' : ''}</div>
+          ${viewer ? `<button class="fc-club vw-club" data-action="nav" data-v="home" title="Main menu"><span class="vw-eye" aria-hidden="true"><svg class="ic ic-eye" aria-hidden="true"><use href="#i-eye"></use></svg></span><span class="fc-club-name">Neutral viewer</span><span class="vw-sub">${esc(reg)}</span></button>` : ''}<button class="fc-club${viewer ? ' hidden' : ''}" data-action="nav" data-v="home" title="Back to modes">${api.badge(t, 'sm')}<span class="fc-club-name">${esc(t.name)}</span><i class="fc-club-bar" style="--b:${C.board}%"></i><span class="fc-thumb ${C.board >= 60 ? 'good' : C.board >= 35 ? 'mid' : 'bad'}" aria-label="Board ${C.board}%">${C.board >= 60 ? '<svg class="ic ic-thumb-up" aria-hidden="true"><use href="#i-thumb-up"></use></svg>' : C.board >= 35 ? '<svg class="ic ic-hand" aria-hidden="true"><use href="#i-hand"></use></svg>' : '<svg class="ic ic-thumb-down" aria-hidden="true"><use href="#i-thumb-down"></use></svg>'}</span></button>
+          <div class="fc-top-r"><button class="fc-chip" data-action="career-view" data-v="news" aria-label="Inbox${unread ? ', ' + unread + ' unread' : ''}"><svg class="ic ic-mail" aria-hidden="true"><use href="#i-mail"></use></svg> Inbox${unread ? ` <i>${Math.min(99, unread)}</i>` : ''}</button><button class="fc-chip" data-action="${viewer ? 'career-vmarket' : 'career-market'}"><svg class="ic ic-swap" aria-hidden="true"><use href="#i-swap"></use></svg> ${viewer ? 'Transfers' : 'Market'}</button><button class="fc-chip" data-action="career-saves" title="Career saves"><svg class="ic ic-save" aria-hidden="true"><use href="#i-save"></use></svg> Saves</button><button class="fc-chip" data-action="nav" data-v="home"><svg class="ic ic-left" aria-hidden="true"><use href="#i-left"></use></svg> Main menu</button>${viewer ? '<button class="fc-chip" data-action="career-quit" title="End this career"><svg class="ic ic-power" aria-hidden="true"><use href="#i-power"></use></svg> End</button>' : ''}</div>
         </div>
-        <div class="fc-tabs" role="tablist" style="--tabs:${TABS.length}"><span class="fc-key" aria-hidden="true">Q</span>${TABS.map(([k, l]) => `<button role="tab" aria-selected="${k === tab}" class="${k === tab ? 'on' : ''}" data-action="career-tab" data-v="${k}"><span class="fc-tab-ico" aria-hidden="true">${{ central: '⌂', squad: '☷', tactics: '◎', transfers: '⇄', teams: '◫', office: '▤', history: '★' }[k]}</span><span class="fc-tab-l">${l}</span></button>`).join('')}<span class="fc-key" aria-hidden="true">E</span></div>
+        <div class="fc-tabs" role="tablist" style="--tabs:${TABS.length}"><span class="fc-key" aria-hidden="true">Q</span>${TABS.map(([k, l]) => `<button role="tab" aria-selected="${k === tab}" class="${k === tab ? 'on' : ''}" data-action="career-tab" data-v="${k}"><span class="fc-tab-ico" aria-hidden="true">${{ central: '<svg class="ic ic-home" aria-hidden="true"><use href="#i-home"></use></svg>', squad: '<svg class="ic ic-users" aria-hidden="true"><use href="#i-users"></use></svg>', tactics: '<svg class="ic ic-target" aria-hidden="true"><use href="#i-target"></use></svg>', transfers: '<svg class="ic ic-swap" aria-hidden="true"><use href="#i-swap"></use></svg>', teams: '<svg class="ic ic-grid" aria-hidden="true"><use href="#i-grid"></use></svg>', office: '<svg class="ic ic-office" aria-hidden="true"><use href="#i-office"></use></svg>', history: '<svg class="ic ic-star" aria-hidden="true"><use href="#i-star"></use></svg>' }[k]}</span><span class="fc-tab-l">${l}</span></button>`).join('')}<span class="fc-key" aria-hidden="true">E</span></div>
         ${body}
         <div class="fc-legend"><span><kbd>Q</kbd><kbd>E</kbd> Switch tabs</span><span><kbd>1</kbd>–<kbd>${X() ? 6 : 5}</kbd> Hub tiles</span><span class="fc-legend-r">${esc(api.regions[reg])} · ${esc(st.name)}</span></div>
       </div>`;
@@ -1888,7 +1888,7 @@
         const club = p.team && C.teams[p.team];
         const sub = tab === 'squad' ? (me.roster.indexOf(p.id) < 3 ? 'Starter' : 'Substitute') + ' · ' + p.contract + 'y left' : club ? `${api.badge(teamObj(p.team), 'sm')}<span>${esc(club.name)}</span>` : 'Free agent';
         const val = tab === 'fa' ? askingSalary(p, C.user) : tab === 'squad' ? p.salary : valueFor(p);
-        return `<button class="th-row ${sel && sel.id === p.id ? 'on' : ''}" data-action="th-sel" data-id="${p.id}">${avatar(p)}<span class="th-who"><b>${p.flag || ''} ${esc(p.name)}</b><small>${sub}</small></span><span class="th-c">${ageLabel(p)}</span><span class="th-c th-ovr">${p.rating}</span><span class="th-c hide-sm">~${p.pot}</span><span class="th-c th-val">${money(val)}</span><span class="th-star" aria-label="${sl.has(p.id) ? 'Shortlisted' : ''}">${sl.has(p.id) ? '★' : ''}</span></button>`;
+        return `<button class="th-row ${sel && sel.id === p.id ? 'on' : ''}" data-action="th-sel" data-id="${p.id}">${avatar(p)}<span class="th-who"><b>${p.flag || ''} ${esc(p.name)}</b><small>${sub}</small></span><span class="th-c">${ageLabel(p)}</span><span class="th-c th-ovr">${p.rating}</span><span class="th-c hide-sm">~${p.pot}</span><span class="th-c th-val">${money(val)}</span><span class="th-star" aria-label="${sl.has(p.id) ? 'Shortlisted' : ''}">${sl.has(p.id) ? '<svg class="ic ic-star-fill" aria-hidden="true"><use href="#i-star-fill"></use></svg>' : ''}</span></button>`;
       }).join('');
       const empty = { shortlist: 'Your shortlist is empty. Select a player and press ☆ Shortlist to track them here.', fa: 'No free agents right now.', scout: 'No players match.', squad: 'Your roster is empty.' }[tab];
       list = `${head}<div class="th-rows">${rows || `<p class="muted th-empty">${empty}</p>`}</div>`;
@@ -1907,11 +1907,11 @@
       const ph = photoOf(p);
       const idx = me.roster.indexOf(p.id);
       let acts = '';
-      if (V()) acts = `<button class="btn" data-action="th-star" data-id="${p.id}">${sl.has(p.id) ? '★ On your watchlist' : '☆ Watch this player'}</button>`;
+      if (V()) acts = `<button class="btn" data-action="th-star" data-id="${p.id}">${sl.has(p.id) ? '<svg class="ic ic-star-fill" aria-hidden="true"><use href="#i-star-fill"></use></svg> On your watchlist' : '<svg class="ic ic-star" aria-hidden="true"><use href="#i-star"></use></svg> Watch this player'}</button>`;
       else if (mine) acts = `${idx >= 3 ? `<button class="btn" data-action="mk-promote" data-id="${p.id}">Make starter</button>` : ''}${open ? `<button class="btn" data-action="mk-extend" data-id="${p.id}">Extend contract</button><button class="btn" data-action="mk-sell" data-id="${p.id}">Find a buyer</button><button class="btn danger" data-action="mk-release" data-id="${p.id}">Release</button>` : ''}`;
-      else acts = `<button class="btn primary" data-action="mk-offer" data-id="${p.id}" ${open && roster.length < 4 ? '' : 'disabled'}>${club ? 'Make a bid' : 'Offer a contract'}</button><button class="btn" data-action="th-star" data-id="${p.id}">${sl.has(p.id) ? '★ Shortlisted' : '☆ Shortlist'}</button>`;
+      else acts = `<button class="btn primary" data-action="mk-offer" data-id="${p.id}" ${open && roster.length < 4 ? '' : 'disabled'}>${club ? 'Make a bid' : 'Offer a contract'}</button><button class="btn" data-action="th-star" data-id="${p.id}">${sl.has(p.id) ? '<svg class="ic ic-star-fill" aria-hidden="true"><use href="#i-star-fill"></use></svg> Shortlisted' : '<svg class="ic ic-star" aria-hidden="true"><use href="#i-star"></use></svg> Shortlist'}</button>`;
       const why = V() ? '' : !mine && !open ? `Deals reopen at the ${esc(nextWindowLabel())}.` : !mine && roster.length >= 4 ? 'Your roster is full: sell or release a player first.' : mine && !open ? 'Contracts, sales and releases open in the next transfer window.' : '';
-      detail = `<button class="th-back" data-action="th-top">↑ Back to the list</button><div class="th-dhead" style="--tc:${(tobj && tobj.color) || 'var(--azure)'}">
+      detail = `<button class="th-back" data-action="th-top"><svg class="ic ic-up" aria-hidden="true"><use href="#i-up"></use></svg> Back to the list</button><div class="th-dhead" style="--tc:${(tobj && tobj.color) || 'var(--azure)'}">
           <div class="th-dname"><small>${club ? esc(club.name) : 'Free agent'}</small><b>${esc(p.name)}</b><span>${p.flag || ''} ${esc(p.country || '')} · Age ${ageLabel(p)}${mine ? ' · ' + (idx < 3 ? 'Starter' : 'Substitute') : ''}</span></div>
           <div class="th-dovr"><small>OVR</small><b>${p.rating}</b></div>
           <div class="th-dphoto">${ph ? `<img src="${esc(ph)}" alt="${esc(p.name)}" onerror="this.remove()">` : ''}<span>${esc(initialsOf(p.name))}</span></div>
@@ -1993,7 +1993,7 @@
     if (activeEvent || st.type === 'review' || C.sacked) return '';
     const opts = Object.entries(FF).filter(([, [, f]]) => SCHEDULE.slice(C.step + 1).some(f) || (f(st) && false));
     if (!opts.length) return '';
-    return `<div class="ff-row"><small>Fast-forward</small>${opts.map(([k, [l]]) => `<button class="btn sm" data-action="career-ff" data-v="${k}" title="Simulate every step until the ${esc(l.toLowerCase())}">⏩ ${esc(l)}</button>`).join('')}</div>`;
+    return `<div class="ff-row"><small>Fast-forward</small>${opts.map(([k, [l]]) => `<button class="btn sm" data-action="career-ff" data-v="${k}" title="Simulate every step until the ${esc(l.toLowerCase())}"><svg class="ic ic-ff" aria-hidden="true"><use href="#i-ff"></use></svg> ${esc(l)}</button>`).join('')}</div>`;
   }
   function fastForward(target) {
     const f = FF[target] && FF[target][1]; if (!f) return;

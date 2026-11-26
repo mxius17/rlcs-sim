@@ -53,7 +53,7 @@
         ${o.holder ? `<span class="ni-holder">🏆 Holders: <b>${esc(o.holder)}</b></span>` : ''}
       </div>
       <div class="ni-stage">${stage}${o.note ? `<p class="ni-note">${esc(o.note)}</p>` : ''}</div>
-      <div class="cut-ui"><button class="cut-skip" type="button">Skip intro</button><button class="cut-go" type="button">Let’s go →</button></div>`;
+      <div class="cut-ui"><button class="cut-skip" type="button">Skip intro</button><button class="cut-go" type="button">Let’s go <svg class="ic ic-right" aria-hidden="true"><use href="#i-right"></use></svg></button></div>`;
     document.body.appendChild(el);
     document.documentElement.classList.add('cer-open');
     const S = (cur = { el, timers: [], dead: false });

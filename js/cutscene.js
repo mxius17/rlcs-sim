@@ -247,7 +247,7 @@
     // the broadcast opener (js/opener.js): a title sequence cut to the anthem's beat, before the city is revealed
     const song = global.RLMusic && global.RLMusic.compose ? global.RLMusic.compose(o.city, o.city === 'Edinburgh' ? 'Scotland' : o.country, !!o.worlds) : null;
     const op = global.RLOpener ? global.RLOpener.build({ city: o.city, country: o.country, flag: o.flag, pal: o.palette, kicker: o.kicker, field: o.field, worlds: !!o.worlds, week: o.week, ewc: o.chip === 'Esports World Cup', flavour: song && song.fname, bpm: song && song.bpm, lm, lmName: info[1], nick: info[2], hello: hello.replace(/ (to|in|a|ao|à|w|v|till|go|ke|di|til)$/i, '') + (/[!?]$/.test(hello) ? '' : '!') }) : null;
-    el.innerHTML = (op ? op.html : '') + '<div class="cut-main"></div><div class="cut-ui"><button class="cut-skip" type="button">Skip intro</button><button class="cut-go" type="button">Let’s go →</button></div>';
+    el.innerHTML = (op ? op.html : '') + '<div class="cut-main"></div><div class="cut-ui"><button class="cut-skip" type="button">Skip intro</button><button class="cut-go" type="button">Let’s go <svg class="ic ic-right" aria-hidden="true"><use href="#i-right"></use></svg></button></div>';
     if (op) el.classList.add('has-op');
     document.body.appendChild(el);
     document.documentElement.classList.add('cer-open');

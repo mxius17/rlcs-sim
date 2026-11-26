@@ -74,7 +74,7 @@
     el.innerHTML = `<div class="si-bg" aria-hidden="true"></div>${mode === 3 && o.art ? '<div class="sc-art" aria-hidden="true"></div>' : ''}${mode === 3 ? '<div class="sc-beams" aria-hidden="true"><i></i><i></i><i></i><i></i></div>' : ''}${o.worlds ? '<div class="si-rays" aria-hidden="true"></div>' : ''}
       <div class="sc-stage"></div><canvas class="sc-confetti" aria-hidden="true"></canvas>
       <div class="cer-ui"><div class="cer-steps">${steps.map(([k, l]) => `<span data-k="${k}">${esc(l)}</span>`).join('')}</div>
-        <div class="cer-btns"><button class="cer-next" type="button">Next ▸</button><button class="cer-skip" type="button">Skip ceremony</button></div></div>`;
+        <div class="cer-btns"><button class="cer-next" type="button">Next <svg class="ic ic-chev-right" aria-hidden="true"><use href="#i-chev-right"></use></svg></button><button class="cer-skip" type="button">Skip ceremony</button></div></div>`;
     document.body.appendChild(el);
     document.documentElement.classList.add('cer-open');
     const S = (cur = { el, timers: [], dead: false, raf: 0, advance: null });
@@ -167,10 +167,10 @@
         <div class="sc-path">${(o.path || []).slice(-8).map((m, i) => `<div class="sc-pm${m.w > m.l ? '' : ' lost'}" style="--i:${i}"><small>${esc(m.round)}</small><b>${esc(m.opp)}</b><span>${m.w}–${m.l}</span></div>`).join('')}</div>
         ${ps.length > 1 ? `<div class="sc-pstats${ps.length > 2 ? ' three' : ''}">${ps.slice(0, 3).map((p) => `<div><b>${esc(p.flag || '')} ${esc(p.name)}</b><span>${p.g || 0} G · ${p.a || 0} A · ${p.sv || 0} Sv</span></div>`).join('')}</div>` : ''}
         ${o.next ? `<p class="sc-next">${esc(o.next)}</p>` : ''}
-        <button class="sc-done" type="button">Continue →</button>
+        <button class="sc-done" type="button">Continue <svg class="ic ic-right" aria-hidden="true"><use href="#i-right"></use></svg></button>
       </div>`;
       stage.querySelector('.sc-done').addEventListener('click', finish);
-      el.querySelector('.cer-next').textContent = 'Finish ▸';
+      el.querySelector('.cer-next').innerHTML = 'Finish ' + window.RLIcon('chev-right');
       later(1100, () => { const bt = stage.querySelector('.sc-done'); if (bt) bt.focus({ preventScroll: true }); });
       await wait(120000);
     };
@@ -263,7 +263,7 @@
     el.innerHTML = `<div class="si-bg" aria-hidden="true"></div><div class="sc-beams" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
       <div class="sc-stage"></div><canvas class="sc-confetti" aria-hidden="true"></canvas>
       <div class="cer-ui"><div class="cer-steps">${steps.map(([k, l]) => `<span data-k="${k}">${esc(l)}</span>`).join('')}</div><span class="aw-count"></span>
-        <div class="cer-btns"><button class="cer-next" type="button">Next ▸</button><button class="cer-skip" type="button">Skip ceremony</button></div></div>`;
+        <div class="cer-btns"><button class="cer-next" type="button">Next <svg class="ic ic-chev-right" aria-hidden="true"><use href="#i-chev-right"></use></svg></button><button class="cer-skip" type="button">Skip ceremony</button></div></div>`;
     document.body.appendChild(el);
     document.documentElement.classList.add('cer-open');
     const S = (cur = { el, timers: [], dead: false, raf: 0, advance: null });
@@ -333,9 +333,9 @@
       mark('recap'); sfx('tab');
       stage.innerHTML = `<div class="sc-road aw-recap"><h2>RLCS ${esc(o.season)} award winners</h2><p class="sc-sub">${esc(o.kicker || '')}</p>
         <div class="aw-grid">${list.map((x, i) => { const w = x.team ? null : x.winner; return `<div class="aw-cell${(w && w.you) || (x.team && x.team.some((p) => p.you)) ? ' you' : ''}" style="--i:${i}"><small>${esc(x.icon || '🏅')} ${esc(x.title)}</small><b>${esc(x.team ? x.team.map((p) => p.name).join(' · ') : (w.flag ? w.flag + ' ' : '') + w.name)}</b><span>${esc(x.team ? 'Team of the Year' : w.teamName || '')}</span></div>`; }).join('')}</div>
-        <button class="sc-done" type="button">Continue →</button></div>`;
+        <button class="sc-done" type="button">Continue <svg class="ic ic-right" aria-hidden="true"><use href="#i-right"></use></svg></button></div>`;
       stage.querySelector('.sc-done').addEventListener('click', finish);
-      el.querySelector('.cer-next').textContent = 'Finish ▸';
+      el.querySelector('.cer-next').innerHTML = 'Finish ' + window.RLIcon('chev-right');
       later(900, () => { const bt = stage.querySelector('.sc-done'); if (bt) bt.focus({ preventScroll: true }); });
       await wait(120000);
     };

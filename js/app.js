@@ -167,7 +167,7 @@
     const champ = res.W && getTeam(res.W);
     const row = (r) => {
       const ids = sideField(n, r, se), w = res[r] && getTeam(res[r]);
-      return `<div class="side-row" style="${themeVars(themeOf('region-' + r.toLowerCase()))}"><span class="side-reg">${esc(r)}</span><div class="side-mid"><b>${esc(REGIONS[r])} ${M.name} Open</b><small>${w && w.name !== 'Unknown' ? '🏆 Won by <b>' + esc(w.name) + '</b>' : 'Top seeds: ' + ids.slice(0, 3).map((id) => esc(getTeam(id).name)).join(', ')}</small></div><button class="btn sm${w ? '' : ' primary'}" data-action="side-start" data-v="${n}|${r}" ${ids.length < 4 ? 'disabled' : ''}>${w ? 'Replay' : 'Play'} →</button></div>`;
+      return `<div class="side-row" style="${themeVars(themeOf('region-' + r.toLowerCase()))}"><span class="side-reg">${esc(r)}</span><div class="side-mid"><b>${esc(REGIONS[r])} ${M.name} Open</b><small>${w && w.name !== 'Unknown' ? '🏆 Won by <b>' + esc(w.name) + '</b>' : 'Top seeds: ' + ids.slice(0, 3).map((id) => esc(getTeam(id).name)).join(', ')}</small></div><button class="btn sm${w ? '' : ' primary'}" data-action="side-start" data-v="${n}|${r}" ${ids.length < 4 ? 'disabled' : ''}>${w ? 'Replay' : 'Play'} <svg class="ic ic-right" aria-hidden="true"><use href="#i-right"></use></svg></button></div>`;
     };
     openModal(`${brand ? `<div class="event-banner has-art" style="${themeVars(brand)};background-image:linear-gradient(180deg, rgba(11,18,38,0.05), rgba(11,18,38,0.45)),url(${brand.art});background-position:center" role="img" aria-label="${esc(brand.name)} key art"><span class="event-swatches"><i style="background:${brand.a}"></i><i style="background:${brand.b}"></i><i style="background:${brand.c}"></i></span></div>` : ''}${modalHead(M.full, 'RLCS format: regional Opens after Major 2. The four winners meet at Worlds.')}
       <div class="modal-body">
@@ -178,10 +178,10 @@
         <div class="side-worlds" style="${themeVars(th)}">
           <div class="side-wf">${wf.map((x) => { const t = getTeam(x.id); return `<div class="team-chip">${badge(t)}<div class="meta"><div class="name">${esc(t.name)}</div><div class="sub">${esc(x.reg)} · ${x.projected ? 'projected' : 'qualified'} · OVR ${t.ovr} ${flagsOf(t)}</div></div></div>`; }).join('')}</div>
           ${champ && champ.name !== 'Unknown' ? `<p class="side-champ">🏆 ${esc(seasonLabel(se))} ${M.name} world champion${n === 2 ? 's' : ''}: <b>${esc(champ.name)}</b></p>` : ''}
-          <button class="btn primary" data-action="side-start" data-v="${n}|W" ${wf.length < 4 ? 'disabled' : ''}>Play the World Championship →</button>
+          <button class="btn primary" data-action="side-start" data-v="${n}|W" ${wf.length < 4 ? 'disabled' : ''}>Play the World Championship <svg class="ic ic-right" aria-hidden="true"><use href="#i-right"></use></svg></button>
         </div>
       </div>
-      <div class="modal-foot"><button class="btn" data-action="side-reset" data-v="${n}">Clear results</button><button class="btn" data-action="side-mode" data-v="${n === 1 ? 2 : 1}">${SIDE[n === 1 ? 2 : 1].full} →</button></div>`, { size: 'md', cls: brand ? 'event-themed' : '', style: themeVars(brand) });
+      <div class="modal-foot"><button class="btn" data-action="side-reset" data-v="${n}">Clear results</button><button class="btn" data-action="side-mode" data-v="${n === 1 ? 2 : 1}">${SIDE[n === 1 ? 2 : 1].full} <svg class="ic ic-right" aria-hidden="true"><use href="#i-right"></use></svg></button></div>`, { size: 'md', cls: brand ? 'event-themed' : '', style: themeVars(brand) });
   }
   function startSide(v) {
     const [nS, reg] = v.split('|'), n = +nS, se = curSeason(), M = SIDE[n];
@@ -206,9 +206,9 @@
       const M = SIDE[n], res = sideStore(se, n), done = SIDE_REGIONS.filter((r) => res[r]).length;
       const champ = res.W && getTeam(res.W);
       const br = themeOf('side-' + n + 'v' + n);
-      return `<button class="side-card" data-action="side-mode" data-v="${n}" style="${themeVars(br)}${br ? `;--art:url(${br.art})` : ''}"><span class="side-mono">${M.name}</span><span class="side-txt"><b>${M.full}</b><small>4 regional Opens → World Championship · ${M.prize}</small>
+      return `<button class="side-card" data-action="side-mode" data-v="${n}" style="${themeVars(br)}${br ? `;--art:url(${br.art})` : ''}"><span class="side-mono">${M.name}</span><span class="side-txt"><b>${M.full}</b><small>4 regional Opens <svg class="ic ic-right" aria-hidden="true"><use href="#i-right"></use></svg> World Championship · ${M.prize}</small>
         <span class="side-prog">${SIDE_REGIONS.map((r) => `<i class="${res[r] ? 'on' : ''}" title="${esc(REGIONS[r])}">${r}</i>`).join('')}<i class="w ${champ ? 'on' : ''}" title="World Championship">WC</i></span>
-        <small>${champ && champ.name !== 'Unknown' ? '🏆 World champion' + (n === 2 ? 's' : '') + ': ' + esc(champ.name) : done + ' of 4 Opens played'}</small></span></button>`;
+        <small>${champ && champ.name !== 'Unknown' ? '<svg class="ic ic-trophy" aria-hidden="true"><use href="#i-trophy"></use></svg> World champion' + (n === 2 ? 's' : '') + ': ' + esc(champ.name) : done + ' of 4 Opens played'}</small></span></button>`;
     }).join('')}</div>`;
   }
   const HAS27 = !!(window.RL_DATA27 && window.RL_DATA27.teams && window.RL_DATA27.teams.length);
@@ -322,17 +322,17 @@
 
     app.innerHTML = `
       <div class="page-head" data-crumb="${esc(s.title || 'Custom tournament')}">
-        <button class="btn sm" data-action="go-home">← Main menu</button>
+        <button class="btn sm" data-action="go-home"><svg class="ic ic-left" aria-hidden="true"><use href="#i-left"></use></svg> Main menu</button>
         <h1>${esc(s.title || 'Custom tournament')}</h1>
         <div class="head-actions">
-          <button class="btn sm" data-action="save-preset" title="Download this setup as a preset file">↓ Save preset</button>
-          <button class="btn sm" data-action="import-preset" title="Load a preset file">↑ Import preset</button>
+          <button class="btn sm" data-action="save-preset" title="Download this setup as a preset file"><svg class="ic ic-download" aria-hidden="true"><use href="#i-download"></use></svg> Save preset</button>
+          <button class="btn sm" data-action="import-preset" title="Load a preset file"><svg class="ic ic-upload" aria-hidden="true"><use href="#i-upload"></use></svg> Import preset</button>
           <span class="count-pill">${s.teams.length}/${s.size} teams</span>
-          <button class="btn primary" data-action="start" ${full ? '' : 'disabled'}>Start tournament →</button>
+          <button class="btn primary" data-action="start" ${full ? '' : 'disabled'}>Start tournament <svg class="ic ic-right" aria-hidden="true"><use href="#i-right"></use></svg></button>
         </div>
       </div>
       <div class="bento">
-        ${T && !T.finished ? `<section class="tile c-12 resume-banner"><div><div class="tile-kicker">Resume tournament</div><strong>${esc(T.title || E.FORMATS[T.format].name)} · ${entrants(T)}</strong> <span class="muted">— ${Object.values(T.matches).filter((m) => m.result && !m.result.bye).length} series played</span></div><div class="toolbar"><button class="btn sm danger" data-action="discard-t">Delete saved tournament</button><button class="btn sm primary" data-action="resume">Resume →</button></div></section>` : ''}
+        ${T && !T.finished ? `<section class="tile c-12 resume-banner"><div><div class="tile-kicker">Resume tournament</div><strong>${esc(T.title || E.FORMATS[T.format].name)} · ${entrants(T)}</strong> <span class="muted">— ${Object.values(T.matches).filter((m) => m.result && !m.result.bye).length} series played</span></div><div class="toolbar"><button class="btn sm danger" data-action="discard-t">Delete saved tournament</button><button class="btn sm primary" data-action="resume">Resume <svg class="ic ic-right" aria-hidden="true"><use href="#i-right"></use></svg></button></div></section>` : ''}
         <section class="tile stat-tile accent-blue c-3"><span class="glyph">◎</span><div class="tile-kicker">Field size</div><div class="big">${s.size}</div><div class="sub">${s.teams.length === s.size ? 'all places filled' : (s.size - s.teams.length) + ' places left to fill'}</div></section>
         <section class="tile stat-tile accent-violet c-3"><span class="glyph">⌘</span><div class="tile-kicker">Format</div><div class="big" style="font-size:clamp(22px,2.4vw,30px)">${esc(F.name)}</div><div class="sub">${esc(stageSummary)}</div></section>
         <section class="tile stat-tile accent-orange c-3"><span class="glyph">⚡</span><div class="tile-kicker">Chaos meter</div><div class="big" style="font-size:clamp(24px,2.6vw,34px)">${chaos[0]}</div><div class="sub">${chaos[1]}</div></section>
@@ -414,7 +414,7 @@
   function brandField() {
     const th = themeOf(state.setup.theme);
     return `<div class="field"><span class="field-label">Event branding</span>
-      <button class="brand-btn" data-action="brand-open">${th ? brandSw(th) : '<span class="brand-sw none" aria-hidden="true"></span>'}<span><b>${esc(th ? brandName(state.setup.theme) : 'No branding')}</b><small>${th ? 'Change branding →' : 'Pick a Major, Worlds or host city look →'}</small></span></button>
+      <button class="brand-btn" data-action="brand-open">${th ? brandSw(th) : '<span class="brand-sw none" aria-hidden="true"></span>'}<span><b>${esc(th ? brandName(state.setup.theme) : 'No branding')}</b><small>${th ? 'Change branding <svg class="ic ic-right" aria-hidden="true"><use href="#i-right"></use></svg>' : 'Pick a Major, Worlds or host city look <svg class="ic ic-right" aria-hidden="true"><use href="#i-right"></use></svg>'}</small></span></button>
       <p class="help">Colours the whole screen while the tournament runs${th && th.art ? ', with the event\'s key art' : ''}.</p></div>`;
   }
   function openBrand() {
@@ -442,7 +442,7 @@
     } else strip = `<p class="help">Fill every place to preview the ${usesGroups() ? 'groups, ' : ''}fixtures and bracket.</p>`;
     const ov = Object.keys(s.overrides).length;
     return `<section class="tile">
-      <div class="tile-head"><div><h2>${title}</h2><p>Arrange your teams and edit individual series.${ov ? ` <span class="ov-tag">${ov} edited</span>` : ''}</p></div><button class="btn sm" data-action="open-draw" ${T ? '' : 'disabled'}>Open draw ↗</button></div>
+      <div class="tile-head"><div><h2>${title}</h2><p>Arrange your teams and edit individual series.${ov ? ` <span class="ov-tag">${ov} edited</span>` : ''}</p></div><button class="btn sm" data-action="open-draw" ${T ? '' : 'disabled'}>Open draw <svg class="ic ic-external" aria-hidden="true"><use href="#i-external"></use></svg></button></div>
       ${strip}
     </section>`;
   }
@@ -452,14 +452,14 @@
     const full = s.teams.length === s.size;
     const chips = s.teams.map((id, i) => {
       const t = getTeam(id);
-      return `<div class="team-chip ${id === s.managed ? 'managed' : ''}"><span class="slot-no">${i + 1}</span>${badge(t)}<div class="meta"><div class="name">${esc(t.name)}</div><div class="sub">${esc(REGIONS[t.region] || t.region)} · OVR ${t.ovr} ${flagsOf(t)}</div></div><div class="chip-actions"><button data-action="edit-team" data-id="${esc(id)}" title="Edit ${esc(t.name)}" aria-label="Edit ${esc(t.name)}">✎</button><button data-action="remove-team" data-id="${esc(id)}" title="Remove" aria-label="Remove ${esc(t.name)}">×</button></div></div>`;
+      return `<div class="team-chip ${id === s.managed ? 'managed' : ''}"><span class="slot-no">${i + 1}</span>${badge(t)}<div class="meta"><div class="name">${esc(t.name)}</div><div class="sub">${esc(REGIONS[t.region] || t.region)} · OVR ${t.ovr} ${flagsOf(t)}</div></div><div class="chip-actions"><button data-action="edit-team" data-id="${esc(id)}" title="Edit ${esc(t.name)}" aria-label="Edit ${esc(t.name)}"><svg class="ic ic-edit" aria-hidden="true"><use href="#i-edit"></use></svg></button><button data-action="remove-team" data-id="${esc(id)}" title="Remove" aria-label="Remove ${esc(t.name)}">×</button></div></div>`;
     }).join('');
     const empties = Math.min(s.size - s.teams.length, 4);
     const emptyChips = s.teams.length ? Array.from({ length: empties }, () => '<button class="team-chip empty" data-action="browse">+ Add team</button>').join('') : '';
     return `<section class="tile">
       <div class="tile-head"><div><h2>Teams</h2><p>${s.teams.length} of ${s.size} selected</p></div><button class="btn sm" data-action="browse">+ Add teams</button></div>
       <div class="library-row">
-        <div class="field" style="margin:0"><span class="field-label">Team library</span><button class="library-btn" data-action="browse"><span>${seasonLabel(curSeason())} teams · ${rankedTeams().length}</span><small>Browse →</small></button></div>
+        <div class="field" style="margin:0"><span class="field-label">Team library</span><button class="library-btn" data-action="browse"><span>${seasonLabel(curSeason())} teams · ${rankedTeams().length}</span><small>Browse <svg class="ic ic-right" aria-hidden="true"><use href="#i-right"></use></svg></small></button></div>
         <div class="field" style="margin:0"><label for="selFill">Auto-fill with</label><select class="select" id="selFill" data-bind="quickFill">${Object.entries(QUICK_FILLS).map(([k, v]) => `<option value="${k}" ${k === s.quickFill ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
       </div>
       <div class="action-row">
@@ -508,7 +508,7 @@
           <div class="toolbar">${seasonSeg('browse-season')}<div class="search"><input class="input" id="browseQ" placeholder="Search teams or players" value="${esc(state.ui.browseQuery)}" aria-label="Search teams or players" /></div></div>
           <div class="seg" role="tablist">${[['all', 'All'], ...Object.keys(REGIONS).map((k) => [k, k]), ['custom', 'Custom']].map(([k, v]) => `<button class="${k === reg ? 'active' : ''}" data-action="browse-region" data-v="${k}" title="${esc(REGIONS[k] || v)}">${v}</button>`).join('')}</div>
         </div>
-        <div class="browse-list">${list.map((t) => `<button class="browse-item ${sel.has(t.id) ? 'on' : ''}" data-action="toggle-team" data-id="${esc(t.id)}" aria-pressed="${sel.has(t.id)}">${badge(t)}<span class="meta"><b>${esc(t.name)}</b><small>${esc(t.players.slice(0, 3).map((p) => (p.flag || '') + ' ' + p.name).join(' · '))}</small></span><span class="rt">${t.ovr}</span><span class="tick">${sel.has(t.id) ? '✓' : ''}</span></button>`).join('') || '<p class="muted">No teams match.</p>'}</div>
+        <div class="browse-list">${list.map((t) => `<button class="browse-item ${sel.has(t.id) ? 'on' : ''}" data-action="toggle-team" data-id="${esc(t.id)}" aria-pressed="${sel.has(t.id)}">${badge(t)}<span class="meta"><b>${esc(t.name)}</b><small>${esc(t.players.slice(0, 3).map((p) => (p.flag || '') + ' ' + p.name).join(' · '))}</small></span><span class="rt">${t.ovr}</span><span class="tick">${sel.has(t.id) ? '<svg class="ic ic-check" aria-hidden="true"><use href="#i-check"></use></svg>' : ''}</span></button>`).join('') || '<p class="muted">No teams match.</p>'}</div>
       </div>
       <div class="modal-foot"><span class="count-pill" style="margin-right:auto">${s.teams.length}/${s.size}</span><button class="btn" data-action="create-team">+ Create team</button><button class="btn primary" data-action="close-modal">Done</button></div>`, { focus: false, onClose: render });
     const inp = $('#browseQ');
@@ -793,7 +793,7 @@
 
     app.innerHTML = `
       <div class="page-head" data-crumb="${esc((T.career ? 'Career  ›  ' : '') + (T.title || E.FORMATS[T.format].name))}">
-        ${T.career ? '<button class="btn sm" data-action="nav" data-v="career">← Career</button>' : `<button class="btn sm" data-action="go-setup">← ${(T.cfg && T.cfg.custom) || T.side ? 'Main menu' : 'Back to settings'}</button>`}
+        ${T.career ? '<button class="btn sm" data-action="nav" data-v="career"><svg class="ic ic-left" aria-hidden="true"><use href="#i-left"></use></svg> Career</button>' : `<button class="btn sm" data-action="go-setup"><svg class="ic ic-left" aria-hidden="true"><use href="#i-left"></use></svg> ${(T.cfg && T.cfg.custom) || T.side ? 'Main menu' : 'Back to settings'}</button>`}
         <h1>${esc(T.title || E.FORMATS[T.format].name)} <span class="muted" style="font-size:.55em;font-family:var(--font)">· ${entrants(T)}</span></h1>
         <div class="head-actions">
           <div style="min-width:140px"><div class="progress" title="${pct}% complete"><i style="width:${pct}%"></i></div><div class="muted mono" style="font-size:11px;margin-top:4px">${played} series played · ${esc(cs.name)}</div></div>
@@ -968,7 +968,7 @@
           <button class="btn sm" data-action="live-pause">${live.playing ? 'Pause' : 'Resume'}</button>
           <div class="seg" aria-label="Playback speed">${SPEEDS.map((s) => `<button class="${live.speed === s ? 'active' : ''}" data-action="live-speed" data-v="${s}">${s}×</button>`).join('')}</div>
           <button class="btn sm" data-action="live-skip-game">Skip game</button>
-          <button class="btn sm orange" data-action="live-reveal">Reveal result →</button>
+          <button class="btn sm orange" data-action="live-reveal">Reveal result <svg class="ic ic-right" aria-hidden="true"><use href="#i-right"></use></svg></button>
         </div>
         <p class="live-keys" aria-hidden="true"><kbd>Space</kbd> pause · <kbd>1</kbd>–<kbd>${SPEEDS.length}</kbd> speed · <kbd>N</kbd> skip game · <kbd>R</kbd> reveal · <kbd>?</kbd> all shortcuts</p>
         <div class="feed" id="feed"></div>`
@@ -978,13 +978,13 @@
         <div class="live-bar">${nextMatchButton(T)}</div>`
       : `
         <div class="result-line">${mine ? 'Your team is up next. Pick a playstyle, then play the series.' : 'Watch it live with commentary and a top-down pitch, or simulate instantly.'}</div>
-        <div class="live-bar"><button class="btn primary" data-action="play-live" data-id="${esc(m.id)}">▶ Play this series</button><button class="btn" data-action="sim-one" data-id="${esc(m.id)}">Quick sim</button></div>`}
+        <div class="live-bar"><button class="btn primary" data-action="play-live" data-id="${esc(m.id)}"><svg class="ic ic-play" aria-hidden="true"><use href="#i-play"></use></svg> Play this series</button><button class="btn" data-action="sim-one" data-id="${esc(m.id)}">Quick sim</button></div>`}
     </section>`;
   }
   function nextMatchButton(T) {
     const r = E.readyMatches(T);
-    if (!r.length) return T.champion ? `<button class="btn primary" data-action="show-champion">🏆 View champion</button>` : '';
-    return `<button class="btn primary" data-action="feature-next">Next series →</button>`;
+    if (!r.length) return T.champion ? `<button class="btn primary" data-action="show-champion"><svg class="ic ic-trophy" aria-hidden="true"><use href="#i-trophy"></use></svg> View champion</button>` : '';
+    return `<button class="btn primary" data-action="feature-next">Next series <svg class="ic ic-right" aria-hidden="true"><use href="#i-right"></use></svg></button>`;
   }
   function gameSummary(res, A, B) {
     return `<div class="feed" style="max-height:260px">${res.games.map((g, i) => {
@@ -1303,7 +1303,7 @@
     openModal(`${modalHead(T.cfg && T.cfg.custom ? 'Match winner' : 'Champions', esc(T.title || E.FORMATS[T.format].name) + ' · ' + entrants(T))}
       <div class="modal-body"><div class="champion"><div class="trophy">🏆</div>${badge(t, 'xl')}<h3>${esc(t.name)}</h3><p class="muted">${t.players.slice(0, 3).map((p) => (p.flag || '') + ' ' + esc(p.name)).join(' · ')}</p><p>${wins} series wins from ${ms.length}${T.runnerUp ? ' · beat ' + esc(getTeam(T.runnerUp).name) + ' in the final' : ''}.</p></div>
         <div class="award-grid">${award('Tournament MVP', mvp, mvp && mvp.score + ' pts')}${award('Top scorer', topG, topG && topG.g + ' goals')}${award('Wall award', topSv, topSv && topSv.sv + ' saves')}</div></div>
-      <div class="modal-foot"><button class="btn" data-action="replay-ceremony">▶ Replay ceremony</button><button class="btn" data-action="export-results">Save tournament</button><button class="btn" data-action="champ-fixtures">View team fixtures</button>${T.career ? '<button class="btn primary" data-action="nav" data-v="career">Back to career →</button>' : '<button class="btn primary" data-action="run-it-back">Run it back ↻</button>'}</div>`, { size: 'md' });
+      <div class="modal-foot"><button class="btn" data-action="replay-ceremony"><svg class="ic ic-play" aria-hidden="true"><use href="#i-play"></use></svg> Replay ceremony</button><button class="btn" data-action="export-results">Save tournament</button><button class="btn" data-action="champ-fixtures">View team fixtures</button>${T.career ? '<button class="btn primary" data-action="nav" data-v="career">Back to career <svg class="ic ic-right" aria-hidden="true"><use href="#i-right"></use></svg></button>' : '<button class="btn primary" data-action="run-it-back">Run it back <svg class="ic ic-replay" aria-hidden="true"><use href="#i-replay"></use></svg></button>'}</div>`, { size: 'md' });
   }
 
   /* ---------------- Settings & guide ---------------- */
@@ -1311,8 +1311,8 @@
   function syncSfxBtn() {
     const b = document.getElementById('sfxBtn'); if (!b || !window.RLSfx) return;
     const on = window.RLSfx.on;
-    document.querySelectorAll('.hub-sfx').forEach((x) => { x.textContent = on ? '🔊' : '🔇'; x.setAttribute('aria-label', on ? 'Sound effects on' : 'Sound effects off'); });
-    b.textContent = on ? '🔊' : '🔇'; b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.setAttribute('aria-label', on ? 'Sound effects on' : 'Sound effects off'); b.title = on ? 'Sound effects: on' : 'Sound effects: off';
+    document.querySelectorAll('.hub-sfx').forEach((x) => { x.innerHTML = window.RLIcon(on ? 'sound' : 'mute'); x.setAttribute('aria-label', on ? 'Sound effects on' : 'Sound effects off'); });
+    b.innerHTML = window.RLIcon(on ? 'sound' : 'mute'); b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.setAttribute('aria-label', on ? 'Sound effects on' : 'Sound effects off'); b.title = on ? 'Sound effects: on' : 'Sound effects: off';
   }
   function openSettings() {
     const st = state.settings;
@@ -1587,16 +1587,16 @@
     const se = curSeason();
     const sideTile = (n) => {
       const M = SIDE[n], res = sideStore(se, n), done = SIDE_REGIONS.filter((r) => res[r]).length, champ = res.W && getTeam(res.W), br = themeOf('side-' + n + 'v' + n);
-      return { t: M.full, s: `4 regional Opens → World Championship · ${M.prize} · ${champ && champ.name !== 'Unknown' ? '🏆 ' + esc(champ.name) : done + ' of 4 Opens played'}`, m: M.name, c: br ? br.a : n === 1 ? '#22d3ee' : '#ff8a1f', th: br, a: 'side-mode', v: String(n), big: true };
+      return { t: M.full, s: `4 regional Opens, then the World Championship · ${M.prize} · ${champ && champ.name !== 'Unknown' ? window.RLIcon('trophy') + ' ' + esc(champ.name) : done + ' of 4 Opens played'}`, m: M.name, c: br ? br.a : n === 1 ? '#22d3ee' : '#ff8a1f', th: br, a: 'side-mode', v: String(n), big: true };
     };
     const TABS = {
       career: { label: 'Career', icon: '★', c: '#f2b632', fig: HUB_CAR, eyebrow: 'Career mode', title: has ? 'Your career' : 'Run an RLCS organisation',
         text: cs ? `${esc(cs.team.name)} · RLCS ${cs.season} · ${esc(cs.step)}` : 'Seasons, Opens, Majors, Worlds, transfers, contracts and player development. Manage a club or follow it all as a neutral viewer.',
         art: cs && cs.team ? `<div class="hub-art-badge">${badge(cs.team, 'xl')}</div>` : `<div class="hub-art-mono">GM</div>`,
         tiles: () => [
-          { t: 'Continue career', s: cs ? `${esc(cs.team.name)} · RLCS ${cs.season} · ${esc(cs.step)}${window.RLCareer.unread() ? ` · <b class="hc-unread">${Math.min(99, window.RLCareer.unread())} unread</b>` : ''}` : 'No career to continue yet', m: '▶', c: '#f2b632', a: 'nav', v: 'career', big: true, dis: !has, art: cs && cs.team ? `<span class="mt-hero">${badge(cs.team, 'xl')}</span>` : '' },
+          { t: 'Continue career', s: cs ? `${esc(cs.team.name)} · RLCS ${cs.season} · ${esc(cs.step)}${window.RLCareer.unread() ? ` · <b class="hc-unread">${Math.min(99, window.RLCareer.unread())} unread</b>` : ''}` : 'No career to continue yet', ic: 'play', c: '#f2b632', a: 'nav', v: 'career', big: true, dis: !has, art: cs && cs.team ? `<span class="mt-hero">${badge(cs.team, 'xl')}</span>` : '' },
           { t: 'Start new career', s: has ? 'Starts in a new save slot. Your current career stays saved.' : 'Pick a club, or follow the season as a neutral viewer.', m: '+', c: '#d97706', a: 'home-career-new', v: '' },
-          { t: 'Career saves', s: nSaves ? `${nSaves} of ${window.RLCareer.maxSaves} slots used · load, switch or delete` : 'Every career you start gets its own save slot.', m: '💾', c: '#a78bfa', a: 'career-saves', v: '', dis: !nSaves },
+          { t: 'Career saves', s: nSaves ? `${nSaves} of ${window.RLCareer.maxSaves} slots used · load, switch or delete` : 'Every career you start gets its own save slot.', ic: 'save', c: '#a78bfa', a: 'career-saves', v: '', dis: !nSaves },
           live ? { t: 'Resume tournament', s: `${esc(T.title || E.FORMATS[T.format].name)} · ${entrants(T)} · ${played} series played`, m: 'LIVE', c: '#22c55e', a: 'resume', v: '' }
             : { t: 'New tournament', s: 'Tournaments you start are saved on this device so you can pick them up later.', m: 'NEW', c: '#2f8cff', a: 'nav', v: 'setup' },
           { t: 'Teams & rankings', s: 'Every roster, rating and region.', m: 'TOP', c: '#60a5fa', a: 'nav', v: 'teams' },
@@ -1698,7 +1698,7 @@
     let items = []; try { items = F.tiles(); } catch (e) { items = []; }
     const n = items.length, shown = items.slice(0, 6);
     const row = (x) => { const attrs = x.href ? `href="${x.href}" target="_blank" rel="noopener"` : `type="button" data-action="${x.a}" data-v="${esc(x.v || '')}"${x.dis ? ' disabled' : ''}`; const tag = x.href ? 'a' : 'button';
-      return `<${tag} class="hf-item" ${attrs} style="--c:${x.c || '#2f8cff'}"><i>${esc(x.m || '')}</i><b>${esc(x.t)}</b><small>${x.s || ''}</small><span aria-hidden="true">${x.more ? '›' : '→'}</span></${tag}>`; };
+      return `<${tag} class="hf-item" ${attrs} style="--c:${x.c || '#2f8cff'}"><i>${x.ic ? window.RLIcon(x.ic) : esc(x.m || '')}</i><b>${esc(x.t)}</b><small>${x.s || ''}</small><span aria-hidden="true">${x.more ? '›' : '→'}</span></${tag}>`; };
     return `<div class="hf-copy"><span class="hf-eye">${esc(HUB_BLURB[k] || '')}</span><h1 class="hf-title">${esc(F.label).replace(/^(\S+)(\s.+)$/, '$1<em>$2</em>')}</h1><p class="hf-text">${HUB_OVERVIEW[k] || F.text}</p>
       <div class="hf-acts"><button class="btn primary" data-action="hub-tab" data-v="${k}">Open ${esc(F.label)} · ${n} ${HUB_KIND[k] || 'item'}${n === 1 ? '' : 's'} ›</button></div></div>
       <div class="hf-list"><span class="hf-list-h">Inside ${esc(F.label)}</span>${shown.map(row).join('')}${n > shown.length ? `<button class="hf-item hf-more" type="button" data-action="hub-tab" data-v="${k}"><i>+${n - shown.length}</i><b>See all ${n} ${HUB_KIND[k] || 'item'}s</b><small></small><span aria-hidden="true">›</span></button>` : ''}</div>`;
@@ -1748,21 +1748,21 @@
         <div class="hub-top">
           <button class="hub-brand" data-action="hub-crumb" data-v="0" aria-label="RL Esports Simulator: main menu"><span class="brand-mark">RL</span><b>ESPORTS <em>SIMULATOR</em></b></button>
           <div class="hub-top-r">
-            <button class="hub-ico" data-action="jump" title="Quick jump (Ctrl+K)" aria-label="Quick jump">⌕</button>
+            <button class="hub-ico" data-action="jump" title="Quick jump (Ctrl+K)" aria-label="Quick jump"><svg class="ic ic-search" aria-hidden="true"><use href="#i-search"></use></svg></button>
             <button class="hub-ico" data-action="open-guide" title="How it works" aria-label="How it works">?</button>
-            <button class="hub-ico hub-sfx" data-action="sfx-toggle" title="Sound effects" aria-label="Sound effects">${window.RLSfx && !window.RLSfx.on ? '🔇' : '🔊'}</button>
-            <button class="hub-ico" data-action="open-settings" title="Settings" aria-label="Settings">⚙</button>
+            <button class="hub-ico hub-sfx" data-action="sfx-toggle" title="Sound effects" aria-label="Sound effects">${window.RLSfx && !window.RLSfx.on ? '<svg class="ic ic-mute" aria-hidden="true"><use href="#i-mute"></use></svg>' : '<svg class="ic ic-sound" aria-hidden="true"><use href="#i-sound"></use></svg>'}</button>
+            <button class="hub-ico" data-action="open-settings" title="Settings" aria-label="Settings"><svg class="ic ic-gear" aria-hidden="true"><use href="#i-gear"></use></svg></button>
           </div>
         </div>
         ${stage}
         <nav class="hub-car" aria-label="Menu sections">
           ${(() => { const i = Math.max(0, tabs.indexOf(tab)), L = tabs.length, pv = tabs[(i - 1 + L) % L], nx = tabs[(i + 1) % L];
             const cnt = (k) => { let n = 0; try { n = TABS[k].tiles().length; } catch (e) { n = 0; } return `${n} ${HUB_KIND[k] || 'item'}${n === 1 ? '' : 's'}`; };
-            return `<button class="hc-arrow l" data-action="hub-step" data-v="-1" aria-label="Previous section: ${esc(TABS[pv].label)}">◀</button>
+            return `<button class="hc-arrow l" data-action="hub-step" data-v="-1" aria-label="Previous section: ${esc(TABS[pv].label)}"><svg class="ic ic-chev-left" aria-hidden="true"><use href="#i-chev-left"></use></svg></button>
             <button class="hc-side l" data-action="hub-sel" data-v="${pv}" tabindex="-1" aria-hidden="true" style="--tc:${TABS[pv].c}"><b>${TABS[pv].label}</b></button>
             <button class="hc-cur" data-action="hub-tab" data-v="${tab}" style="--tc:${F.c}" aria-label="Open ${esc(F.label)}"><small>${esc(HUB_BLURB[tab] || '')}</small><b>${F.label}</b><span>${cnt(tab)} ›</span></button>
             <button class="hc-side r" data-action="hub-sel" data-v="${nx}" tabindex="-1" aria-hidden="true" style="--tc:${TABS[nx].c}"><b>${TABS[nx].label}</b></button>
-            <button class="hc-arrow r" data-action="hub-step" data-v="1" aria-label="Next section: ${esc(TABS[nx].label)}">▶</button>`; })()}
+            <button class="hc-arrow r" data-action="hub-step" data-v="1" aria-label="Next section: ${esc(TABS[nx].label)}"><svg class="ic ic-chev-right" aria-hidden="true"><use href="#i-chev-right"></use></svg></button>`; })()}
         </nav>
         <div class="hub-tabs hc-list" role="tablist" aria-label="All sections">${tabs.map((k) => `<button class="hub-tab${k === tab ? ' on' : ''}" id="hubTab-${k}" role="tab" aria-selected="${k === tab}" data-action="${path.length ? 'hub-tab' : 'hub-sel'}" data-v="${k}" style="--tc:${TABS[k].c}">${TABS[k].label}${k === 'career' && window.RLCareer.unread() ? `<i class="hc-badge" title="Unread career news">${Math.min(99, window.RLCareer.unread())}</i>` : ''}</button>`).join('')}</div>
         <div class="hub-foot">
@@ -1851,7 +1851,7 @@
         <div class="field-label" style="margin:14px 0 8px">Field · ${teams.length} ${c.nations ? 'nations' : 'teams'} (${se === '2027' ? 'RLCS 2027 rosters as of ' + esc(window.RL_DATA27.asOf) : seasonLabel(se) + ' rosters'})</div>
         <div class="team-grid">${teams.map((t) => `<div class="team-chip">${badge(t)}<div class="meta"><div class="name">${esc(t.name)}</div><div class="sub">OVR ${t.ovr} ${flagsOf(t)}</div></div></div>`).join('')}</div>
       </div>
-      <div class="modal-foot"><button class="btn" data-action="comp-customise" data-v="${c.id}">Customise</button><button class="btn primary" data-action="comp-start" data-v="${c.id}">Start tournament →</button></div>`, { size: 'md', cls: th ? 'event-themed' : '', style: themeVars(th) });
+      <div class="modal-foot"><button class="btn" data-action="comp-customise" data-v="${c.id}">Customise</button><button class="btn primary" data-action="comp-start" data-v="${c.id}">Start tournament <svg class="ic ic-right" aria-hidden="true"><use href="#i-right"></use></svg></button></div>`, { size: 'md', cls: th ? 'event-themed' : '', style: themeVars(th) });
   }
 
   function openCustomMatch() {
@@ -1866,7 +1866,7 @@
           <div class="field"><label for="cmSim">Simulation style</label><select class="select" id="cmSim">${Object.entries(E.SIM_STYLES).map(([k, v]) => `<option value="${k}" ${k === 'standard' ? 'selected' : ''}>${v.name}</option>`).join('')}</select></div>
         </div>
       </div>
-      <div class="modal-foot"><button class="btn" data-action="close-modal">Cancel</button><button class="btn primary" data-action="custom-match-start">Play match →</button></div>`, { size: 'sm' });
+      <div class="modal-foot"><button class="btn" data-action="close-modal">Cancel</button><button class="btn primary" data-action="custom-match-start">Play match <svg class="ic ic-right" aria-hidden="true"><use href="#i-right"></use></svg></button></div>`, { size: 'sm' });
   }
 
   function launch(cfg, title, extra) {
@@ -1954,7 +1954,7 @@
     app.innerHTML = `
       <div class="tp" style="--tc:${esc(t.color || '#1F8BFF')}">
         <div class="tp-hero">
-          <button class="btn sm" data-action="nav" data-v="teams">← Team rankings</button>
+          <button class="btn sm" data-action="nav" data-v="teams"><svg class="ic ic-left" aria-hidden="true"><use href="#i-left"></use></svg> Team rankings</button>
           <div class="tp-id">
             ${badge(t, 'xl')}
             <div class="tp-name">
@@ -1998,7 +1998,7 @@
     const reg = state.ui.rankRegion || 'all';
     const list = rankedTeams().map((t, i) => Object.assign({ rank: i + 1 }, t)).filter((t) => (reg === 'all' || t.region === reg) && (!q || t.name.toLowerCase().includes(q) || t.players.some((p) => p.name.toLowerCase().includes(q))));
     app.innerHTML = `
-      <div class="page-head" data-crumb="Teams  ›  Team rankings"><button class="btn sm" data-action="nav" data-v="home">← Main menu</button><h1>Team rankings</h1><div class="head-actions">${seasonSeg()}<span class="count-pill">${rankedTeams().length} teams</span></div></div>
+      <div class="page-head" data-crumb="Teams  ›  Team rankings"><button class="btn sm" data-action="nav" data-v="home"><svg class="ic ic-left" aria-hidden="true"><use href="#i-left"></use></svg> Main menu</button><h1>Team rankings</h1><div class="head-actions">${seasonSeg()}<span class="count-pill">${rankedTeams().length} teams</span></div></div>
       <div class="bento">
         <section class="tile c-12">
           <div class="tile-head"><div><h2>${seasonLabel(curSeason())} rosters</h2><p>${curSeason() === '2027' ? 'Current rosters as of ' + esc((window.RL_DATA27 || {}).asOf || '') + '. ' : HIST.some((x) => x.key === curSeason()) ? 'Rosters from that season\'s ' + (/^S\d$/.test(curSeason()) ? 'Finals' : curSeason() === 'S9' ? 'regional championships' : curSeason() === 'SX' ? 'regional Majors and Championships' : 'Majors and World Championship') + '. ' : ''}Ratings are estimates from ${curSeason() === '2027' || curSeason() === '2026' ? '2026' : 'that season\'s'} results. Select a team to edit its name, players or ratings.</p></div>
@@ -2304,7 +2304,7 @@
   // back to top: a small button once a long page has been scrolled a good way down
   {
     const tb = document.createElement('button');
-    tb.type = 'button'; tb.className = 'to-top'; tb.setAttribute('aria-label', 'Back to top'); tb.title = 'Back to top'; tb.textContent = '↑';
+    tb.type = 'button'; tb.className = 'to-top'; tb.setAttribute('aria-label', 'Back to top'); tb.title = 'Back to top'; tb.innerHTML = window.RLIcon('up');
     tb.addEventListener('click', () => window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }));
     document.body.appendChild(tb);
     let tick = 0;
