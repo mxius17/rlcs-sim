@@ -1585,7 +1585,7 @@
       setTimeout(() => playNationIntro(st), 350);
     }
     // the season's awards ceremony plays once when the review is reached
-    if (st.type === 'review' && tab === 'central' && X() && X().hasAwards() && !X().awardsSeen() && autoI && !document.querySelector('#modalRoot .modal')) { X().markAwards(); setTimeout(() => X().openAwards(C.season), 450); }
+    if (st.type === 'review' && tab === 'central' && X() && X().hasAwards() && !X().awardsSeen() && autoI && !document.querySelector('#modalRoot .modal, .side-cer, .cut')) { X().markAwards(); setTimeout(() => X().openAwards(C.season), 450); }
     else if (st.type === 'review' && X() && X().hasAwards() && !autoI) X().markAwards();
     // the 1v1 and 2v2 Opens keep their branding but have no intro
   }
@@ -2126,7 +2126,7 @@
       api = a; E = a.E;
       if (global.RLCareerX) global.RLCareerX.attach({
         get C() { return C; }, api: () => api, esc: (s) => api.esc(s), news, teamObj, userTeam, V, homeReg, step, isWindow, REGIONS, money, ovr, standings,
-        salaryFor, valueFor, askingSalary, minTierFor, tierOf, tierName, joinTeam, removeFromTeam, aiFill, recordDeal, bump, save, avatar, ageLabel, diff,
+        salaryFor, valueFor, askingSalary, minTierFor, tierOf, tierName, joinTeam, removeFromTeam, aiFill, recordDeal, bump, save, avatar, ageLabel, diff, photoOf,
         openMarket, setObjectives, render: () => api.render(), slots: () => ({ major: slotM(), worlds: slotW() }),
       });
       load();

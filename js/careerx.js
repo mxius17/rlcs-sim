@@ -871,8 +871,25 @@
 
   /* ======================= awards ceremony ======================= */
   let AW = null;
+  const AW_META = { mvp: ['🏆', 'MVP'], young: ['🌱', 'Young player'], scorer: ['⚽', 'Golden Boost'], play: ['🎯', 'Playmaker'], wall: ['🧱', 'The Wall'], break: ['🚀', 'Breakout'], toty: ['⭐', 'Team of the Year'], mgr: ['📋', 'Manager'], club: ['🏟️', 'Club'] };
+  /** Awards night, staged like the trophy ceremonies (js/ceremony.js); the old pop-up stays as a fallback. */
   function openAwards(season) {
     const list = (C().x.awards || {})[season]; if (!list || !list.length) return;
+    if (global.RLCeremony && global.RLCeremony.awards) {
+      const api = K.api();
+      const person = (w, crest) => {
+        const p = w.pid && C().players[w.pid];
+        const t = w.team && C().teams[w.team] ? K.teamObj(w.team) : null;
+        return { name: w.name, flag: w.flag || '', photo: p && K.photoOf ? K.photoOf(p) : null, badge: t ? api.badge(t, crest ? 'xl' : 'sm') : '', teamName: w.teamName || (t ? t.name : ''), stat: String(w.stat || ''), crest: !!crest, you: !K.V() && w.team === C().user };
+      };
+      const awards = list.map((a) => {
+        const crest = a.key === 'mgr' || a.key === 'club', m = AW_META[a.key] || ['🏅', a.title];
+        return { key: a.key, title: a.title, short: m[1], icon: m[0], blurb: a.blurb, nominees: (a.nominees || []).map((n) => person(n, crest)), winner: a.winner ? person(a.winner, crest) : null, team: a.team ? a.team.map((n) => person(n)) : null };
+      });
+      const mineCol = !K.V() && C().teams[C().user] ? C().teams[C().user].color : null;
+      global.RLCeremony.awards({ season, kicker: 'RLCS ' + season + ' · Season awards', palette: { a: '#d4a017', b: '#0b0f22', c: '#fcd34d' }, mine: mineCol, awards }, () => K.render());
+      return;
+    }
     AW = { season, i: 0, shown: false, list };
     drawAwards();
   }

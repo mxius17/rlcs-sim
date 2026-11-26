@@ -239,5 +239,113 @@
     if (S.raf) cancelAnimationFrame(S.raf);
   }
 
-  global.RLCeremony = { play, stop, hexA };
+
+  /* ---------- season awards night (career mode, js/careerx.js builds the data) ----------
+   * o = { season, kicker, palette, mine: teamId, awards: [{ key, title, short, blurb, icon,
+   *        nominees: [{ name, flag, photo, badge, teamName, stat, crest, you }], winner: {…}, team: [{…}] }] }
+   * Scenes: the opening card → for every award the nominees, an envelope moment, the winner under the spotlight
+   * (a golden statuette, the name letter by letter, confetti) → a recap of the night. Same controls as the trophy
+   * ceremonies: Next ▸ skips a beat, Skip ends it, Space / → / Enter and Esc. */
+  const STATUE = `<svg class="sc-medal aw-statue" viewBox="0 0 160 260" aria-hidden="true">
+      <path class="cu" d="M80 8 L92 40 L126 41 L99 61 L109 94 L80 75 L51 94 L61 61 L34 41 L68 40Z"/>
+      <path class="cu" d="M70 98 H90 L94 186 H66Z"/><path class="sh" d="M74 104 L72 180"/>
+      <path class="cu" d="M44 186 H116 L124 214 H36Z"/><rect class="cu" x="28" y="214" width="104" height="24" rx="4"/>
+      <path class="st" d="M58 226 H102"/></svg>`;
+  function awards(o, done) {
+    stop();
+    const pal = o.palette || { a: '#d4a017', b: '#0b0f22', c: '#fcd34d' };
+    const list = o.awards || [];
+    const el = document.createElement('div');
+    el.className = 'side-cer si-m3 aw-night';
+    el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Season awards ceremony');
+    el.style.cssText = `--a:${pal.a};--b:${pal.b};--c:${pal.c};--c3:${pal.c}`;
+    const steps = [['open', 'Awards night']].concat(list.map((x, i) => ['a' + i, x.short || x.title]), [['recap', 'The winners']]);
+    el.innerHTML = `<div class="si-bg" aria-hidden="true"></div><div class="sc-beams" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <div class="sc-stage"></div><canvas class="sc-confetti" aria-hidden="true"></canvas>
+      <div class="cer-ui"><div class="cer-steps">${steps.map(([k, l]) => `<span data-k="${k}">${esc(l)}</span>`).join('')}</div><span class="aw-count"></span>
+        <div class="cer-btns"><button class="cer-next" type="button">Next ▸</button><button class="cer-skip" type="button">Skip ceremony</button></div></div>`;
+    document.body.appendChild(el);
+    document.documentElement.classList.add('cer-open');
+    const S = (cur = { el, timers: [], dead: false, raf: 0, advance: null });
+    const stage = el.querySelector('.sc-stage');
+    const finish = () => { if (S.dead) return; stop(); if (done) done(); };
+    const next = () => { if (S.advance) { const f = S.advance; S.advance = null; f(); } };
+    el.querySelector('.cer-next').addEventListener('click', next);
+    el.querySelector('.cer-skip').addEventListener('click', finish);
+    S.onKey = (ev) => { if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); finish(); } else if (ev.key === ' ' || ev.key === 'ArrowRight' || ev.key === 'Enter') { ev.preventDefault(); ev.stopPropagation(); next(); } };
+    document.addEventListener('keydown', S.onKey, true);
+    const wait = (ms) => new Promise((res) => { const t = setTimeout(() => { S.advance = null; res(); }, ms); S.timers.push(t); S.advance = () => { clearTimeout(t); res(); }; });
+    const later = (ms, f) => S.timers.push(setTimeout(() => { if (!S.dead) f(); }, ms));
+    const mark = (k) => { el.querySelectorAll('.cer-steps span').forEach((x) => { x.classList.toggle('on', x.dataset.k === k); if (x.dataset.k === k) { x.classList.add('seen'); x.scrollIntoView({ block: 'nearest', inline: 'center' }); } }); const i = steps.findIndex((s) => s[0] === k); el.querySelector('.aw-count').textContent = i > 0 && i <= list.length ? `Award ${i} of ${list.length}` : ''; };
+    const sfx = (n) => global.RLSfx && global.RLSfx.play(n);
+    let li = 0;
+    const big = (n) => `<span class="sc-word">${String(n).split(' ').map((w) => `<span class="sc-w">${Array.from(w).map((ch) => `<i style="--i:${li++}">${esc(ch)}</i>`).join('')}</span>`).join(' ')}</span>`;
+    const who = (w) => (w.crest ? `<span class="aw-crest">${w.badge || ''}</span>` : face(w));
+    const card = (w, i, cls) => `<div class="aw-nom ${cls || ''}${w.you ? ' you' : ''}" style="--i:${i}">${who(w)}<b>${esc(w.flag || '')} ${esc(w.name)}</b><span class="aw-team">${w.crest ? '' : w.badge || ''}<small>${esc(w.teamName || '')}</small></span><em>${esc(w.stat || '')}</em>${w.you ? '<i class="aw-you">You</i>' : ''}</div>`;
+    sfx('whoosh');
+
+    const sceneOpen = async () => {
+      mark('open');
+      stage.innerHTML = `<div class="sc-champ aw-open"><div class="sc-spot" aria-hidden="true"></div>${STATUE}
+        <span class="si-kicker">${esc(o.kicker || '')}</span>
+        <h1 class="sc-name">${big('Awards night')}</h1>
+        <div class="aw-marquee">${list.map((x, i) => `<span style="--i:${i}">${esc(x.icon || '🏅')} ${esc(x.title)}</span>`).join('')}</div>
+        <p class="sc-next">The best of RLCS ${esc(o.season)}. ${list.length} awards, one night.</p></div>`;
+      later(300, () => sfx('fanfare'));
+      await wait(4200);
+    };
+    const sceneAward = async (x, i) => {
+      mark('a' + i);
+      const isTeam = !!x.team;
+      // nominees (Team of the Year is named as a line-up instead)
+      if (!isTeam) {
+        stage.innerHTML = `<div class="aw-stage"><span class="si-kicker">${esc(x.icon || '🏅')} ${esc(x.title)}</span>
+          <h2 class="aw-h">The nominees are…</h2><p class="aw-blurb">${esc(x.blurb || '')}</p>
+          <div class="aw-noms">${x.nominees.map((n, k) => card(n, k)).join('')}</div></div>`;
+        x.nominees.forEach((_, k) => later(450 + k * 420, () => sfx('count')));
+        await wait(1500 + x.nominees.length * 420 + 1200); if (S.dead) return;
+        // the envelope
+        stage.innerHTML = `<div class="aw-stage aw-env"><div class="aw-envelope" aria-hidden="true"><i></i></div><h2 class="aw-h">And the winner is…</h2></div>`;
+        sfx('whoosh');
+        await wait(1500); if (S.dead) return;
+      }
+      li = 0;
+      const W = x.winner;
+      const lead = isTeam ? `<div class="sc-trio aw-trio">${x.team.map((p, k) => `<div class="sc-pl p${k}${p.you ? ' you' : ''}">${face(p)}<b>${esc(p.flag || '')} ${esc(p.name)}</b><small>${esc(p.teamName || '')} · ${esc(p.stat || '')}</small></div>`).join('')}</div>`
+        : `<div class="aw-win-who">${who(W)}</div><h1 class="sc-name aw-wname">${big(W.name)}</h1>
+           <div class="sc-club">${W.crest ? '' : W.badge || ''}<span>${esc(W.flag || '')} ${esc(W.teamName || '')}</span></div>
+           <div class="aw-stat"><b>${esc(W.stat || '')}</b></div>`;
+      stage.innerHTML = `<div class="sc-champ aw-win${isTeam ? ' aw-team-win' : ''}${(W && W.you) || (isTeam && x.team.some((p) => p.you)) ? ' mine' : ''}">
+        <div class="sc-spot" aria-hidden="true"></div>${STATUE}
+        <span class="si-kicker">${esc(o.kicker || '')}</span>
+        ${isTeam ? `<h1 class="sc-name aw-wname">${big('Team of the Year')}</h1>` : ''}
+        ${lead}
+        <div class="sc-label">${esc(isTeam ? 'RLCS ' + o.season : x.title)}</div>
+        ${(W && W.you) || (isTeam && x.team.some((p) => p.you)) ? '<p class="sc-next aw-mine">One of yours! 🎉</p>' : ''}
+      </div>`;
+      later(200, () => sfx('fanfare'));
+      later(isTeam ? 1700 : 900, () => confetti(S, [pal.a, pal.c, '#ffffff', '#ffe58a']));
+      await wait(isTeam ? 6500 : 5200);
+      if (S.raf) { cancelAnimationFrame(S.raf); S.raf = 0; }
+      const cv = el.querySelector('.sc-confetti'); if (cv) cv.getContext('2d').clearRect(0, 0, cv.width, cv.height);
+    };
+    const sceneRecap = async () => {
+      mark('recap'); sfx('tab');
+      stage.innerHTML = `<div class="sc-road aw-recap"><h2>RLCS ${esc(o.season)} award winners</h2><p class="sc-sub">${esc(o.kicker || '')}</p>
+        <div class="aw-grid">${list.map((x, i) => { const w = x.team ? null : x.winner; return `<div class="aw-cell${(w && w.you) || (x.team && x.team.some((p) => p.you)) ? ' you' : ''}" style="--i:${i}"><small>${esc(x.icon || '🏅')} ${esc(x.title)}</small><b>${esc(x.team ? x.team.map((p) => p.name).join(' · ') : (w.flag ? w.flag + ' ' : '') + w.name)}</b><span>${esc(x.team ? 'Team of the Year' : w.teamName || '')}</span></div>`; }).join('')}</div>
+        <button class="sc-done" type="button">Continue →</button></div>`;
+      stage.querySelector('.sc-done').addEventListener('click', finish);
+      el.querySelector('.cer-next').textContent = 'Finish ▸';
+      later(900, () => { const bt = stage.querySelector('.sc-done'); if (bt) bt.focus({ preventScroll: true }); });
+      await wait(120000);
+    };
+    (async () => {
+      await sceneOpen(); if (S.dead) return;
+      for (let i = 0; i < list.length; i++) { await sceneAward(list[i], i); if (S.dead) return; }
+      await sceneRecap(); if (S.dead) return;
+      finish();
+    })();
+  }
+
+  global.RLCeremony = { play, stop, hexA, awards };
 })(window);
