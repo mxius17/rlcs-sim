@@ -179,17 +179,59 @@
   const FAN_PRE = ['rl', 'boost', 'flip', 'aerial', 'goal', 'demo', 'ceiling', 'musty', 'wavedash', 'pinch', 'zero', 'backboard', 'kickoff', 'redirect'];
   const FAN_SUF = ['fan', 'enjoyer', 'merchant', 'god', 'andy', 'stan', 'watcher', 'head', 'enthusiast', 'goblin', 'lover', 'warrior'];
   const fanAcct = () => { const h = pick(FAN_PRE) + '_' + pick(FAN_SUF) + ri(1, 99); return { n: h.replace(/_/g, ' '), h, c: pick(['#64748b', '#0ea5e9', '#f97316', '#84cc16', '#ec4899', '#14b8a6']) }; };
-  const playerAcct = (p) => ({ n: p.name, h: String(p.name).replace(/[^A-Za-z0-9_]/g, '') || 'player', c: p.team && C().teams[p.team] ? C().teams[p.team].color : '#475569', v: p.rating >= 80, flag: p.flag });
+  const playerAcct = (p) => ({ n: p.name, h: String(p.name).replace(/[^A-Za-z0-9_]/g, '') || 'player', c: p.team && C().teams[p.team] ? C().teams[p.team].color : '#475569', v: p.rating >= 80, flag: p.flag, pid: p.id, club: p.team || null });
   const clubAcct = (id) => { const t = C().teams[id]; return { n: t.name, h: String(t.name).replace(/[^A-Za-z0-9]/g, ''), c: t.color, v: true, club: id }; };
   const pressAcct = () => { const x = pick(PRESS); return { n: x[0], h: x[1], c: x[2], v: true, press: true }; };
   function post(acct, text, o) {
     o = o || {};
     const x = C().x; x.social = x.social || [];
     const base = (acct.v ? 900 : 40) * (o.big ? 6 : 1);
-    x.social.unshift({ a: acct, t: text, k: o.kind || 'fan', mood: o.mood || '', likes: Math.round(base * rnd(0.4, 2.6)), rts: Math.round(base * rnd(0.05, 0.4)), when: C().season + ' · ' + K.step().short, tag: o.tag || '' });
+    x.sid = (x.sid || 0) + 1;
+    x.social.unshift({ id: x.sid, a: acct, t: text, k: o.kind || 'fan', mood: o.mood || '', likes: Math.round(base * rnd(0.4, 2.6)), rts: Math.round(base * rnd(0.05, 0.4)), when: C().season + ' · ' + K.step().short, tag: o.tag || '' });
     x.social = x.social.slice(0, 140);
   }
   const hashTag = (s) => '#' + String(s).replace(/[^A-Za-z0-9]/g, '');
+
+  /* ---- comments under a post: generated the first time a thread is opened (older posts included), more on demand ---- */
+  const CM = {
+    good: ['LETS GOOOO 🔥🔥', 'deserved. no debate.', 'goosebumps watching that', 'best team in the world rn', 'told everyone in my discord this would happen', 'I need this on a t-shirt', 'crying real tears ngl', 'what a time to be a fan 🙌', 'that final will live in my head rent free', 'proud of you guys ❤️', 'the clutch gene is real', 'W', 'absolute cinema 🎬', 'running it back next event 😤'],
+    bad: ['unacceptable tbh', 'something has to change', 'we\'re better than this', 'the rotation was a mess all event', 'not even mad, just disappointed', 'bench the whole roster 💀', 'manager out? genuinely asking', 'pain. just pain.', 'how do you lose that series', 'I believed... I really did', 'L', 'back to the drawing board'],
+    neutral: ['big if true 👀', 'interesting times', 'source?', 'can\'t wait for the next event', 'this scene never sleeps', 'thoughts? 🤔', 'bookmarking this', 'the timeline is going crazy today', 'who else is watching live?', 'make it make sense'],
+    rival: ['enjoy it while it lasts 😏', 'see you in the final 👋', 'carried by the bracket ngl', 'ok but wait till the Major', 'lucky. next.', 'still think we\'re better', 'calm down it\'s just one event'],
+    press: ['Full breakdown of the stats in our next piece.', 'Remarkable numbers this season. We\'ll have analysis tomorrow.', 'One of the storylines of the year.', 'Our sources say there\'s more to come.'],
+    transfer: ['massive signing', 'overpaid imo', 'that roster is scary now', 'welcome!! 🙌', 'the fee is wild', 'bold move, let\'s see', 'he\'s going to cook there', 'didn\'t see that coming at all'],
+    mate: ['my brother 🤝', 'built different 🐐', 'couldn\'t do it without you', 'love this team ❤️', 'that save in game 5 though 😮‍💨', 'next one is ours too'],
+    cryptic: ['you good? 👀', 'what does this mean...', 'uh oh', 'don\'t leave us 😭', 'the club needs to sort this out', 'stay strong', 'he\'s gone isn\'t he'],
+  };
+  function makeComment(sp) {
+    const x = C().x, kind = sp.k, mood = sp.mood, txt = String(sp.t);
+    const r = Math.random();
+    // a teammate or the club answers a player's post, a player answers his club's post
+    if (sp.a.pid && sp.a.club && C().teams[sp.a.club] && r < 0.25) {
+      const mates = C().teams[sp.a.club].roster.filter((id) => id !== sp.a.pid).map((id) => C().players[id]).filter(Boolean);
+      const m = pick(mates);
+      if (m) return { a: playerAcct(m), t: mood === 'bad' ? pick(['talk to me bro 🙏', 'we got you', 'head up, we go again']) : pick(CM.mate) };
+    }
+    if (sp.a.club && !sp.a.pid && C().teams[sp.a.club] && r < 0.2) {
+      const m = pick(C().teams[sp.a.club].roster.map((id) => C().players[id]).filter(Boolean));
+      if (m) return { a: playerAcct(m), t: pick(CM.mate) };
+    }
+    if (r < 0.32 && kind !== 'press') return { a: pressAcct(), t: pick(CM.press) };
+    // rival fans show up under celebrations
+    if (mood === 'good' && r < 0.5) { const rv = pick(Object.keys(C().teams).filter((id) => id !== sp.a.club && K.tierOf(id) >= 3)); if (rv) { const f = fanAcct(); f.n = f.n + ' · ' + (C().teams[rv].tag || C().teams[rv].name); return { a: f, t: pick(CM.rival), rival: true }; } }
+    const pool = mood === 'bad' ? (/\.\.\.|scenery|future|Not today/.test(txt) ? CM.cryptic : CM.bad) : mood === 'good' ? CM.good : /Welcome|signs|bid|offer|monitoring|move|fee/i.test(txt) ? CM.transfer : CM.neutral;
+    return { a: fanAcct(), t: pick(pool) };
+  }
+  function ensureComments(sp, more) {
+    sp.c = sp.c || [];
+    const n = more ? 4 : Math.max(0, ri(3, 5) - sp.c.length);
+    for (let i = 0; i < n && sp.c.length < 24; i++) {
+      // no repeated lines or repeated authors in one thread
+      let c = null; for (let t = 0; t < 8; t++) { const y = makeComment(sp); if (!sp.c.some((z) => z.t === y.t || (z.a.pid && z.a.pid === y.a.pid) || z.a.h === y.a.h)) { c = y; break; } }
+      if (!c) break; c.likes = Math.round((sp.likes || 50) * rnd(0.005, 0.12) * (c.a.v ? 3 : 1)); c.ago = ri(1, 59) + 'm'; sp.c.push(c); }
+    sp.c.sort((a, b) => b.likes - a.likes);
+    sp.cn = Math.max(sp.cn || 0, Math.round((sp.rts || 10) * rnd(0.4, 0.9)), sp.c.length);
+  }
 
   /* ======================= news helpers ======================= */
   const KIND_LABEL = { trophy: 'Trophy', result: 'Result', transfer: 'Transfer', academy: 'Academy', career: 'Club', info: 'Club', upset: 'Upset', rumour: 'Rumour', feature: 'Feature', milestone: 'Milestone', award: 'Awards', hof: 'Hall of Fame', power: 'Power shift', preview: 'Preview', record: 'Record' };
@@ -810,14 +852,21 @@
       ${hist.length > 1 ? `<div class="tile-kicker" style="margin-top:12px">Power index by season</div><div class="table-wrap"><table class="st"><thead><tr><th class="l">Region</th>${hist.map((h) => `<th>${h.season}</th>`).join('')}</tr></thead><tbody>${REG.map((r) => `<tr><td class="l">${r}</td>${hist.map((h) => `<td>${h.idx[r] != null ? h.idx[r] : '—'}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}
     </div></section>`;
   }
+  function thread(s) {
+    const k = (n) => (n >= 1000 ? (n / 1000).toFixed(1) + 'k' : n);
+    return `<div class="x-thread">${(s.c || []).map((c) => `<div class="x-cmt${c.rival ? ' rival' : ''}"><span class="x-av sm" style="--c:${esc(c.a.c || '#475569')}">${esc((c.a.n || '?').replace(/[^A-Za-z0-9]/g, '').slice(0, 1).toUpperCase() || '?')}</span><div><header><b>${esc(c.a.n)}</b>${c.a.v ? '<i class="x-ver" title="Verified">✔</i>' : ''}<small>@${esc(c.a.h)} · ${esc(c.ago || '')}</small></header><small class="x-rep">Replying to @${esc(s.a.h)}</small><p>${esc(c.t)}</p><footer><span>♥ ${k(c.likes || 0)}</span></footer></div></div>`).join('')}
+      <div class="x-thread-f"><small>Showing ${(s.c || []).length} of ${k(s.cn || (s.c || []).length)} comments · top first</small>${(s.c || []).length < 24 ? `<button class="btn sm" data-action="x-cmt-more" data-v="${s.id}">More comments</button>` : ''}</div></div>`;
+  }
   function socialHTML() {
     const S = C().x.social || [];
+    const ui = K.api().state.ui, open = new Set(ui.xOpen || []);
+    let fix = false; S.forEach((s) => { if (!s.id) { C().x.sid = (C().x.sid || 0) + 1; s.id = C().x.sid; fix = true; } }); if (fix) K.save();
     const tags = {}; S.slice(0, 60).forEach((s) => (String(s.t).match(/#\w+/g) || []).forEach((h) => (tags[h] = (tags[h] || 0) + 1)));
     const trend = Object.entries(tags).sort((a, b) => b[1] - a[1]).slice(0, 6);
     const k = (n) => (n >= 10000 ? (n / 1000).toFixed(0) + 'k' : n >= 1000 ? (n / 1000).toFixed(1) + 'k' : n);
     return `<div class="fc-panel-body x-soc"><h3 class="fc-h">Social</h3>
       ${trend.length ? `<div class="x-trend"><small>Trending</small>${trend.map(([h, n]) => `<span>${esc(h)} <i>${n}</i></span>`).join('')}</div>` : ''}
-      <div class="x-feed">${S.slice(0, 40).map((s) => `<article class="x-post ${s.mood || ''}"><span class="x-av" style="--c:${esc(s.a.c || '#475569')}">${esc((s.a.n || '?').replace(/[^A-Za-z0-9]/g, '').slice(0, 1).toUpperCase() || '?')}</span><div><header><b>${esc(s.a.n)}</b>${s.a.v ? '<i class="x-ver" title="Verified">✔</i>' : ''}<small>@${esc(s.a.h)} · ${esc(s.when)}</small></header><p>${s.t}</p><footer><span>💬 ${k(Math.round(s.rts * 0.6))}</span><span>🔁 ${k(s.rts)}</span><span>♥ ${k(s.likes)}</span></footer></div></article>`).join('') || '<p class="muted">Nothing posted yet. Play an event to get people talking.</p>'}</div></div>`;
+      <div class="x-feed">${S.slice(0, 40).map((s) => `<article class="x-post ${s.mood || ''}"><span class="x-av" style="--c:${esc(s.a.c || '#475569')}">${esc((s.a.n || '?').replace(/[^A-Za-z0-9]/g, '').slice(0, 1).toUpperCase() || '?')}</span><div><header><b>${esc(s.a.n)}</b>${s.a.v ? '<i class="x-ver" title="Verified">✔</i>' : ''}<small>@${esc(s.a.h)} · ${esc(s.when)}</small></header><p>${s.t}</p><footer><button class="x-cbtn${open.has(s.id) ? ' on' : ''}" data-action="x-cmt" data-v="${s.id}" aria-expanded="${open.has(s.id)}">💬 ${k(s.cn || Math.round(s.rts * 0.6))}</button><span>🔁 ${k(s.rts)}</span><span>♥ ${k(s.likes)}</span></footer>${open.has(s.id) ? thread(s) : ''}</div></article>`).join('') || '<p class="muted">Nothing posted yet. Play an event to get people talking.</p>'}</div></div>`;
   }
 
   /* ======================= awards ceremony ======================= */
@@ -849,6 +898,17 @@
       case 'x-talk': teamTalk(v); K.render(); return true;
       case 'x-scout': { const lv = (scoutNet()[v] || 0) + 1, cost = SCOUT_COST[lv]; if (K.userTeam().budget < cost) return true; K.userTeam().budget -= cost; C().x.scout[v] = lv; K.news('career', `🔭 Scouting: you ${lv === 1 ? 'hire a scout in' : 'expand your network in'} ${esc(K.api().regions[v])} (level ${lv}).`); K.save(); K.render(); return true; }
       case 'x-trreg': K.api().state.ui.trReg = v; K.render(); return true;
+      case 'x-cmt': case 'x-cmt-more': {
+        const ui = K.api().state.ui, sid = +v, sp = (C().x.social || []).find((y) => y.id === sid); if (!sp) return true;
+        const open = new Set(ui.xOpen || []);
+        if (a === 'x-cmt-more') ensureComments(sp, true);
+        else if (open.has(sid)) open.delete(sid); else { open.add(sid); ensureComments(sp); }
+        ui.xOpen = [...open]; K.save();
+        const y = window.scrollY, feed = document.querySelector('.x-feed'), fy = feed ? feed.scrollTop : 0;
+        K.render();
+        window.scrollTo({ top: y }); const f2 = document.querySelector('.x-feed'); if (f2) f2.scrollTop = fy;
+        return true;
+      }
       case 'x-neg-go': negGo(false); return true;
       case 'x-neg-acc': negGo(true); return true;
       case 'x-bid': bidAct(id, v); return true;

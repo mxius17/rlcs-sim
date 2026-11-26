@@ -4111,3 +4111,16 @@ html.menu-home .hub .hc-list .hub-tab.on { color: #fff; background: none; box-sh
 .fc-tiles:has(> :nth-child(6)) { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 @media (max-width: 1100px) { .fc-tiles:has(> :nth-child(6)) { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .fc-tiles:has(> :nth-child(6)) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* social: comment threads */
+.x-cbtn { background: none; border: 0; color: inherit; font: inherit; cursor: pointer; padding: 2px 6px; margin: -2px -6px; border-radius: 4px; opacity: 1; }
+.x-cbtn:hover, .x-cbtn.on { background: rgba(96,165,250,.15); color: #93c5fd; }
+.x-post footer { opacity: 1; } .x-post footer > span { opacity: .6; }
+.x-thread { margin-top: 10px; padding-left: 12px; border-left: 2px solid rgba(255,255,255,.1); display: grid; gap: 2px; }
+.x-cmt { display: grid; grid-template-columns: 30px 1fr; gap: 8px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.05); }
+.x-cmt.rival .x-rep::after { content: " · rival fan"; color: #f87171; }
+.x-av.sm { width: 30px; height: 30px; font-size: 12px; }
+.x-cmt header b { font-size: 13px; } .x-cmt p { margin: 2px 0 4px; font-size: 13.5px; }
+.x-rep { display: block; font-size: 11.5px; opacity: .5; }
+.x-cmt footer { font-size: 11.5px; }
+.x-thread-f { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding-top: 8px; flex-wrap: wrap; }
+.x-thread-f small { font-size: 11.5px; opacity: .6; }
