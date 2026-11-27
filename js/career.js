@@ -24,13 +24,16 @@
   /** What the save list shows for the loaded career. */
   function slotMeta() {
     const t = C.user ? teamObj(C.user) : null;
-    return { name: t ? t.name : 'Neutral viewer', tag: t ? t.tag : 'GM', color: t ? t.color : '#8b5cf6', tid: C.user || '', viewer: !C.user, reg: C.vreg || '', season: C.season, step: SCHEDULE[C.step] ? SCHEDULE[C.step].name : '', trophies: (C.trophies || []).length, at: Date.now() };
+    return { name: t ? t.name : C.pro && C.players[C.pro.pid] ? C.players[C.pro.pid].name + ' (player)' : 'Neutral viewer', tag: t ? t.tag : 'GM', color: t ? t.color : '#8b5cf6', tid: C.user || '', viewer: !C.user, reg: C.vreg || '', season: C.season, step: SCHEDULE[C.step] ? SCHEDULE[C.step].name : '', trophies: (C.trophies || []).length, at: Date.now() };
   }
   let api, E, C = null, teamCache = {}, cacheVer = 0;
 
   const REGIONS = ['EU', 'NA', 'SAM', 'MENA', 'OCE', 'APAC', 'SSA'];
   /** Career extras (js/careerx.js): personalities, tactics, negotiations, awards, Hall of Fame, records, social, scouting, power shifts. */
   const X = () => (global.RLCareerX && C && C.x ? global.RLCareerX : null);
+  /** Player career (js/procareer.js): active while your created player is still playing. */
+  const P = () => (global.RLPro && C && C.pro && !C.pro.retired ? global.RLPro : null);
+  const PA = () => (global.RLPro && C && C.pro ? global.RLPro : null);
   const MAJOR_SLOTS = { EU: 5, NA: 4, SAM: 2, MENA: 2, OCE: 1, APAC: 1, SSA: 1 };
   const WORLDS_SLOTS = { EU: 6, NA: 5, SAM: 3, MENA: 3, OCE: 1, APAC: 1, SSA: 1 };
   // regional power shifts can move slots between regions (C.x.slotsM / C.x.slotsW)
@@ -911,6 +914,7 @@
     if (champ === C.user) { C.trophies.push({ season: C.season, title }); news('trophy', `🏆 <b>${esc(userTeam().name)}</b> win the ${esc(title)}!`, { ev: st.key, region, champ, place: 1 }); }
     else if (kind !== 'open' || region === homeReg()) news('result', `<b>${esc(C.teams[champ].name)}</b> win the ${esc(title)}${me ? ` · you finished <b>${placeLabel(me.place, list)}</b>` : ''}.`, { ev: st.key, region, champ, mine: me ? placeLabel(me.place, list) : null });
     if (X()) X().onEvent(T, st, region, title, list);
+    if (P()) { const pt = C.players[C.pro.pid].team, row = pt && list.find((x) => x.id === pt); P().onEvent(T, st, region, title, list, row ? (PRIZE[kind] || [])[row.place - 1] || 0 : 0); }
   }
 
   /** Finished 1v1/2v2 event: prize money to each player's club, results, news and trophies. No 3v3 points or stats. */
@@ -932,6 +936,7 @@
     if (!V() && entry.champClub === C.user) { C.trophies.push({ season: C.season, title: title + ' · ' + entry.champName }); news('trophy', `🏆 <b>${esc(entry.champName)}</b> ${st.mode === 1 ? 'wins' : 'win'} the ${esc(title)} for ${esc(userTeam().name)}!`, { ev: st.key, region, champ: C.user, place: 1 }); }
     else if (st.type === 'sidew' || region === sideHome()) news('result', `<b>${esc(entry.champName)}</b> (${esc(clubName)}) ${st.mode === 1 ? 'wins' : 'win'} the ${esc(title)}${st.type === 'side' ? ` and ${st.mode === 1 ? 'qualifies' : 'qualify'} for the World Championship` : ''}${entry.me ? ` · ${esc(entry.me.name)} finished <b>${entry.me.label}</b>` : ''}.`, { ev: st.key, region, champ: entry.champClub, mine: entry.me ? entry.me.label : null });
     if (X()) { const ps = (id) => (id ? sidePids(id).map((pid) => C.players[pid]).filter(Boolean) : []); X().onSide(T, st, region, title, { champ: ps(champ), runner: ps(T.runnerUp), mine: entry.me, mode: st.mode, world: st.type === 'sidew' }); }
+    if (P()) P().onSide(T, st, region, title, list);
   }
   /** A national-team event: results, news, your players on international duty. No club money, no RLCS points. */
   function applyNation(T, st, title) {
@@ -944,6 +949,7 @@
     const won = mine.filter((p) => co && p.country === co.name);
     news(won.length ? 'trophy' : 'result', `${co ? esc(co.tag) + ' ' : ''}<b>${esc(co ? co.name : '')}</b> win the ${esc(title)}${T.runnerUp && nationObj(T.runnerUp) ? `, beating ${esc(nationObj(T.runnerUp).name)} in the final` : ''}.${won.length ? ` Your ${won.map((p) => esc(p.name)).join(' and ')} ${won.length === 1 ? 'is a' : 'are'} national champion${won.length === 1 ? '' : 's'}!` : mine.length ? ` Your players on duty: ${mine.map((p) => esc(p.name) + ' (' + esc(p.country) + ', ' + placeOf(p.country) + ')').join(', ')}.` : ''}`, { ev: st.key, champ: null });
     if (X()) { const ro = T.runnerUp ? nationObj(T.runnerUp) : null; X().onNation(T, st, title, { champ: co ? co.name : '', champFlag: co ? co.tag : '', runner: ro ? ro.name : '', runnerFlag: ro ? ro.tag : '', champPs: co ? nationPlayers(co.name) : [], mine, won }); }
+    if (P()) P().onNation(T, st, title, list);
   }
   function runStep(userT) {
     const st = step();
@@ -991,6 +997,7 @@
     C.step++;
     if (C.step >= SCHEDULE.length) C.step = SCHEDULE.length - 1;
     if (X()) X().onStep();
+    if (P()) P().onStep();
     bump(); save();
   }
 
@@ -1047,13 +1054,14 @@
         if (pass === 1 ? !sold[buyer] || Math.random() > 0.4 : Math.random() > chance[tier]) continue; // sellers only sometimes reinvest straight away
         const starters = bt.roster.slice(0, 3).map((id) => C.players[id]).filter(Boolean);
         if (starters.length < 3) continue;
-        const weakest = starters.slice().sort((a, b) => a.rating - b.rating)[0];
+        const weakest = starters.filter((q) => !q.pro).sort((a, b) => a.rating - b.rating)[0];
+        if (!weakest) continue;
         const abroad = Math.random() < 0.25; // most clubs only shop in their own region
         const regs = [bt.region].concat(abroad ? MIGRATE[bt.region] || [] : []);
         const priced = [];
         Object.values(C.players).forEach((p) => {
           const st = p.team && C.teams[p.team];
-          if (!st || p.team === buyer || p.team === C.user || sold[p.team] || !regs.includes(st.region) || p.joined === C.season) return; // new signings stay for the season
+          if (!st || p.pro || p.team === buyer || p.team === C.user || sold[p.team] || !regs.includes(st.region) || p.joined === C.season) return; // new signings stay for the season
           if (st.region !== bt.region && (p.rating < 90 || Math.random() > 0.3)) return; // only top stars, and rarely, move across regions
           if (p.rating < weakest.rating + 3 || minTierFor(p) > tier) return;
           if (p.contract >= 2 && Math.random() > 0.25) return; // players under contract are rarely available
@@ -1090,9 +1098,9 @@
       if (signed[buyer]) continue;
       const bt = C.teams[buyer];
       const starters = bt.roster.slice(0, 3).map((id) => C.players[id]).filter(Boolean);
-      const weakest = starters.sort((a, b) => a.rating - b.rating)[0];
+      const weakest = starters.filter((q) => !q.pro).sort((a, b) => a.rating - b.rating)[0];
       if (!weakest) continue;
-      const cands = C.fa.map((id) => C.players[id]).concat(Object.values(C.players).filter((p) => p.team && p.team !== buyer && p.team !== C.user && !sold[p.team] && C.teams[p.team].region === bt.region && ovr(p.team) < ovr(buyer) - 3 && p.joined !== C.season))
+      const cands = C.fa.map((id) => C.players[id]).concat(Object.values(C.players).filter((p) => p.team && !p.pro && p.team !== buyer && p.team !== C.user && !sold[p.team] && C.teams[p.team].region === bt.region && ovr(p.team) < ovr(buyer) - 3 && p.joined !== C.season))
         .filter((p) => p.rating >= weakest.rating + 3 && p.rating <= weakest.rating + 12 && minTierFor(p) <= (bt.tier || 1) + 1);
       if (!cands.length) continue;
       const p = pick(cands.sort((a, b) => b.rating - a.rating).slice(0, 5));
@@ -1112,6 +1120,7 @@
     ai.forEach(aiFill);
     headlines.reverse().forEach(([m, h]) => news('transfer', h, m)); // biggest clubs' deals end up on top
     if (X()) X().onWindow();
+    if (P()) P().afterWindow();
     bump();
   }
 
@@ -1178,10 +1187,11 @@
       p.age++;
       if (p.team === C.user && p.rating !== old) devLines.push(`${esc(p.name)} ${p.rating > old ? '▲' : '▼'} ${old} → ${p.rating}`);
     });
+    if (P()) { P().afterDev(); P().onReview(); }
     if (X()) X().onReview({ objOk: objRes.filter((o) => o.ok).length, worlds: worlds ? worlds.label : null, regRank });
     const retired = [];
     Object.values(C.players).forEach((p) => {
-      if (p.age >= 29 && Math.random() < (p.age - 27) * 0.18 && !(p.team === C.user && p.rating >= 85)) retired.push(p);
+      if (p.age >= 29 && Math.random() < (p.age - 27) * 0.18 && !(p.team === C.user && p.rating >= 85) && !(p.pro && !p.retiredPro)) retired.push(p);
     });
     if (X()) X().onRetire(retired);
     retired.forEach((p) => { removeFromTeam(p.id); C.fa = C.fa.filter((x) => x !== p.id); delete C.players[p.id]; if (p.rating >= 82) news('info', `${esc(p.name)} retires.`); });
@@ -1191,6 +1201,7 @@
       p.contract--;
       if (p.contract <= 0) {
         if (p.team === C.user) expiring.push(p.id);
+        else if (p.pro && !p.retiredPro) { if (P()) P().onExpire(); }
         else if (Math.random() < 0.8) { p.contract = ri(1, 3); p.salary = salaryFor(p.rating); }
         else { const tm = p.team; removeFromTeam(p.id); C.fa.push(p.id); aiFill(tm); }
       }
@@ -1226,6 +1237,7 @@
     bump();
     setObjectives();
     if (X()) X().onNewSeason();
+    if (P()) P().onNewSeason();
     news('career', `The ${C.season} season begins. The pre-season transfer window is open.`);
     save();
   }
@@ -1259,6 +1271,9 @@
     if (rank <= (big ? 5 : 2)) return ['Qualify for the World Championship', 'Qualify for both Majors'];
     if (rank <= (big ? 10 : 5)) return ['Qualify for at least one Major', 'Reach an Open top 4'];
     return ['Reach an Open top 8', 'Finish top 12 in ' + api.regions[reg] + ' points'];
+  }
+  function proCard() {
+    return global.RLPro ? `<div class="cs-viewer cs-pro"><span class="vw-eye" aria-hidden="true">${global.RLIcon('person')}</span><div class="cs-viewer-t"><b>Player career</b><small>Create your own pro: a 17-year-old free agent. Train, win a place in the starting three, move to bigger clubs and chase the world title.</small></div><div class="cs-viewer-r"><button class="btn primary" data-action="pro-new">Create a player ${global.RLIcon('right')}</button></div></div>` : '';
   }
   function viewerCard() {
     const vr = api.state.ui.vreg || 'EU';
@@ -1305,7 +1320,7 @@
     app.innerHTML = `
       <div class="cs ${motion}">
         <div class="cs-title"><button class="btn sm" data-action="nav" data-v="home"><svg class="ic ic-left" aria-hidden="true"><use href="#i-left"></use></svg> Main menu</button>${slotList().length ? `<button class="btn sm" data-action="career-saves"><svg class="ic ic-save" aria-hidden="true"><use href="#i-save"></use></svg> Saves (${slotList().length})</button>` : ''}<h1>Choose your club</h1><span class="muted">${lib.length} teams · RLCS 2027</span></div>
-        ${viewerCard()}
+        ${proCard()}${viewerCard()}
         <div class="cs-card">
           <div class="cs-left">
             <div class="cs-box"><b>${esc(api.regions[t.region])}</b><span class="cs-region" style="--rc:${REG_COL[t.region] || 'var(--azure)'}">${esc(t.region)}</span></div>
@@ -1351,6 +1366,7 @@
     return '20 teams · four groups of five, then an eight-team knockout';
   }
   function myEventStatus(st) {
+    if (P() && C.players[C.pro.pid].team) { const e = C.pro.log.find((x) => x.season === C.season && x.key === st.key && !x.nation); if (e) return e.side ? e.label : e.label + (e.gp ? '' : ' · bench'); }
     if (st.type === 'nation') { const r = C.results[st.key]; return r ? '🏆 ' + (r.flag ? r.flag + ' ' : '') + r.champName : null; }
     if (st.type === 'side' || st.type === 'sidew') {
       const r = st.type === 'side' ? C.results[st.key] && C.results[st.key][sideHome() || 'EU'] : C.results[st.key];
@@ -1470,6 +1486,7 @@
     const ui = api.state.ui;
     let tab = ui.ctab || 'central'; const view = ui.cview || 'next';
     if (viewer && (tab === 'squad' || tab === 'office' || tab === 'tactics')) tab = ui.ctab = 'central';
+    if (tab === 'player' && !PA()) tab = ui.ctab = 'central';
     if (tab === 'tactics' && !X()) tab = ui.ctab = 'central';
     const hubKey = [tab, view, C.season, C.step, ui.cnews || 0].join('|'), enter = hubKey !== lastHubKey;
     const tabChanged = !lastHubKey || lastHubKey.split('|')[0] !== tab;
@@ -1521,13 +1538,13 @@
     const sideCard = `<aside class="fc-side">
         <div class="fc-side-head"><h2>${esc(st.name)}</h2><small>RLCS ${C.season}${hostCity(st) ? ' · ' + esc(hostCity(st)) + (HOST_PAL[hostCity(st)] ? ', ' + esc(HOST_PAL[hostCity(st)][0]) : '') : ''} · step ${C.step + 1} of ${SCHEDULE.length}</small></div>
         <div class="fc-side-row"><span class="fc-day">${C.step + 1}</span><span><small>${esc(st.type === 'window' ? 'Transfer window' : st.type === 'review' ? 'Season review' : st.type === 'open' ? 'Regional Open' : st.type === 'major' ? 'Major' : st.type === 'kickoff' ? 'Season opener' : st.type === 'ewc' ? 'Club event · not RLCS' : st.type === 'nation' ? 'Off-season · national teams' : st.type === 'side' ? (st.mode === 1 ? '1v1' : '2v2') + ' Championship' : st.type === 'sidew' ? 'Worlds week' : 'World Championship')}</small><b>${esc(st.short || st.name)}</b></span><span class="fc-ico" aria-hidden="true">${st.type === 'window' ? '⇄' : st.type === 'review' ? '★' : '🏆'}</span></div>
-        <div class="fc-side-mid"><small>${viewer ? 'Neutral viewer · home region ' + esc(api.regions[reg]) : esc(t.name) + ' · ' + regionRankLabel() + ' in ' + esc(api.regions[reg])}</small>
-          <div class="fc-rings">${viewer ? (() => { const n88 = Object.values(C.players).filter((p) => p.team && p.rating >= 88).length, base = (C.base || talentBase()).n88; return ring(t.ovr - 60, 40, 'Region leader', `<span data-count="${t.ovr}">${t.ovr}</span>`, '◆') + ring(n88, Math.round(base * 1.5), 'Stars 88+', `<span data-count="${n88}">${n88}</span>`, '★'); })() : ring(t.ovr - 60, 40, 'Team rating', `<span data-count="${t.ovr}">${t.ovr}</span>`, '◆')}${viewer ? '' : ring(C.board, 100, 'Board', `<span data-count="${C.board}" data-suf="%">${C.board}%</span>`, '☺')}${ring(C.step + 1, SCHEDULE.length, 'Season', (C.step + 1) + '/' + SCHEDULE.length, '▶')}</div></div>
-        <div class="fc-next">${next}${ffHtml(activeEvent)}${(st.type === 'major' || st.type === 'kickoff' || st.type === 'ewc' || st.type === 'worlds' || st.type === 'sidew') && window.RLCutscene ? `<button class="fc-intro" data-action="career-intro"><svg class="ic ic-play" aria-hidden="true"><use href="#i-play"></use></svg> Watch the ${esc(st.type === 'major' ? majorCity(st) : st.type === 'kickoff' ? 'Kick-Off' : st.type === 'ewc' ? 'Esports World Cup' : worldsCity() + ' Worlds Week')} intro</button>` : ''}</div>
+        <div class="fc-side-mid"><small>${P() ? esc(P().name()) + ' · ' + (C.players[C.pro.pid].team ? esc(C.teams[C.players[C.pro.pid].team].name) : 'free agent') + ' · ' + esc(api.regions[reg]) : viewer ? 'Neutral viewer · home region ' + esc(api.regions[reg]) : esc(t.name) + ' · ' + regionRankLabel() + ' in ' + esc(api.regions[reg])}</small>
+          <div class="fc-rings">${P() ? (() => { const pp = C.players[C.pro.pid]; return ring(pp.rating - 60, 39, 'Your rating', `<span data-count="${pp.rating}">${pp.rating}</span>`, '◆') + ring(C.pro.morale, 100, 'Morale', `<span data-count="${C.pro.morale}">${C.pro.morale}</span>`, '☺'); })() : viewer ? (() => { const n88 = Object.values(C.players).filter((p) => p.team && p.rating >= 88).length, base = (C.base || talentBase()).n88; return ring(t.ovr - 60, 40, 'Region leader', `<span data-count="${t.ovr}">${t.ovr}</span>`, '◆') + ring(n88, Math.round(base * 1.5), 'Stars 88+', `<span data-count="${n88}">${n88}</span>`, '★'); })() : ring(t.ovr - 60, 40, 'Team rating', `<span data-count="${t.ovr}">${t.ovr}</span>`, '◆')}${viewer ? '' : ring(C.board, 100, 'Board', `<span data-count="${C.board}" data-suf="%">${C.board}%</span>`, '☺')}${ring(C.step + 1, SCHEDULE.length, 'Season', (C.step + 1) + '/' + SCHEDULE.length, '▶')}</div></div>
+        <div class="fc-next">${P() ? P().nextHTML() : ''}${next}${ffHtml(activeEvent)}${(st.type === 'major' || st.type === 'kickoff' || st.type === 'ewc' || st.type === 'worlds' || st.type === 'sidew') && window.RLCutscene ? `<button class="fc-intro" data-action="career-intro"><svg class="ic ic-play" aria-hidden="true"><use href="#i-play"></use></svg> Watch the ${esc(st.type === 'major' ? majorCity(st) : st.type === 'kickoff' ? 'Kick-Off' : st.type === 'ewc' ? 'Esports World Cup' : worldsCity() + ' Worlds Week')} intro</button>` : ''}</div>
       </aside>`;
     const tiles = `<nav class="fc-tiles" aria-label="Career hub">${VIEWS.map(([k, l, sub]) => `<button class="fc-tile ${k === view && tab === 'central' ? 'on' : ''}" data-action="career-view" data-v="${k}"><b>${l}</b><small>${esc(sub)}</small><span class="fc-tile-ico" aria-hidden="true">${{ next: '<svg class="ic ic-play" aria-hidden="true"><use href="#i-play"></use></svg>', standings: '<svg class="ic ic-list" aria-hidden="true"><use href="#i-list"></use></svg>', schedule: '<svg class="ic ic-calendar" aria-hidden="true"><use href="#i-calendar"></use></svg>', objectives: '<svg class="ic ic-goal" aria-hidden="true"><use href="#i-goal"></use></svg>', news: '<svg class="ic ic-news" aria-hidden="true"><use href="#i-news"></use></svg>', social: '<svg class="ic ic-hash" aria-hidden="true"><use href="#i-hash"></use></svg>' }[k]}</span></button>`).join('')}</nav>`;
     // ---- tabs ----
-    const TABS = [['central', 'Central'], ['squad', 'Squad'], ['tactics', 'Tactics'], ['transfers', 'Transfers'], ['teams', 'Teams'], ['office', 'Office'], ['history', 'History']].filter(([k]) => (!viewer || !['squad', 'office', 'tactics'].includes(k)) && (k !== 'tactics' || X()));
+    const TABS = [['central', 'Central']].concat(PA() ? [['player', 'Player']] : [], [['squad', 'Squad'], ['tactics', 'Tactics'], ['transfers', 'Transfers'], ['teams', 'Teams'], ['office', 'Office'], ['history', 'History']]).filter(([k]) => (!viewer || !['squad', 'office', 'tactics'].includes(k)) && (k !== 'tactics' || X()));
     let body;
     const avgAge = roster.length ? (roster.reduce((x, p) => x + p.age, 0) / roster.length).toFixed(1) : '—';
     const fin = C.seasonFin || { prize: 0, sponsor: 0, salaries: 0, transfers: 0 };
@@ -1563,6 +1580,7 @@
           <section class="fc-panel"><div class="fc-panel-body"><h3 class="fc-h">Season leaders</h3><div class="fc-stats sq-leaders">${leaders}</div>
             <h3 class="fc-h" style="margin-top:18px">Trophy cabinet <span class="pill gold">${C.trophies.length}</span></h3>${trophyHtml}</div></section></div>`;
     } else if (tab === 'tactics') body = X().tacticsHTML();
+    else if (tab === 'player' && PA()) body = PA().playerHTML();
     else if (tab === 'transfers') body = transferHub(st, me, roster, salaries);
     else if (tab === 'teams') body = (X() ? X().powerHTML() : '') + teamsPage(reg);
     else if (tab === 'office') {
@@ -1594,10 +1612,10 @@
     app.innerHTML = `
       <div class="fc ${enter ? 'fc-enter' : ''} ${tabChanged ? 'fc-tabin' : ''}${hostTheme(st) ? ' fc-host' : ''}" style="${hostVars(hostTheme(st))}">
         <div class="fc-top">
-          ${viewer ? `<button class="fc-club vw-club" data-action="nav" data-v="home" title="Main menu"><span class="vw-eye" aria-hidden="true"><svg class="ic ic-eye" aria-hidden="true"><use href="#i-eye"></use></svg></span><span class="fc-club-name">Neutral viewer</span><span class="vw-sub">${esc(reg)}</span></button>` : ''}<button class="fc-club${viewer ? ' hidden' : ''}" data-action="nav" data-v="home" title="Back to modes">${api.badge(t, 'sm')}<span class="fc-club-name">${esc(t.name)}</span><i class="fc-club-bar" style="--b:${C.board}%"></i><span class="fc-thumb ${C.board >= 60 ? 'good' : C.board >= 35 ? 'mid' : 'bad'}" aria-label="Board ${C.board}%">${C.board >= 60 ? '<svg class="ic ic-thumb-up" aria-hidden="true"><use href="#i-thumb-up"></use></svg>' : C.board >= 35 ? '<svg class="ic ic-hand" aria-hidden="true"><use href="#i-hand"></use></svg>' : '<svg class="ic ic-thumb-down" aria-hidden="true"><use href="#i-thumb-down"></use></svg>'}</span></button>
+          ${viewer && PA() ? PA().chipHTML() : viewer ? `<button class="fc-club vw-club" data-action="nav" data-v="home" title="Main menu"><span class="vw-eye" aria-hidden="true"><svg class="ic ic-eye" aria-hidden="true"><use href="#i-eye"></use></svg></span><span class="fc-club-name">Neutral viewer</span><span class="vw-sub">${esc(reg)}</span></button>` : ''}<button class="fc-club${viewer ? ' hidden' : ''}" data-action="nav" data-v="home" title="Back to modes">${api.badge(t, 'sm')}<span class="fc-club-name">${esc(t.name)}</span><i class="fc-club-bar" style="--b:${C.board}%"></i><span class="fc-thumb ${C.board >= 60 ? 'good' : C.board >= 35 ? 'mid' : 'bad'}" aria-label="Board ${C.board}%">${C.board >= 60 ? '<svg class="ic ic-thumb-up" aria-hidden="true"><use href="#i-thumb-up"></use></svg>' : C.board >= 35 ? '<svg class="ic ic-hand" aria-hidden="true"><use href="#i-hand"></use></svg>' : '<svg class="ic ic-thumb-down" aria-hidden="true"><use href="#i-thumb-down"></use></svg>'}</span></button>
           <div class="fc-top-r"><button class="fc-chip" data-action="career-view" data-v="news" aria-label="Inbox${unread ? ', ' + unread + ' unread' : ''}"><svg class="ic ic-mail" aria-hidden="true"><use href="#i-mail"></use></svg> Inbox${unread ? ` <i>${Math.min(99, unread)}</i>` : ''}</button><button class="fc-chip" data-action="${viewer ? 'career-vmarket' : 'career-market'}"><svg class="ic ic-swap" aria-hidden="true"><use href="#i-swap"></use></svg> ${viewer ? 'Transfers' : 'Market'}</button><button class="fc-chip" data-action="career-saves" title="Career saves"><svg class="ic ic-save" aria-hidden="true"><use href="#i-save"></use></svg> Saves</button><button class="fc-chip" data-action="nav" data-v="home"><svg class="ic ic-left" aria-hidden="true"><use href="#i-left"></use></svg> Main menu</button>${viewer ? '<button class="fc-chip" data-action="career-quit" title="End this career"><svg class="ic ic-power" aria-hidden="true"><use href="#i-power"></use></svg> End</button>' : ''}</div>
         </div>
-        <div class="fc-tabs" role="tablist" style="--tabs:${TABS.length}"><span class="fc-key" aria-hidden="true">Q</span>${TABS.map(([k, l]) => `<button role="tab" aria-selected="${k === tab}" class="${k === tab ? 'on' : ''}" data-action="career-tab" data-v="${k}"><span class="fc-tab-ico" aria-hidden="true">${{ central: '<svg class="ic ic-home" aria-hidden="true"><use href="#i-home"></use></svg>', squad: '<svg class="ic ic-users" aria-hidden="true"><use href="#i-users"></use></svg>', tactics: '<svg class="ic ic-target" aria-hidden="true"><use href="#i-target"></use></svg>', transfers: '<svg class="ic ic-swap" aria-hidden="true"><use href="#i-swap"></use></svg>', teams: '<svg class="ic ic-grid" aria-hidden="true"><use href="#i-grid"></use></svg>', office: '<svg class="ic ic-office" aria-hidden="true"><use href="#i-office"></use></svg>', history: '<svg class="ic ic-star" aria-hidden="true"><use href="#i-star"></use></svg>' }[k]}</span><span class="fc-tab-l">${l}</span></button>`).join('')}<span class="fc-key" aria-hidden="true">E</span></div>
+        <div class="fc-tabs" role="tablist" style="--tabs:${TABS.length}"><span class="fc-key" aria-hidden="true">Q</span>${TABS.map(([k, l]) => `<button role="tab" aria-selected="${k === tab}" class="${k === tab ? 'on' : ''}" data-action="career-tab" data-v="${k}"><span class="fc-tab-ico" aria-hidden="true">${{ player: '<svg class="ic ic-person" aria-hidden="true"><use href="#i-person"></use></svg>', central: '<svg class="ic ic-home" aria-hidden="true"><use href="#i-home"></use></svg>', squad: '<svg class="ic ic-users" aria-hidden="true"><use href="#i-users"></use></svg>', tactics: '<svg class="ic ic-target" aria-hidden="true"><use href="#i-target"></use></svg>', transfers: '<svg class="ic ic-swap" aria-hidden="true"><use href="#i-swap"></use></svg>', teams: '<svg class="ic ic-grid" aria-hidden="true"><use href="#i-grid"></use></svg>', office: '<svg class="ic ic-office" aria-hidden="true"><use href="#i-office"></use></svg>', history: '<svg class="ic ic-star" aria-hidden="true"><use href="#i-star"></use></svg>' }[k]}</span><span class="fc-tab-l">${l}</span></button>`).join('')}<span class="fc-key" aria-hidden="true">E</span></div>
         ${body}
         <div class="fc-legend"><span><kbd>Q</kbd><kbd>E</kbd> Switch tabs</span><span><kbd>1</kbd>–<kbd>${X() ? 6 : 5}</kbd> Hub tiles</span><span class="fc-legend-r">${esc(api.regions[reg])} · ${esc(st.name)}</span></div>
       </div>`;
@@ -2003,7 +2021,7 @@
       if (!C || C.sacked) { api.render(); return; }
       const st = step();
       if (st.type === 'review' || (n > 0 && f(st))) { save(); api.render(); api.toast(`Fast-forwarded ${n} step${n === 1 ? '' : 's'}: ${st.name}.`); return; }
-      if (st.type === 'window') { aiWindow(); advance(); news('career', 'The transfer window is closed.'); }
+      if (st.type === 'window') { if (P() && P().needsClub()) { api.render(); api.toast('Sign with a club first: pick an offer in Next up.'); return; } aiWindow(); advance(); news('career', 'The transfer window is closed.'); }
       else runStep(null);
       n++;
       const b = document.querySelector('.ff-row'); if (b) b.innerHTML = `<small>Simulating ${esc(step().name)}…</small>`;
@@ -2086,6 +2104,7 @@
   function onAction(a, el) {
     const id = el.dataset.id, v = el.dataset.v;
     if (a.startsWith('x-') && X() && X().onAction(a, el)) return true;
+    if (a.startsWith('pro-') && global.RLPro && global.RLPro.onAction(a, el)) return true;
     if (['career-play', 'career-sim', 'career-close-window', 'career-next-season'].includes(a) && C && !V() && userTeam().roster.length < 3) { api.toast('You need at least three players. Sign someone in the transfer market.'); return true; }
     switch (a) {
       case 'career-pick': newCareer(id, api.state.ui.cdiff || 'normal'); api.go('career'); return true;
@@ -2119,7 +2138,7 @@
       case 'career-sim': { const b = el; b.disabled = true; b.textContent = 'Simulating…'; setTimeout(() => { runStep(null); api.render(); }, 30); return true; }
       case 'career-ff': fastForward(v); return true;
       case 'career-sim-rest': { const T = api.state.T; simRest(T); api.render(); return true; }
-      case 'career-close-window': aiWindow(); advance(); news('career', 'The transfer window is closed.'); save(); api.render(); return true;
+      case 'career-close-window': if (P() && P().needsClub()) { api.toast('Sign with a club first: pick one of the offers.'); return true; } aiWindow(); advance(); news('career', 'The transfer window is closed.'); save(); api.render(); return true;
       case 'career-next-season': startNextSeason(); api.render(); window.scrollTo({ top: 0 }); return true;
       case 'career-letgo': { const R = C.review; R.letGo = R.letGo || []; R.letGo = R.letGo.includes(id) ? R.letGo.filter((x) => x !== id) : R.letGo.concat(id); save(); api.render(); return true; }
       case 'career-job': {
@@ -2185,6 +2204,7 @@
   function render(app) {
     if (!uiRestored) { uiRestored = true; try { const o = JSON.parse(localStorage.getItem('rlsim.careerUi') || '{}'); UI_KEYS.forEach((k) => { if (o[k] != null && api.state.ui[k] == null) api.state.ui[k] = o[k]; }); } catch (e) { /* ignore */ } }
     setTimeout(rememberUi, 0);
+    if (api.state.ui.proNew && global.RLPro) { app.innerHTML = global.RLPro.creatorHTML(); global.RLPro.bindCreator(app); return; }
     if (!C) renderStart(app); else renderHub(app);
   }
   function canAdvanceCheck() { return !C || V() || userTeam().roster.length >= 3; }
@@ -2195,6 +2215,10 @@
     themeKey() { try { return C && api && api.state.view === 'career' ? themeKeyFor(step()) : null; } catch (e) { return null; } },
     init(a) {
       api = a; E = a.E;
+      if (global.RLPro) global.RLPro.attach({
+        get C() { return C; }, api: () => api, esc: (s) => api.esc(s), news, teamObj, ovr, step, REGIONS, ROOKIE_COUNTRIES, SCHEDULE, money, salaryFor, valueFor, joinTeam, removeFromTeam, aiFill, recordDeal, bump, save, avatar, addPlayer, placeLabel, nationPlayers, newCareer,
+        X: () => X(), render: () => api.render(),
+      });
       if (global.RLCareerX) global.RLCareerX.attach({
         get C() { return C; }, api: () => api, esc: (s) => api.esc(s), news, teamObj, userTeam, V, homeReg, step, isWindow, REGIONS, money, ovr, standings,
         salaryFor, valueFor, askingSalary, minTierFor, tierOf, tierName, joinTeam, removeFromTeam, aiFill, recordDeal, bump, save, avatar, ageLabel, diff, photoOf,
@@ -2212,7 +2236,7 @@
           return;
         }
         if (document.querySelector('#modalRoot .modal') || /input|select|textarea/i.test((ev.target && ev.target.tagName) || '')) return;
-        const TABS = (C && C.viewer ? ['central', 'transfers', 'teams', 'history'] : ['central', 'squad'].concat(X() ? ['tactics'] : [], ['transfers', 'teams', 'office', 'history'])), VIEWS = ['next', 'standings', 'schedule', 'objectives', 'news', 'social'];
+        const TABS = (C && C.viewer ? ['central'].concat(C.pro ? ['player'] : [], ['transfers', 'teams', 'history']) : ['central', 'squad'].concat(X() ? ['tactics'] : [], ['transfers', 'teams', 'office', 'history'])), VIEWS = ['next', 'standings', 'schedule', 'objectives', 'news', 'social'];
         const ui = api.state.ui, k = ev.key.toLowerCase();
         if (k === 'n') { const b = document.querySelector('.fc-next [data-action="career-sim"], .fc-next [data-action="career-close-window"], .fc-next [data-action="career-next-season"]'); if (b && !b.disabled) { ev.preventDefault(); b.click(); } return; }
         if (k === 'q' || k === 'e') { const i = TABS.indexOf(ui.ctab || 'central'); ui.ctab = TABS[(i + (k === 'e' ? 1 : TABS.length - 1)) % TABS.length]; api.render(); }

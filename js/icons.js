@@ -44,6 +44,7 @@
     'thumb-up': '<path d="M7 10.5V20H4v-9.5zM7 10.5L11 4a2 2 0 0 1 3.2 2.2L13 10h5.6a2 2 0 0 1 2 2.4l-1.4 6A2 2 0 0 1 17.2 20H7"/>',
     'thumb-down': '<path d="M7 13.5V4H4v9.5zM7 13.5L11 20a2 2 0 0 0 3.2-2.2L13 14h5.6a2 2 0 0 0 2-2.4l-1.4-6A2 2 0 0 0 17.2 4H7"/>',
     hand: '<path d="M8 13V6a1.5 1.5 0 0 1 3 0v5M11 10.5V4.5a1.5 1.5 0 0 1 3 0v6M14 10.5V6a1.5 1.5 0 0 1 3 0v8.5a6 6 0 0 1-6 6h-.5a6 6 0 0 1-4.8-2.4L3.8 15.5a1.5 1.5 0 0 1 2.4-1.8L8 15.5"/>',
+    person: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
     comment: '<path d="M4 5h16v11H10l-6 4.5z"/>',
   };
   const sprite = '<svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">'

@@ -1148,6 +1148,7 @@
   global.RLCareerX = {
     attach(core) { K = core; },
     migrate, onNew, onEvent, onSide, onNation, onReview, onRetire, onStep, onNewSeason, onDeal, onWindow,
+    social: { post, fanAcct, pressAcct, clubAcct, playerAcct, statsAcct, itkAcct, casterAcct },
     tacticFor, negotiate: (pid) => {
       const b = C().x.negBlock && C().x.negBlock[pid];
       if (b && b === C().season + '|' + C().step) { K.api().toast('They are not willing to talk again during this window.'); return; }

@@ -1596,6 +1596,7 @@
         tiles: () => [
           { t: 'Continue career', s: cs ? `${esc(cs.team.name)} · RLCS ${cs.season} · ${esc(cs.step)}${window.RLCareer.unread() ? ` · <b class="hc-unread">${Math.min(99, window.RLCareer.unread())} unread</b>` : ''}` : 'No career to continue yet', ic: 'play', c: '#f2b632', a: 'nav', v: 'career', big: true, dis: !has, art: cs && cs.team ? `<span class="mt-hero">${badge(cs.team, 'xl')}</span>` : '' },
           { t: 'Start new career', s: has ? 'Starts in a new save slot. Your current career stays saved.' : 'Pick a club, or follow the season as a neutral viewer.', m: '+', c: '#d97706', a: 'home-career-new', v: '' },
+          { t: 'Player career', s: 'Create your own pro and play a whole career as one player.', ic: 'person', c: '#22c55e', a: 'home-pro-new', v: '' },
           { t: 'Career saves', s: nSaves ? `${nSaves} of ${window.RLCareer.maxSaves} slots used · load, switch or delete` : 'Every career you start gets its own save slot.', ic: 'save', c: '#a78bfa', a: 'career-saves', v: '', dis: !nSaves },
           live ? { t: 'Resume tournament', s: `${esc(T.title || E.FORMATS[T.format].name)} · ${entrants(T)} · ${played} series played`, m: 'LIVE', c: '#22c55e', a: 'resume', v: '' }
             : { t: 'New tournament', s: 'Tournaments you start are saved on this device so you can pick them up later.', m: 'NEW', c: '#2f8cff', a: 'nav', v: 'setup' },
@@ -2071,7 +2072,7 @@
     if (!el || el.disabled) return;
     const a = el.dataset.action, v = el.dataset.v, id = el.dataset.id;
     const s = state.setup;
-    if ((a.startsWith('career-') || a.startsWith('mk-') || a.startsWith('th-') || a.startsWith('x-')) && a !== 'career-out-sim' && window.RLCareer.onAction(a, el)) return;
+    if ((a.startsWith('career-') || a.startsWith('mk-') || a.startsWith('th-') || a.startsWith('x-') || a.startsWith('pro-')) && a !== 'career-out-sim' && window.RLCareer.onAction(a, el)) return;
     switch (a) {
       case 'career-out-sim': { closeModal(); const T = state.T; T.managedOutShown = true; T.championShown = true; window.RLCareer.simRest(T); save(); go('career'); break; }
       case 'close-modal': closeModal(); break;
@@ -2123,6 +2124,11 @@
         if (window.RLCareer.newSave()) { go('career'); toast('Your previous career is saved. Switch back any time from Career saves.'); }
         else { window.RLCareer.openSaves(); toast(`All ${window.RLCareer.maxSaves} save slots are in use. Delete one to start another career.`); }
         break;
+      }
+      case 'home-pro-new': {
+        state.ui.proNew = true; state.ui.proForm = null;
+        if (window.RLCareer.has() && !window.RLCareer.newSave()) { state.ui.proNew = false; window.RLCareer.openSaves(); toast(`All ${window.RLCareer.maxSaves} save slots are in use. Delete one to start another career.`); break; }
+        go('career'); break;
       }
       case 'home-career-new-ok': window.RLCareer.end(); closeModal(); toast('Career ended. Choose how to start your new one.'); go('career'); break;
       case 'replay-ceremony': closeModal(); if (state.T && state.T.champion) playCeremony(state.T, () => openChampion(true)); break;
